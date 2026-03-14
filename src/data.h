@@ -11,19 +11,14 @@
 struct MacroCell {
 
   enum Field {
-    FrameMarker,
-    EnterFlag,
+    Value0,
+    Value1,
+    FrameID,
+    Flag,
     Runtime0,
     Runtime1,
-    Value, // TODO: move to field 0
     FieldCount
   };
-
-  enum FrameMarkerValue {
-    StackFrameMarkerValue = 1,
-    GlobalVariableFrameMarkerValue = 2
-  };
-  
 };
 
 // ============================================================
@@ -34,10 +29,10 @@ class DataPointer {
   bool _static = true;
   int _staticOffset = 0;
   int _dynamicOffset = 0;
-  MacroCell::Field _activeField = MacroCell::Value;
+  MacroCell::Field _activeField = MacroCell::Value0;
 
 public:
-  inline explicit DataPointer(int offset = 0, MacroCell::Field field = MacroCell::Value):
+  inline explicit DataPointer(int offset = 0, MacroCell::Field field = MacroCell::Value0):
     _staticOffset(offset),
     _activeField(field)
   {}
@@ -61,7 +56,7 @@ public:
     else _dynamicOffset += logicalCells;
   }
 
-  inline void resetTo(int offset, MacroCell::Field field = MacroCell::Value) {
+  inline void resetTo(int offset, MacroCell::Field field = MacroCell::Value0) {
     _static = true;
     _staticOffset = offset;
     _dynamicOffset = 0;

@@ -15,6 +15,7 @@ int main() {
       } c.endBlock();
 
       c.beginBlock("after"); {
+	c.setToValue('\n', x);
 	c.writeOut(x);
 	c.returnFromFunction();
       }; c.endBlock();
@@ -42,7 +43,7 @@ int main() {
       c.beginBlock("entry"); {
        	c.setToValue('C', z);
 	c.writeOut(z);
-	c.abortProgram();
+	c.returnFromFunction();
       } c.endBlock();
 
     } c.endFunction();

@@ -1,11 +1,10 @@
 #pragma once
 #include <iostream>
 #include <cassert>
-#include <functional>
 #include <vector>
 #include <memory>
 #include <utility>
-
+#include "defer.h"
 
 namespace primitive {
 
@@ -17,40 +16,15 @@ namespace primitive {
 
     int getBlockIndex(std::string const &f, std::string const &b = "") const {      
       std::string const id = f + (b.empty() ? "" : (std::string(".") + b));
-      int x = blockIDtoIndex.at(id);
-      //      std::cerr << "Getting block index of " << id << ": " << x << '\n';
-      return x;
-
+      return blockIDtoIndex.at(id);
     }
 
     int getStackFrameSize(std::string const &f) const {
-      int x = stackFrameSize.at(f);
-      //      std::cerr << "Getting stackframe size of " << f << ": " << x << '\n';
-      return x;
-      
+      return stackFrameSize.at(f);
     }
   };
 
-  namespace Defer {
-
-    template <typename T>
-    class Type {
-      std::function<int(Context const &)> _get;
-    public:
-      Type(int value):
-	_get([value](Context const &){ return value; })
-      {}
-
-      template <typename Getter> requires std::is_invocable_r_v<int, Getter, Context const&>
-      Type(Getter&& func):
-	_get(std::forward<Getter>(func))
-      {}
-
-      int resolve(Context const &ctx) const { return _get(ctx); }
-    };
-
-    using Int = Type<int>;
-  }
+  using DInt = Defer::Int<Context>;
   
   struct Node {
     virtual ~Node() = default;
@@ -83,8 +57,6 @@ namespace primitive {
   std::string generate(Context const&) const override;	 \
 
 
-  using DInt = Defer::Int;
-  
   struct LoopOpen: Node {
     std::string tag;
     inline explicit LoopOpen(std::string tag): tag(std::move(tag)) {}

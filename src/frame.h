@@ -9,12 +9,17 @@
 struct FrameLayout {
 
   enum Offsets {
-    TargetBlockOffset,
-    RunStateOffset,    
-    ReturnValueOffset, 
-    LocalBaseOffset   
+    TargetBlock,
+    RunState,    
+    ReturnValue, 
+    LocalBase   
   };
 
+  enum FrameMarkerValue {
+    GlobalVariableFrameID = 1,
+    FirstStackFrameID = 2
+  };
+  
   std::unordered_map<std::string, Slot> locals;
 
   inline int localAreaSize() const {
@@ -24,7 +29,7 @@ struct FrameLayout {
   }
 
   inline int totalLogicalCells() const {
-    return LocalBaseOffset + localAreaSize();
+    return LocalBase + localAreaSize();
   }
   
 };

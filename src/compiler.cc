@@ -12,7 +12,6 @@
 
 void Compiler::begin() {
   assert(not _program.entryFunctionName.empty()); 
-
 }
 
 void Compiler::end() {
@@ -21,7 +20,7 @@ void Compiler::end() {
 
   
   // To bootstrap the system, we need to do the following:
-  // 1. Mark cell 0 using the FrameMarker field to indicate that this is where
+  // 1. Mark cell 0 using the FrameID field to indicate that this is where
   //    the global data frame starts. Leave the pointer in the value-field.
   // 2. Move the pointer to the first stackframe and reset the origin.
   // 3. Initialize the first stack-frame, where we set the TargetBlock to the
@@ -32,29 +31,29 @@ void Compiler::end() {
 
   resetOrigin();
   _dp.setField(static_cast<MacroCell::Field>(0));
-  switchField(MacroCell::FrameMarker);
-    addConst(MacroCell::GlobalVariableFrameMarkerValue); // ++
-  switchField(MacroCell::Value); // >>>>
+  switchField(MacroCell::FrameID);
+  addConst(FrameLayout::GlobalVariableFrameID);
+  switchField(MacroCell::Value0);
 
   moveTo(1 + _program.globalVariableFrameSize()); 
 
   resetOrigin();
-  switchField(MacroCell::FrameMarker);
-    addConst(MacroCell::StackFrameMarkerValue);
-  switchField(MacroCell::Value);
+  switchField(MacroCell::FrameID);
+  addConst(FrameLayout::FirstStackFrameID);
+  switchField(MacroCell::Value0);
 
   setNextBlock(_program.entryFunctionName); // [-]
-  setToValue(1, FrameLayout::RunStateOffset); // >>>>>[-]+
+  setToValue(1, FrameLayout::RunState); // >>>>>[-]+
 
   
-  loopOpen(FrameLayout::RunStateOffset, "main loop"); // [
+  loopOpen(FrameLayout::RunState, "main loop"); // [
   moveToOrigin(); // <<<<<
   
   // Also generate the hatstrap code. All this needs to do is move the pointer to
   // the run-cell and close the loop.
 
   setTargetSequence(&_program.hatstrap);
-  loopClose(FrameLayout::RunStateOffset, "main loop");
+  loopClose(FrameLayout::RunState, "main loop");
 }
 
 void Compiler::resetOrigin() {
@@ -64,6 +63,20 @@ void Compiler::resetOrigin() {
 
 void Compiler::moveToOrigin() {
   moveTo(0);
+}
+
+void Compiler::pushPtr() {
+  _ptrStack.push({
+      .offset = _dp.staticOffset(),
+      .field = _dp.activeField()
+    });
+}
+
+void Compiler::popPtr() {
+  auto [offset, field] = _ptrStack.top();
+  moveTo(offset);
+  switchField(field);
+  _ptrStack.pop();
 }
 
 void Compiler::beginFunction(std::string name) {
@@ -120,7 +133,7 @@ void Compiler::blockOpen() {
   // 1. Does the block-index match the value stored in the TargetBlock cell?
   // 2. Is the Run-cell still set?
   //
-  // If both are true, the EnterFlag field of the TargetBlock cell is set to 1 and
+  // If both are true, the Flag field of the TargetBlock cell is set to 1 and
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
 
@@ -142,29 +155,29 @@ void Compiler::blockOpen() {
 
   // Step 1: Set-up the flag. We set it to 1 and reset it to 0 if either of the
   //         conditions fail.
-  moveTo(FrameLayout::TargetBlockOffset);
-  switchField(MacroCell::EnterFlag); // <<<
-  setToValue(1); // [-]+
+  moveTo(FrameLayout::TargetBlock);
+  switchField(MacroCell::Flag);
+  setToValue(1);
 
   // Step 2: Compare the TargetBlock value with the index of this block.
   // a. Copy the value into the Runtime0 cell, using Runtime1 as a temporary scratch pad.
   // b. Subtract the index from the copy in RT0
   // c. Branch on the result -> if nonzero, reset the flag
 
-  switchField(MacroCell::Value); // >>>
-  emit<primitive::CopyData>(MacroCell::Value, MacroCell::Runtime0, MacroCell::Runtime1); 
+  switchField(MacroCell::Value0);
+  emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Runtime0, MacroCell::Runtime1); 
   switchField(MacroCell::Runtime0);
   subConst(_currentBlock->globalBlockIndex);
-  clearFieldIfActiveFieldNonzero(MacroCell::EnterFlag);
+  clearFieldIfActiveFieldNonzero(MacroCell::Flag);
 
   // Step 3: Check the Run-state
   // a. After moving to the Run-cell, copy the run-state into its Runtime0 field
   // b. Set its RT1 field to 1; this will be reset if run == 1 (effectively computing !run)
   // c. Use the value in RT1 (!Run) to reset the Enter-flag: if (!run) clear
 
-  switchField(MacroCell::Value);
-  moveTo(FrameLayout::RunStateOffset);
-  emit<primitive::CopyData>(MacroCell::Value, MacroCell::Runtime0, MacroCell::Runtime1);
+  switchField(MacroCell::Value0);
+  moveTo(FrameLayout::RunState);
+  emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Runtime0, MacroCell::Runtime1);
 
   switchField(MacroCell::Runtime1);
   setToValue(1);
@@ -172,25 +185,25 @@ void Compiler::blockOpen() {
   clearFieldIfActiveFieldNonzero(MacroCell::Runtime1);
 
   switchField(MacroCell::Runtime1);
-  clearFieldIfActiveFieldNonzero(MacroCell::EnterFlag, FrameLayout::TargetBlockOffset);
+  clearFieldIfActiveFieldNonzero(MacroCell::Flag, FrameLayout::TargetBlock);
   
   // Step 4: Enter block based on the Enter-flag in the TargetCell Block
-  moveTo(FrameLayout::TargetBlockOffset);
-  switchField(MacroCell::EnterFlag);
+  moveTo(FrameLayout::TargetBlock);
+  switchField(MacroCell::Flag);
   loopOpen("block open");
   zeroCell();
-  switchField(MacroCell::Value);
+  switchField(MacroCell::Value0);
 }
 
 void Compiler::blockClose() {
   assert(_dp.isStatic());
   assert(_currentBlock != nullptr);
 
-  // We move back to the EnterFlag stored in the TargetBlock cell
-  moveTo(FrameLayout::TargetBlockOffset);
-  switchField(MacroCell::EnterFlag);
+  // We move back to the Flag stored in the TargetBlock cell
+  moveTo(FrameLayout::TargetBlock);
+  switchField(MacroCell::Flag);
   loopClose("block close");
-  switchField(MacroCell::Value);
+  switchField(MacroCell::Value0);
   moveToOrigin();
 }
 
@@ -217,10 +230,41 @@ void Compiler::pushFrame() {
   assert(_currentFunction != nullptr);
   assert(_currentSeq != nullptr);
 
-  moveToOrigin();
-  emit<primitive::MovePointerRelative>([caller = _currentFunction->name](primitive::Context const &ctx){
+
+  pushPtr();
+  
+  // To push a frame, we need to move the pointer into the cell that marks the start of a fresh
+  // frame, starting just beyond the current one. We also initialize the FrameID of this frame
+  // with the current ID + 1.
+
+  primitive::DInt currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
-  });
+  };
+  
+  moveToOrigin();
+  switchField(MacroCell::FrameID);
+  emit<primitive::CopyData>(MacroCell::FrameID,
+			    currentFrameSize + MacroCell::FrameID,
+			    currentFrameSize + MacroCell::Runtime0);
+  emit<primitive::MovePointerRelative>(currentFrameSize);
+  addConst(1);
+
+  popPtr();
+}
+
+void Compiler::moveToPreviousFrame() {
+
+  pushPtr();
+  
+  moveToOrigin();
+  switchField(MacroCell::FrameID);
+  emit<primitive::MovePointerDynamic>( /*Direction*/     primitive::Left,
+				       /*Stride*/        MacroCell::FieldCount,
+				       /*Until nonzero*/ MacroCell::FrameID,
+				       /*Loop flag*/     MacroCell::Flag,
+				       /*Scratch1*/      MacroCell::Runtime0,
+				       /*Scratch2*/      MacroCell::Runtime1);
+  popPtr();
 }
 
 void Compiler::popFrame() {
@@ -231,36 +275,23 @@ void Compiler::popFrame() {
   // Check if function is the entry-point of the program. If so, we need to set the run-cell to 0
   // If not, we do a dynamic move left until we hit the next frame marker.
 
-  int const offsetBeforePop = _dp.staticOffset();
-  MacroCell::Field const fieldBeforePop = _dp.activeField();
+  pushPtr();
   
   if (_currentFunction->name == _program.entryFunctionName) {
-    zeroCell(FrameLayout::RunStateOffset);
+    zeroCell(FrameLayout::RunState);
     moveToOrigin();
   }
   else {
     moveToOrigin();
-    switchField(MacroCell::FrameMarker);
+    switchField(MacroCell::FrameID);
     zeroCell();
-    emit<primitive::MovePointerDynamic>(primitive::Left,
-					MacroCell::FieldCount,
-					MacroCell::FrameMarker,
-					MacroCell::EnterFlag,
-					MacroCell::Runtime0,
-					MacroCell::Runtime1);
+    moveToPreviousFrame();
     // Pointer should now be at the start of the previous frame
   }
   
-  moveTo(offsetBeforePop);
-  switchField(fieldBeforePop);
+  popPtr();
 }
 
-void Compiler::setFrameMarker(MacroCell::FrameMarkerValue value) {
-  moveToOrigin();
-  switchField(MacroCell::FrameMarker);
-  setToValue(value);
-  switchField(MacroCell::Value);
-}
 
 void Compiler::fetchReturnData() {
   assert(_currentSeq != nullptr);  
@@ -270,32 +301,31 @@ void Compiler::fetchReturnData() {
   // 1. Run-state
   // 2. Return-values (not implemented)
 
-  auto const forward = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
+  primitive::DInt const forward = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
   };
 
-  auto const backward = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
-    return -ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
-  };
-
+  pushPtr();
+  
   // Get run-state
-  moveTo(FrameLayout::RunStateOffset);
+  moveTo(FrameLayout::RunState);
   zeroCell();
   emit<primitive::MovePointerRelative>(forward);
-  emit<primitive::MoveData>(backward);
-  emit<primitive::MovePointerRelative>(backward);
+  emit<primitive::MoveData>(-forward);
+  emit<primitive::MovePointerRelative>(-forward);
+
+  popPtr();
 }
     
 void Compiler::setNextBlock(int index) {
   assert(_currentSeq != nullptr);
-  int const offsetBefore = _dp.staticOffset();
-  MacroCell::Field const fieldBefore = _dp.activeField();
 
-  switchField(MacroCell::Value);
-  setToValue(index, FrameLayout::TargetBlockOffset);
-  switchField(fieldBefore);
-  moveTo(offsetBefore);
+  pushPtr();
   
+  switchField(MacroCell::Value0);
+  setToValue(index, FrameLayout::TargetBlock);
+  
+  popPtr();
   _nextBlockIsSet = true;
 }
     
@@ -312,13 +342,15 @@ void Compiler::setNextBlock(std::string f, std::string b) {
     }
   }
 
+  pushPtr();
   // Could not determine block index yet -> postpone until actual code generation
-  zeroCell(FrameLayout::TargetBlockOffset);
+  zeroCell(FrameLayout::TargetBlock);
   emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
     return ctx.getBlockIndex(f, b);
   });
   
   _nextBlockIsSet = true;
+  popPtr();
 }
 
     
@@ -341,7 +373,7 @@ Slot &Compiler::declareLocal(std::string const& name, int size) {
   Slot slot {
     .type = Slot::Local,
     .name = name,
-    .offset = FrameLayout::LocalBaseOffset + frame.localAreaSize(),
+    .offset = FrameLayout::LocalBase + frame.localAreaSize(),
     .size = size
   };
   auto [it, success] = frame.locals.emplace(name, slot);
@@ -485,8 +517,7 @@ void Compiler::callFunction(std::string const& functionName,
     });
 
   pushFrame();
-  setFrameMarker(MacroCell::StackFrameMarkerValue);
-  setToValue(1, FrameLayout::RunStateOffset);
+  setToValue(1, FrameLayout::RunState);
   setNextBlock(functionName);
 }
   
@@ -505,8 +536,8 @@ void Compiler::constructMetaBlocks() {
       fetchReturnData();
 
       // Check if the run-state has become 0. If so, unwind the stack
-      moveTo(FrameLayout::RunStateOffset);
-      emit<primitive::CopyData>(MacroCell::Value, MacroCell::Runtime0, MacroCell::Runtime1);
+      moveTo(FrameLayout::RunState);
+      emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Runtime0, MacroCell::Runtime1);
       switchField(MacroCell::Runtime1);
       setToValue(1);
       
@@ -525,7 +556,7 @@ void Compiler::constructMetaBlocks() {
 	zeroCell();
 	popFrame(); // This leaves us at the Runtime1 cell in another frame: guaranteed 0
       } loopClose();
-      switchField(MacroCell::Value);
+      switchField(MacroCell::Value0);
       
     } endBlock();
   }
@@ -538,7 +569,7 @@ void Compiler::constructMetaBlocks() {
 void Compiler::abortProgram() {
   assert(_currentBlock != nullptr);
 
-  setToValue(0, FrameLayout::RunStateOffset);
+  setToValue(0, FrameLayout::RunState);
   returnFromFunction();
 }
 
@@ -624,41 +655,34 @@ void Compiler::syncGlobalToLocal() {
     Slot const &globalSlot = globals.at(globalName);
     assert(globalSlot.size == localSlot.size);
 
-    // Move left dynamically until the FrameMarker equals the Global Marker
+    // Move left dynamically until the FrameID equals the Global Marker
     moveToOrigin();
-    switchField(MacroCell::EnterFlag);
+    switchField(MacroCell::Flag);
     setToValue(1);
     loopOpen(); {
       zeroCell();
-
-      switchField(MacroCell::FrameMarker);
-      emit<primitive::MovePointerDynamic>(primitive::Left,
-					  MacroCell::FieldCount,
-					  MacroCell::FrameMarker,
-					  MacroCell::EnterFlag,
-					  MacroCell::Runtime0,
-					  MacroCell::Runtime1);
-
-      switchField(MacroCell::EnterFlag);
+      switchField(MacroCell::FrameID);
+      moveToPreviousFrame();
+      switchField(MacroCell::Flag);
       setToValue(1);
       
       // Copy the marker value into RT0
-      switchField(MacroCell::Value);
-      emit<primitive::CopyData>(MacroCell::Value, MacroCell::Runtime0, MacroCell::Runtime1);
+      switchField(MacroCell::Value0);
+      emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Runtime0, MacroCell::Runtime1);
     
       // Subtract the global marker value from the copy in RT0
       switchField(MacroCell::Runtime0);
-      subConst(MacroCell::GlobalVariableFrameMarkerValue);
+      subConst(FrameLayout::GlobalVariableFrameID);
 
       // If nonzero, we're not here yet -> set enter to 0
       loopOpen("Clear if nonzero"); {
 	zeroCell();
-	switchField(MacroCell::EnterFlag);
+	switchField(MacroCell::Flag);
 	zeroCell();
 	switchField(MacroCell::Runtime0);
       }; loopClose("Clear if nonzero");
 
-      switchField(MacroCell::EnterFlag);
+      switchField(MacroCell::Flag);
     } loopClose();
 
     

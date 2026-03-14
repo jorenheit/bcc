@@ -1,4 +1,5 @@
 #pragma once
+#include <stack>
 #include "program.h"
 #include "function.h"
 #include "data.h"
@@ -17,14 +18,18 @@ class Compiler {
 
   DataPointer _dp;
 
-
   struct MetaBlock {
     std::string name;
     std::string caller;
     std::string nextBlockName;
   };
   std::vector<MetaBlock> _metaBlocks;
-  
+
+  struct PointerState {
+    int offset;
+    MacroCell::Field field;
+  };
+  std::stack<PointerState> _ptrStack;
 
 public:
   // TODO: distinguish between public and private interface
@@ -49,6 +54,9 @@ public:
   
   void moveToOrigin();
   void resetOrigin();
+
+  void pushPtr();
+  void popPtr();
   
   template <typename Primitive, typename ... Args>
   void emit(Args&& ... args) {
@@ -57,8 +65,7 @@ public:
   }
 
   void pushFrame();
-  void setFrameMarker(MacroCell::FrameMarkerValue value);
-  
+  void moveToPreviousFrame();
   void popFrame();
   void fetchReturnData();
   void abortProgram();
