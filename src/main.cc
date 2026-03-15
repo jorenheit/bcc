@@ -1,6 +1,52 @@
 #include <iostream>
 #include "compiler.h"
 
+#if 1
+int main() {
+  Compiler c;
+  c.setEntryPoint("main");
+    
+  c.begin(); {
+    auto g = c.declareGlobal("g");
+
+    c.beginFunction("main"); {
+      auto x = c.declareLocal("x");
+      c.referGlobals({"g"});
+      auto gLocal = c.local("g");
+
+      c.beginBlock("entry"); {
+	c.assignConst(gLocal, 'A');
+	c.callFunction("foo", "after");
+      } c.endBlock();
+
+      c.beginBlock("after"); {
+	c.writeOut(gLocal);          // should print 'F'
+	c.assignConst(x, '\n');
+	c.writeOut(x);
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo"); {
+      auto y = c.declareLocal("y");
+      c.referGlobals({"g"});
+      auto gLocal = c.local("g");
+
+      c.beginBlock("entry"); {
+	c.writeOut(gLocal);          // should print 'A'
+	c.assignConst(gLocal, 'F');  // modify global shadow
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+  } c.end();
+  
+  //  std::cout << c.dumpPrimitives() << "\n\n";
+  std::cout << c.dumpBrainfuck() << "\n";
+}
+
+#else
+
 int main() {
   Compiler c;
   c.setEntryPoint("main");
@@ -98,6 +144,6 @@ int main() {
     } c.endFunction();
 
   } c.end();
-  //  std::cout << c.dumpPrimitives() << "\n\n";
   std::cout << c.dumpBrainfuck() << "\n";
 }
+#endif

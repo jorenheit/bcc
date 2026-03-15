@@ -9,62 +9,47 @@ void Compiler::blockOpen() {
   // 1. Does the block-index match the value stored in the TargetBlock cell?
   // 2. Is the Run-cell still set?
   //
-  // If both are true, the Flag0 field of the TargetBlock cell is set to 1 and
+  // If both are true, the Flag field of the TargetBlock cell is set to 1 and
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
 
+  // Condition 1: Compare the TargetBlock value with the index of this block.
+  // a. Copy the value into the Flag cell
+  // b. Subtract the index from the copy
+  // c. Compute NOT on the flag
+  
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
+  copyField(FrameLayout::TargetBlock, MacroCell::Flag);
+  switchField(MacroCell::Flag);
+  subConst(_currentBlock->globalBlockIndex);
+  notValue();
 
-  // TODO: this can probably be replaced by a not-operation
-  auto const clearFieldIfActiveFieldNonzero = [&](MacroCell::Field targetField, int targetOffset = -1) {
-    MacroCell::Field currentField = _dp.activeField();
-    int currentOffset = _dp.staticOffset();
+  // Condition 2: If TargetBlock::Flag was set, we need to check the RunState
+  // a. Copy the current TargetBlock::Flag into the RunState::Flag
+  // b. If set, compute the NOT on the RunState
+  // c. If NOT(run), reset the TargetBlock::Flag
+  
+  copyField(FrameLayout::RunState, MacroCell::Flag);
+  moveTo(FrameLayout::RunState, MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();
     
+    moveTo(FrameLayout::RunState, MacroCell::Value0);
+    notValue(MacroCell::Flag);
+    moveTo(FrameLayout::RunState, MacroCell::Flag);
     loopOpen(); {
       zeroCell();
-      switchField(targetField);
-      moveTo(targetOffset);
+      moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
       zeroCell();
-      moveTo(currentOffset);
-      switchField(currentField);
-    }; loopClose();
-  };
+      moveTo(FrameLayout::RunState, MacroCell::Flag);
+    } loopClose();
+    
+    moveTo(FrameLayout::RunState, MacroCell::Flag);
+  } loopClose();
 
 
-  // Step 1: Set-up the flag. We set it to 1 and reset it to 0 if either of the
-  //         conditions fail.
-  moveTo(FrameLayout::TargetBlock);
-  switchField(MacroCell::Flag0);
-  setToValue(1);
-
-  // Step 2: Compare the TargetBlock value with the index of this block.
-  // a. Copy the value into the Scratch0 cell, using Scratch1 as a temporary scratch pad.
-  // b. Subtract the index from the copy in RT0
-  // c. Branch on the result -> if nonzero, reset the flag
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  copyField(FrameLayout::TargetBlock, MacroCell::Scratch0);
-  
-  switchField(MacroCell::Scratch0);
-  subConst(_currentBlock->globalBlockIndex);
-  clearFieldIfActiveFieldNonzero(MacroCell::Flag0);
-
-  // Step 3: Check the Run-state
-  // a. After moving to the Run-cell, copy the run-state into its Scratch0 field
-  // b. Set its RT1 field to 1; this will be reset if run == 1 (effectively computing !run)
-  // c. Use the value in RT1 (!Run) to reset the Enter-flag: if (!run) clear
-
-  moveTo(FrameLayout::RunState, MacroCell::Value0);
-  copyField(FrameLayout::RunState, MacroCell::Scratch0); 
-
-  moveTo(FrameLayout::RunState, MacroCell::Scratch1);
-  setToValue(1);
-  switchField(MacroCell::Scratch0);
-  clearFieldIfActiveFieldNonzero(MacroCell::Scratch1);
-
-  switchField(MacroCell::Scratch1);
-  clearFieldIfActiveFieldNonzero(MacroCell::Flag0, FrameLayout::TargetBlock);
-  
-  // Step 4: Enter block based on the flag in the TargetCell Block
-  moveTo(FrameLayout::TargetBlock, MacroCell::Flag0);
+  // Start Block, conditional on the computed flag (index match && run == 1)
+  moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
   loopOpen("block open");
   zeroCell();
   switchField(MacroCell::Value0);
@@ -75,7 +60,7 @@ void Compiler::blockClose() {
   assert(_currentBlock != nullptr);
 
   // We move back to the Flag stored in the TargetBlock cell
-  moveTo(FrameLayout::TargetBlock, MacroCell::Flag0);
+  moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
   loopClose("block close");
   moveToOrigin();
   switchField(MacroCell::Value0);

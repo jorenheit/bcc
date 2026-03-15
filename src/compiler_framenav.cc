@@ -30,14 +30,14 @@ void Compiler::pushFrame() {
 void Compiler::moveToPreviousFrame() {
   pushPtr();
   moveToOrigin();
-  switchField(MacroCell::Flag0);
+  switchField(MacroCell::Flag);
   setToValue(1);
   loopOpen(); {
     zeroCell();
     emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
     switchField(MacroCell::FrameID);
-    notValue(MacroCell::Flag0);
-    switchField(MacroCell::Flag0);
+    notValue(MacroCell::Flag);
+    switchField(MacroCell::Flag);
   } loopClose();
   popPtr();
 }
@@ -51,7 +51,7 @@ void Compiler::moveToGlobalFrame(bool payload) {
   
   moveToOrigin();
   markStartOfOriginFrame();
-  switchField(MacroCell::Flag0);
+  switchField(MacroCell::Flag);
   setToValue(1);
   loopOpen(); {
     zeroCell();
@@ -61,10 +61,10 @@ void Compiler::moveToGlobalFrame(bool payload) {
     }    
     emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
 
-    // Check if flag was hit by storing NOT(Flag1) in Flag0. If hit, flag0 becomes 0 and we exit the loop
-    switchField(MacroCell::Flag1);
-    emit<primitive::Not2>(MacroCell::Flag1, MacroCell::Flag0, MacroCell::Scratch0, MacroCell::Scratch1);
-    switchField(MacroCell::Flag0);
+    // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
+    switchField(MacroCell::SeekMarker);
+    emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
+    switchField(MacroCell::Flag);
   } loopClose();
 
   popPtr();
@@ -73,7 +73,7 @@ void Compiler::moveToGlobalFrame(bool payload) {
 
 void Compiler::markStartOfOriginFrame() {
   moveToOrigin();
-  switchField(MacroCell::Flag1);
+  switchField(MacroCell::SeekMarker);
   setToValue(1);
 }
 
@@ -83,7 +83,7 @@ void Compiler::moveToOriginFrameWithPayload() {
 
 void Compiler::moveToOriginFrame(bool payload) {
   pushPtr();
-  switchField(MacroCell::Flag0);
+  switchField(MacroCell::Flag);
   setToValue(1);
   loopOpen(); {
     zeroCell();
@@ -94,13 +94,13 @@ void Compiler::moveToOriginFrame(bool payload) {
     }
     emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
 
-    // Check if flag was hit by storing NOT(Flag1) in Flag0. If hit, flag0 becomes 0 and we exit the loop
-    switchField(MacroCell::Flag1);
-    emit<primitive::Not2>(MacroCell::Flag1, MacroCell::Flag0, MacroCell::Scratch0, MacroCell::Scratch1);
-    switchField(MacroCell::Flag0);
+    // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
+    switchField(MacroCell::SeekMarker);
+    emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
+    switchField(MacroCell::Flag);
   } loopClose();
 
-  switchField(MacroCell::Flag1);
+  switchField(MacroCell::SeekMarker);
   zeroCell();
   switchField(MacroCell::Value0);
   resetOrigin();

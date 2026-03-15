@@ -114,7 +114,6 @@ private:
   // Post processing/optimization (compiler_misc.cc)
   static std::string simplifyProgram(std::string const &bf);
   
-  
   // General helpers (inline definitions)
   static inline std::string defaultOpenTag() {
     static int count = 0;

@@ -14,12 +14,13 @@ struct MacroCell {
     Value0,
     Value1,
     FrameID,
-    Flag0,
-    Flag1,
+    Flag,
+    SeekMarker,
     Scratch0,
     Scratch1,
     Payload0,
     Payload1,
+    
     FieldCount
   };
 };

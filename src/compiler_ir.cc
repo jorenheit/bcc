@@ -25,12 +25,9 @@ void Compiler::end() {
 
   resetOrigin();
   _dp.setField(static_cast<MacroCell::Field>(0));
-  //  switchField(MacroCell::FrameID);
-  //  addConst(FrameLayout::GlobalVariableFrameID);
-  switchField(MacroCell::Flag1);
+  switchField(MacroCell::SeekMarker);
   addConst(1);
   switchField(MacroCell::Value0);
-
   moveTo(1 + _program.globalVariableFrameSize()); 
 
   resetOrigin();
