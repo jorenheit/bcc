@@ -17,8 +17,6 @@ namespace Defer {
     {}
 
     int resolve(Context const &ctx) const { return _get(ctx); }
-
-
   };
 
   template <typename Context>
@@ -67,6 +65,27 @@ namespace Defer {
     };
   }
 
+  // *
+  template <typename T, typename U, typename C> requires std::convertible_to<U, T>
+  Type<T, C> operator*(Type<T, C> const &lhs, U const &rhs) {
+    return [lhs, rhs](C const &ctx) {
+      return lhs.resolve(ctx) * static_cast<T>(rhs);
+    };
+  }
+
+  template <typename T, typename U, typename C> requires std::convertible_to<U, T>
+  Type<T, C> operator*(U const &lhs, Type<T, C> const &rhs) {
+    return rhs * lhs;
+  }
+
+  template <typename T, typename C>
+  Type<T, C> operator*(Type<T, C> const &lhs, Type<T, C> const &rhs) {
+    return [lhs, rhs](C const &ctx) {
+      return lhs.resolve(ctx) * rhs.resolve(ctx);
+    };
+  }
+
+  
   // Unary Minus
   template <typename T, typename C>
   Type<T, C> operator-(Type<T, C> const &op) {

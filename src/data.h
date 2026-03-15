@@ -14,9 +14,12 @@ struct MacroCell {
     Value0,
     Value1,
     FrameID,
-    Flag,
-    Runtime0,
-    Runtime1,
+    Flag0,
+    Flag1,
+    Scratch0,
+    Scratch1,
+    Payload0,
+    Payload1,
     FieldCount
   };
 };
@@ -24,6 +27,7 @@ struct MacroCell {
 // ============================================================
 // DataPointer
 // ============================================================
+
 
 class DataPointer {
   bool _static = true;

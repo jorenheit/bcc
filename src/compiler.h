@@ -10,7 +10,6 @@
 
 class Compiler {
   Program _program;
-
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
   primitive::Sequence* _currentSeq = nullptr;
@@ -32,48 +31,91 @@ class Compiler {
   std::stack<PointerState> _ptrStack;
 
 public:
-  // TODO: distinguish between public and private interface
-  
-  inline Program const& program() const { return _program; }
-  inline Program& program() { return _program; }
-  inline void setTargetSequence(primitive::Sequence *seq) { _currentSeq = seq; }
-  
+  std::string dumpPrimitives() const;
+  std::string dumpBrainfuck() const;
+
+  // IR Directives
+  void setEntryPoint(std::string functionName);
   void begin();
   void end();
-  
   void beginFunction(std::string name);
   void endFunction();
-  void setEntryPoint(std::string functionName);
-
   void beginBlock(std::string name);
   void endBlock();
+  void assignConst(Slot const &slot, int value);
+  void writeOut(Slot const &slot);
+  void setNextBlock(int index);
+  void setNextBlock(std::string f, std::string b = "");
+  void returnFromFunction();
+  void abortProgram();
+  void callFunction(std::string const& functionName, std::string const& nextBlockName);
+  void referGlobals(std::vector<std::string> const &names);      
+  Slot &declareLocal(std::string const& name, int size = 1);
+  Slot &declareGlobal(std::string const &name, int size = 1);
+  Slot &local(std::string const& name);
+  Slot &global(std::string const& name);    
 
+private:
+  // Memory management (compiler_memory.cc)
+  Slot &allocateTemp(int size = 1);
+  void freeTemp(Slot &slot);
+  
+  // Algorithms: all applied to the current DP (compiler_algorithms.cc)
+  void moveTo(int frameOffset);  
+  void moveTo(int frameOffset, MacroCell::Field field);
+  void moveToOrigin();
+  void switchField(MacroCell::Field field);  
+  void zeroCell();
+  void addConst(int delta);
+  void subConst(int delta);
+  void setToValue(uint8_t value);
+  void notValue();
+  void notValue(MacroCell::Field resultField);
+  void cmpConst(int value, MacroCell::Field resultField);
+  void moveField(int destOffset, MacroCell::Field destField);
+  void moveField(int destOffset1, MacroCell::Field destField1, int destOffset2, MacroCell::Field destField2);
+  void copyField(int destOffset, MacroCell::Field destField);
+  void loopOpen(std::string const &tag = defaultOpenTag());
+  void loopClose(std::string const &tag = defaultCloseTag());
+
+  // Frame Navigation (compiler_framenav.cc)
+  void pushFrame();
+  void popFrame();
+  void markStartOfOriginFrame();  
+  void moveToPreviousFrame();
+  void moveToGlobalFrame(bool payload = false);  
+  void moveToGlobalFrameWithPayload();
+  void moveToOriginFrame(bool payload = false);
+  void moveToOriginFrameWithPayload();
+  void fetchReturnData();
+
+  // Global Data (compiler_globals.cc)
+  void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
+  void putGlobal(Slot const &globalSlot, Slot const &localSlot);
+  void syncGlobalToLocal();
+  void syncLocalToGlobal();
+  
+  // Codeblock construction (compiler_codeblocks.cc)
   void blockOpen();
   void blockClose();
   void constructMetaBlocks();
-  
-  void moveToOrigin();
-  void resetOrigin();
 
+  // Code generation (compiler_codegen.cc)
+  void setTargetSequence(primitive::Sequence *seq);
+  primitive::Context constructContext() const;    
+  primitive::Sequence compilePrimitives() const;
+
+  
+  // Pointer management (compiler_misc.cc)
+  void resetOrigin();
   void pushPtr();
   void popPtr();
-  
-  template <typename Primitive, typename ... Args>
-  void emit(Args&& ... args) {
-    assert(_currentSeq != nullptr);
-    _currentSeq->emplace<Primitive>(std::forward<Args>(args)...);
-  }
 
-  void pushFrame();
-  void moveToPreviousFrame();
-  void popFrame();
-  void fetchReturnData();
-  void abortProgram();
+  // Post processing/optimization (compiler_misc.cc)
+  static std::string simplifyProgram(std::string const &bf);
   
-  void setNextBlock(int index);
-  void setNextBlock(std::string f, std::string b = "");
-  void switchField(MacroCell::Field field);
-
+  
+  // General helpers (inline definitions)
   static inline std::string defaultOpenTag() {
     static int count = 0;
     return std::string("open_loop_") + std::to_string(count++);
@@ -82,38 +124,34 @@ public:
     static int count = 0;
     return std::string("close_loop_") + std::to_string(count++);
   }
- 
-  void loopOpen(std::string const &tag = defaultOpenTag());
-  void loopOpen(int frameOffset, std::string const &tag = defaultOpenTag());
-  void loopClose(std::string const &tag = defaultCloseTag());
-  void loopClose(int frameOffset, std::string const &tag = defaultCloseTag());
-
-  void moveTo(int frameOffset = -1);  
-  void zeroCell(int frameOffset = -1);
-  void addConst(int delta, int frameOffset = -1);
-  void subConst(int delta, int frameOffset = -1);
-  void setToValue(uint8_t value, int frameOffset = -1);
-  void writeOut(int frameOffset = -1);
   
-  void returnFromFunction();
-  void syncGlobalToLocal();
-  void syncLocalToGlobal();
+  template <typename Primitive, typename ... Args>
+  inline void emit(Args&& ... args) {
+    assert(_currentSeq != nullptr);
+    _currentSeq->emplace<Primitive>(std::forward<Args>(args)...);
+  }
 
-  void callFunction(std::string const& functionName, std::string const& nextBlockName);
-    
-  Slot &declareLocal(std::string const& name, int size = 1);
-  Slot &declareGlobal(std::string const &name, int size = 1);
-  void referGlobals(std::vector<std::string> const &names);    
+  inline int getFieldIndex(int offset, int field) {
+    return offset * MacroCell::FieldCount + field;
+  }
 
-  Slot &local(std::string const& name);
-  Slot &global(std::string const& name);    
-  Slot &allocateTemp(int size = 1);
-  void freeTemp(Slot &slot);
+  template <typename... Args>  requires ((std::convertible_to<Args, int>) && ...)
+  auto getFieldIndices(Args... args)  {
+    static_assert(sizeof...(Args) % 2 == 0, "getFieldIndices requires an even number of arguments");
+    constexpr std::size_t pairCount = sizeof...(Args) / 2;    
+    auto allArgs = std::make_tuple(static_cast<int>(args)...);
+    return [&]<std::size_t... I>(std::index_sequence<I...>) {
+      return std::make_tuple(getFieldIndex(std::get<2 * I>(allArgs), std::get<2 * I + 1>(allArgs))...);
+    }(std::make_index_sequence<pairCount>{});
+  }
+
+  template <typename... Fields>
+  int pickScratchField(Fields... fields) {
+    static_assert((std::convertible_to<Fields, int> && ...));
+    const bool scratch0Used = ((fields == MacroCell::Scratch0) || ...);
+    const bool scratch1Used = ((fields == MacroCell::Scratch1) || ...);
+    assert(!(scratch0Used && scratch1Used));
+    return scratch0Used ? MacroCell::Scratch1 : MacroCell::Scratch0;
+  }
   
-  primitive::Context constructContext() const;    
-  primitive::Sequence compilePrimitives() const;
-  std::string dumpPrimitives() const;
-  std::string dumpBrainfuck() const;
-  
-  static std::string simplifyProgram(std::string const &bf);
 };

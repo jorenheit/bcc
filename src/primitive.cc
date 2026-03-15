@@ -33,8 +33,8 @@ namespace Algorithm {
     return movePtr(dest - current);
   }
 
-  std::string decrement(int n) { assert(n >= 0); return std::string(n, '-'); }
-  std::string increment(int n) { assert(n >= 0); return std::string(n, '+'); }
+  std::string decrement(int n = 1) { assert(n >= 0); return std::string(n, '-'); }
+  std::string increment(int n = 1) { assert(n >= 0); return std::string(n, '+'); }
   std::string modify(int n) {
     return (n > 0) ? increment(std::abs(n)) : decrement(std::abs(n));
   }
@@ -46,10 +46,10 @@ namespace Algorithm {
     // [->+<]
     std::ostringstream oss;
     oss << "["
-	<< decrement(1)
-	<< movePtr(target, current)
-	<< increment(1)
-	<< movePtr(current, target)
+	<<   decrement()
+	<<   movePtr(target, current)
+	<<   increment()
+	<<   movePtr(current, target)
 	<< "]";
     return oss.str();
   }
@@ -57,12 +57,13 @@ namespace Algorithm {
   std::string moveValue(int current, int target1, int target2) {
     // [->+>+<<]
     std::ostringstream oss;
-    oss << "[-"
-	<< movePtr(target1, current)
-	<< increment(1)
-	<< movePtr(target2, target1)
-	<< increment(1)
-	<< movePtr(current, target2)
+    oss << "["
+	<<   decrement()
+	<<   movePtr(target1, current)
+	<<   increment()
+	<<   movePtr(target2, target1)
+	<<   increment()
+	<<   movePtr(current, target2)
 	<< "]";
     return oss.str();
   }
@@ -77,17 +78,6 @@ namespace Algorithm {
     return oss.str();
   }
 
-  std::string movePtrUntilZero(int stride, bool unconditionalStart = false) {
-    // [<] or [>]
-    char const ch = (stride > 0) ? '>' : '<';
-    std::string const move(std::abs(stride), ch);
-    
-    std::stringstream oss;
-    if (unconditionalStart) oss << move;
-    oss << "[" << move << "]";
-    return oss.str();
-  }
-
   std::string notValue(int current, int result, int copy, int tmp) {
     // Store !current in result
     // assumes copy and tmp are 0
@@ -95,14 +85,14 @@ namespace Algorithm {
     
     std::ostringstream oss;
     oss << movePtr(result, current)
-	<< increment(1)
+	<< increment()
 	<< movePtr(current, result)
 	<< copyValue(current, copy, tmp)
 	<< movePtr(copy, current)
 	<< "["
 	<<   zero()
 	<<   movePtr(result, copy)
-	<<   zero()
+	<<   decrement()
 	<<   movePtr(copy, result)
 	<< "]"
 	<< movePtr(current, copy);
@@ -110,40 +100,50 @@ namespace Algorithm {
     return oss.str();
   }
 
-  
-  std::string movePtrUntilNonzero(int stride, int value, int flag, int tmp1, int tmp2) {
-    // Assumes pointer points at value.
-    // This algorithm will enter a loop by setting the flag and immidiately clearing it after entering
-    // In the loop, the move (size stride) will be performed
-    // Then, based on the value it landed on, it will decide if the loop needs to be re-entered.
-    // If (value != 0) break from loop
-    // This is implemented by first computing the NOT of the current value (see above).
+  std::string notValue(int current, int tmp) {
+    // Store !current back into current
+    // assumes tmp = 0
     
-    // 1. Set flag = 1 and enter loop
-    // 2.   Clear flag
-    // 3.   move
-    // 4.   store not(value) in flag
-    // 5.   if (flag zero) break, otherwise back to 2
-
-    char const ch = (stride > 0) ? '>' : '<';
-    std::string const move(std::abs(stride), ch);
-
     std::ostringstream oss;
-    oss << movePtr(flag, value)
-	<< increment(1)
+    oss << movePtr(tmp, current)
+	<< increment()
+	<< movePtr(current, tmp)
 	<< "["
 	<<   zero()
-	<<   move
-	<<   movePtr(value, flag)
-	<<   notValue(value, flag, tmp1, tmp2)
-	<<   movePtr(flag, value)
+	<<   movePtr(tmp, current)
+	<<   decrement()
+	<<   movePtr(current, tmp)
 	<< "]"
-	<< movePtr(value, flag);
-    
+	<< movePtr(tmp, current)
+	<< "["
+	<<   decrement()
+	<<   movePtr(current, tmp)
+	<<   increment()
+	<<   movePtr(tmp, current)
+	<< "]"
+	<< movePtr(current, tmp);
 
     return oss.str();
   }
   
+  std::string cmpConst(int value, int current, int result, int copy, int tmp) {
+
+    std::ostringstream oss;
+    oss << movePtr(result, current)
+	<< increment()
+	<< movePtr(current, result)
+	<< copyValue(current, copy, tmp)
+	<< movePtr(copy, current)
+	<< decrement(value)
+	<< "["
+	<<   zero()
+	<<   movePtr(result, copy)
+	<<   decrement()
+	<<   movePtr(copy, result)
+	<< "]"
+	<< movePtr(current, copy);
+    return oss.str();
+  }  
 }
 
 
@@ -167,16 +167,13 @@ GEN(MovePointerRelative) {
   return Algorithm::movePtr(amount.resolve(ctx));
 }
 
-// MovePointerDynamic
-TXT(MovePointerDynamic) { return "move_ptr_dyn"; }
-GEN(MovePointerDynamic) {
-  return Algorithm::movePtrUntilNonzero(stride * (dir == Left ? -1 : 1),
-					value, flag, tmp1, tmp2);
-}
-
 // ZeroCell
 TXT(ZeroCell) { return "zero_cell"; }
 GEN(ZeroCell) { return Algorithm::zero(); }
+
+// ZeroCellPlus
+TXT(ZeroCellPlus) { return "zero_cell"; }
+GEN(ZeroCellPlus) { return Algorithm::zeroPlus(); }
 
 // ChangeBy
 TXT(ChangeBy) { return std::string("change_by ") + std::to_string(delta.resolve(ctx)); }
@@ -190,6 +187,15 @@ GEN(MoveData) {
   return Algorithm::moveValue(cur, dst);
 }
 
+// MoveData2
+TXT(MoveData2) { return "move_data2"; } // TODO add indices
+GEN(MoveData2) {
+  int const cur = current.resolve(ctx);
+  int const dst1 = dest1.resolve(ctx);
+  int const dst2 = dest2.resolve(ctx);
+  return Algorithm::moveValue(cur, dst1, dst2);
+}
+
 // CopyData
 TXT(CopyData) { return "copy_data"; } // TODO add indices
 GEN(CopyData) {
@@ -197,6 +203,37 @@ GEN(CopyData) {
   int const dst = dest.resolve(ctx);
   int const tmp = scratch.resolve(ctx);
   return Algorithm::copyValue(cur, dst, tmp);
+}
+
+
+// Not (destructive version)
+TXT(Not1) { return "not1"; } 
+GEN(Not1) {
+  int const cur = current.resolve(ctx);
+  int const tmp = scratch.resolve(ctx);
+  return Algorithm::notValue(cur, tmp);
+}
+
+// Not (non-destructive version)
+TXT(Not2) { return "not2"; } 
+GEN(Not2) {
+  int const cur = current.resolve(ctx);
+  int const res = result.resolve(ctx);
+  int const tmp1 = scratch1.resolve(ctx);
+  int const tmp2 = scratch2.resolve(ctx);
+  return Algorithm::notValue(cur, res, tmp1, tmp2);
+}
+
+
+// Cmp
+TXT(Cmp) { return "cmp"; } 
+GEN(Cmp) {
+  int const val = value.resolve(ctx);
+  int const cur = current.resolve(ctx);
+  int const res = result.resolve(ctx);
+  int const tmp1 = scratch1.resolve(ctx);
+  int const tmp2 = scratch2.resolve(ctx);
+  return Algorithm::cmpConst(val, cur, res, tmp1, tmp2);
 }
 
 // Out
