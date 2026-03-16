@@ -12,41 +12,50 @@ void Compiler::blockOpen() {
   // If both are true, the Flag field of the TargetBlock cell is set to 1 and
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
-
-  // Condition 1: Compare the TargetBlock value with the index of this block.
-  // a. Copy the value into the Flag cell
-  // b. Subtract the index from the copy
-  // c. Compute NOT on the flag
   
+  // // Low byte
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  copyField(FrameLayout::TargetBlock, MacroCell::Flag);
-  switchField(MacroCell::Flag);
-  subConst(_currentBlock->globalBlockIndex);
+  copyField(FrameLayout::TargetBlock, MacroCell::Payload0);
+  switchField(MacroCell::Payload0);
+  subConst(_currentBlock->globalBlockIndex & 0xff);
   notValue();
 
-  // Condition 2: If TargetBlock::Flag was set, we need to check the RunState
-  // a. Copy the current TargetBlock::Flag into the RunState::Flag
-  // b. If set, compute the NOT on the RunState
-  // c. If NOT(run), reset the TargetBlock::Flag
-  
-  copyField(FrameLayout::RunState, MacroCell::Flag);
-  moveTo(FrameLayout::RunState, MacroCell::Flag);
+  // High Byte
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
+  copyField(FrameLayout::TargetBlock, MacroCell::Payload1);
+  switchField(MacroCell::Payload1);
+  subConst((_currentBlock->globalBlockIndex >> 8) & 0xff);
+  notValue();
+
+  // Run State
+  moveTo(FrameLayout::RunState, MacroCell::Value0);
+  copyField(FrameLayout::RunState, MacroCell::Payload0);
+
+  // AND results into Flag
+  moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
+  setToValue(0);
+  moveTo(FrameLayout::TargetBlock, MacroCell::Payload0);
   loopOpen(); {
     zeroCell();
-    
-    moveTo(FrameLayout::RunState, MacroCell::Value0);
-    notValue(MacroCell::Flag);
-    moveTo(FrameLayout::RunState, MacroCell::Flag);
+    moveTo(FrameLayout::TargetBlock, MacroCell::Payload1);
     loopOpen(); {
       zeroCell();
-      moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
-      zeroCell();
-      moveTo(FrameLayout::RunState, MacroCell::Flag);
+      moveTo(FrameLayout::RunState, MacroCell::Payload0);
+      loopOpen(); {
+	zeroCell();
+	moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
+	setToValue(1);
+	moveTo(FrameLayout::RunState, MacroCell::Payload0);
+      } loopClose();
+      moveTo(FrameLayout::TargetBlock, MacroCell::Payload1);
     } loopClose();
-    
-    moveTo(FrameLayout::RunState, MacroCell::Flag);
+    moveTo(FrameLayout::TargetBlock, MacroCell::Payload0);
   } loopClose();
 
+  // Clear helper cells
+  moveTo(FrameLayout::TargetBlock, MacroCell::Payload0); zeroCell();
+  moveTo(FrameLayout::TargetBlock, MacroCell::Payload1); zeroCell();
+  moveTo(FrameLayout::RunState, MacroCell::Payload0);    zeroCell();
 
   // Start Block, conditional on the computed flag (index match && run == 1)
   moveTo(FrameLayout::TargetBlock, MacroCell::Flag);

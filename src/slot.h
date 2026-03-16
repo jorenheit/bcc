@@ -1,43 +1,11 @@
 #pragma once
 
-// class ValueField {
-//   bool _known = false;
-//   uint8_t _value = 0;
-
-// public:
-//   inline void set(uint8_t v = 0) {
-//     _known = true;
-//     _value = v;
-//   }
-  
-//   inline void invalidate() { _known = false; }
-//   inline operator uint8_t() const { return _value; }
-//   inline bool known() const { return _known; }
-  
-//   inline ValueField &operator+=(uint8_t val) {
-//     if (_known) _value += val;
-//     return *this;
-//   }
-
-//   inline ValueField &operator-=(uint8_t val) {
-//     if (_known) _value -= val;
-//     return *this;
-//   }
-
-//   inline ValueField &operator*=(uint8_t val) {
-//     if (_known) _value *= val;
-//     return *this;
-//   }
-
-//   inline ValueField &operator/=(uint8_t val) {
-//     if (_known) _value /= val;
-//     return *this;
-//   }
-// };
+#include <memory>
+#include "types.h"
 
 struct Slot {
 
-  enum Type {
+  enum StorageType {
     Local,
     Global,
     GlobalReference,
@@ -45,10 +13,11 @@ struct Slot {
     TempFree
   };
 
-  Type type;
-  std::string name;
-  int offset = 0;
-  int size = 1;
-
+  std::string name;  
+  std::shared_ptr<types::Type> type;
+  StorageType storageType;
+  int offset;
+	 
+  int size() const { return type->size(); }
   operator int() const { return offset; }
 };

@@ -1,16 +1,16 @@
 #include <iostream>
 #include "compiler.h"
 
-#if 1
+#if 0
 int main() {
   Compiler c;
   c.setEntryPoint("main");
     
   c.begin(); {
-    auto g = c.declareGlobal("g");
+    auto g = c.declareGlobal<types::i8>("g");
 
     c.beginFunction("main"); {
-      auto x = c.declareLocal("x");
+      auto x = c.declareLocal<types::i8>("x");
       c.referGlobals({"g"});
       auto gLocal = c.local("g");
 
@@ -28,7 +28,7 @@ int main() {
     } c.endFunction();
 
     c.beginFunction("foo"); {
-      auto y = c.declareLocal("y");
+      auto y = c.declareLocal<types::i8>("y");
       c.referGlobals({"g"});
       auto gLocal = c.local("g");
 
@@ -52,10 +52,10 @@ int main() {
   c.setEntryPoint("main");
 
   c.begin(); {
-    auto g1 = c.declareGlobal("g1");
-    auto g2 = c.declareGlobal("g2");
-    auto g3 = c.declareGlobal("g3");
-    auto g4 = c.declareGlobal("g4");
+    auto g1 = c.declareGlobal<types::i8>("g1");
+    auto g2 = c.declareGlobal<types::i8>("g2");
+    auto g3 = c.declareGlobal<types::i8>("g3");
+    auto g4 = c.declareGlobal<types::i8>("g4");
 
     c.beginFunction("main"); {
       c.referGlobals({"g1", "g2", "g3", "g4"});

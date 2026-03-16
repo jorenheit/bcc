@@ -42,11 +42,8 @@ void Compiler::moveToPreviousFrame() {
   popPtr();
 }
 
-void Compiler::moveToGlobalFrameWithPayload() {
-  moveToGlobalFrame(true);
-}
-
-void Compiler::moveToGlobalFrame(bool payload) {
+void Compiler::moveToGlobalFrame(int payload) {
+  assert(payload >= 0 && payload <= 2);
   pushPtr();
   
   moveToOrigin();
@@ -58,6 +55,10 @@ void Compiler::moveToGlobalFrame(bool payload) {
     if (payload) {
       switchField(MacroCell::Payload0);
       emit<primitive::MoveData>(-MacroCell::FieldCount);
+      if (payload == 2) {
+	switchField(MacroCell::Payload1);
+	emit<primitive::MoveData>(-MacroCell::FieldCount);
+      }
     }    
     emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
 
@@ -68,7 +69,6 @@ void Compiler::moveToGlobalFrame(bool payload) {
   } loopClose();
 
   popPtr();
-  
 }
 
 void Compiler::markStartOfOriginFrame() {
@@ -77,11 +77,9 @@ void Compiler::markStartOfOriginFrame() {
   setToValue(1);
 }
 
-void Compiler::moveToOriginFrameWithPayload() {
-  moveToOriginFrame(true);
-}
-
-void Compiler::moveToOriginFrame(bool payload) {
+void Compiler::moveToOriginFrame(int payload) {
+  assert(payload >= 0 && payload <= 2);
+  
   pushPtr();
   switchField(MacroCell::Flag);
   setToValue(1);
@@ -91,6 +89,10 @@ void Compiler::moveToOriginFrame(bool payload) {
     if (payload) {
       switchField(MacroCell::Payload0);
       emit<primitive::MoveData>(MacroCell::FieldCount);
+      if (payload == 2) {
+	switchField(MacroCell::Payload1);
+	emit<primitive::MoveData>(MacroCell::FieldCount);
+      }
     }
     emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
 

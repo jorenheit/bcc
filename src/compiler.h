@@ -42,23 +42,38 @@ public:
   void endFunction();
   void beginBlock(std::string name);
   void endBlock();
-  void assignConst(Slot const &slot, int value);
-  void writeOut(Slot const &slot);
+  void assignConst(int offset, int value);
+  void writeOut(int offset, MacroCell::Field field = MacroCell::Value0);
   void setNextBlock(int index);
   void setNextBlock(std::string f, std::string b = "");
   void returnFromFunction();
   void abortProgram();
   void callFunction(std::string const& functionName, std::string const& nextBlockName);
   void referGlobals(std::vector<std::string> const &names);      
-  Slot &declareLocal(std::string const& name, int size = 1);
-  Slot &declareGlobal(std::string const &name, int size = 1);
+
+  Slot &declareLocal(std::string const& name, std::shared_ptr<types::Type>);
+  Slot &declareGlobal(std::string const &name, std::shared_ptr<types::Type>);
+  Slot &declareGlobalReference(Slot const &globalSlot);
   Slot &local(std::string const& name);
-  Slot &global(std::string const& name);    
+  Slot &global(std::string const& name);
+
+  template <typename T, typename ... Args>
+  Slot &declareLocal(std::string const& name, Args&& ... args) {
+    auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
+    return declareLocal(name, std::move(ptr));
+  }
+
+  template <typename T, typename ... Args>
+  Slot &declareGlobal(std::string const& name, Args&& ... args) {
+    auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
+    return declareGlobal(name, std::move(ptr));
+  }
+  
 
 private:
   // Memory management (compiler_memory.cc)
-  Slot &allocateTemp(int size = 1);
-  void freeTemp(Slot &slot);
+  // Slot &allocateTemp(int size = 1);
+  // void freeTemp(Slot &slot);
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(int frameOffset);  
@@ -83,10 +98,8 @@ private:
   void popFrame();
   void markStartOfOriginFrame();  
   void moveToPreviousFrame();
-  void moveToGlobalFrame(bool payload = false);  
-  void moveToGlobalFrameWithPayload();
-  void moveToOriginFrame(bool payload = false);
-  void moveToOriginFrameWithPayload();
+  void moveToGlobalFrame(int payload = 0);  
+  void moveToOriginFrame(int payload = 0);
   void fetchReturnData();
 
   // Global Data (compiler_globals.cc)

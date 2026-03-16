@@ -93,9 +93,14 @@ void Compiler::setNextBlock(int index) {
   assert(_currentSeq != nullptr);
 
   pushPtr();
+
+  int const low = index & 0xff;
+  int const high = (index >> 8) & 0xff;
   
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  setToValue(index);
+  setToValue(low);
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
+  setToValue(high);
   
   popPtr();
   _nextBlockIsSet = true;
@@ -115,56 +120,73 @@ void Compiler::setNextBlock(std::string f, std::string b) {
   }
 
   pushPtr();
+
   // Could not determine block index yet -> postpone until actual code generation
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   zeroCell();
   emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
-    return ctx.getBlockIndex(f, b);
+    return ctx.getBlockIndex(f, b) & 0xff;
+  });
+
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
+  zeroCell();
+  emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
+    return (ctx.getBlockIndex(f, b) >> 8) & 0xff;
   });
   
   _nextBlockIsSet = true;
   popPtr();
 }
 
-    
-Slot &Compiler::declareLocal(std::string const& name, int size) {
+Slot &Compiler::declareLocal(std::string const& name, std::shared_ptr<types::Type> type) {
   assert(_currentFunction != nullptr);
   assert(!_currentFunction->frame.locals.contains(name));
 
   FrameLayout &frame = _currentFunction->frame;
-
-  // First look for an existing slot that is empty at this point
-  for (auto &[_, slot]: frame.locals) {
-    if (slot.type == Slot::TempFree && size == slot.size) {
-      slot.type = Slot::Local;
-      slot.name = name;
-      return slot;
-    }
-  }
-  
-  // No existing slot found that fits -> new slot
+  int const offset = FrameLayout::LocalBase + frame.localAreaSize();
   Slot slot {
-    .type = Slot::Local,
     .name = name,
-    .offset = FrameLayout::LocalBase + frame.localAreaSize(),
-    .size = size
+    .type = type,
+    .storageType = Slot::Local,
+    .offset = offset
   };
-  auto [it, success] = frame.locals.emplace(name, slot);
+
+  auto [it, success] = frame.locals.emplace(name, std::move(slot));
   assert(success);
   return it->second;
 }
 
-Slot &Compiler::declareGlobal(std::string const &name, int size) {
+Slot &Compiler::declareGlobal(std::string const &name, std::shared_ptr<types::Type> type) {
   assert(_currentFunction == nullptr);
   assert(!_program.globals.contains(name));
 
+  int const offset = _program.globalVariableFrameSize();
   Slot slot {
-    .type = Slot::Global,
     .name = name,
-    .offset = _program.globalVariableFrameSize(),
-    .size = size
+    .type = type,
+    .storageType = Slot::Global,
+    .offset = offset
   };
-  auto [it, success] = _program.globals.emplace(name, slot);
+
+  auto [it, success] = _program.globals.emplace(name, std::move(slot));
+  assert(success);
+  return it->second;
+}
+
+Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
+  assert(globalSlot.storageType == Slot::Global);
+  assert(_currentFunction != nullptr);
+  
+  FrameLayout &frame = _currentFunction->frame;
+  int const offset = FrameLayout::LocalBase + frame.localAreaSize();
+  Slot slot {
+    .name = std::string("__g_") + globalSlot.name,
+    .type = globalSlot.type,
+    .storageType = Slot::GlobalReference,
+    .offset = offset
+  };
+
+  auto [it, success] = frame.locals.emplace(slot.name, std::move(slot));
   assert(success);
   return it->second;
 }
@@ -178,8 +200,7 @@ void Compiler::referGlobals(std::vector<std::string> const &names) {
       assert(_program.globals.contains(name));
 
       Slot const &globalSlot = _program.globals.at(name);
-      Slot &localSlot = declareLocal(std::string("__g_") + name, globalSlot.size);
-      localSlot.type = Slot::GlobalReference;
+      declareGlobalReference(globalSlot);
     }
 
     syncGlobalToLocal();
@@ -253,12 +274,16 @@ void Compiler::returnFromFunction() {
   _nextBlockIsSet = true;
 }
 
-void Compiler::assignConst(Slot const &slot, int value) {
-  moveTo(slot, MacroCell::Value0); // TODO: Value1
-  setToValue(value);
+void Compiler::assignConst(int offset, int value) {
+  int const low = value & 0xff;
+  int const high = (value >> 8) & 0xff;
+  moveTo(offset, MacroCell::Value0);
+  setToValue(low);
+  moveTo(offset, MacroCell::Value1);
+  setToValue(high);
 }
 
-void Compiler::writeOut(Slot const &slot) {
-  moveTo(slot, MacroCell::Value0);
+void Compiler::writeOut(int offset, MacroCell::Field field) {
+  moveTo(offset, field);
   emit<primitive::Out>();
 }

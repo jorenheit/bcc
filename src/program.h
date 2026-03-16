@@ -48,7 +48,7 @@ struct Program {
 
   inline int globalVariableFrameSize() const {
     int result = 0;
-    for (auto const &[_, slot]: globals) result += slot.size;
+    for (auto const &[_, slot]: globals) result += slot.size();
     return result;
   }
 

@@ -24,7 +24,7 @@ struct FrameLayout {
 
   inline int localAreaSize() const {
     int result = 0;
-    for (auto const &[_, slot]: locals) result += slot.size;
+    for (auto const &[_, slot]: locals) result += slot.size();
     return result;
   }
 
