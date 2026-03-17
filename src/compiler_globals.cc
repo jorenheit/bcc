@@ -1,36 +1,43 @@
 #include "compiler.ih"
 
+// TODO: verify that size>1 works as expected
+
 void Compiler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
   assert(types::match(*globalSlot.type, *localSlot.type));
   assert(globalSlot.size() == localSlot.size());
 
-  
   pushPtr();
   bool const useValue1 = globalSlot.type->usesValue1();
-  
-  // Move to global frame and load the data into the payload field
-  moveToGlobalFrame();
+  int const size = globalSlot.type->size();
 
-  moveTo(globalSlot, MacroCell::Value0); // TODO: handle size > 1, TODO: Value1
-  copyField(globalSlot, MacroCell::Payload0);
-  if (useValue1) {
-    moveTo(globalSlot, MacroCell::Value1); 
-    copyField(globalSlot, MacroCell::Payload1);
-  }
+  for (int i = 0; i != size; ++i) {
+    // Move to global frame and load the data into the payload field
+    moveToGlobalFrame();
 
-  // Bring payload back
-  moveToOriginFrame(useValue1 ? 2 : 1);
+    int const globalCell = globalSlot + i;
+    int const localCell = localSlot + i;
+    
+    moveTo(globalCell, MacroCell::Value0);
+    copyField(globalCell, MacroCell::Payload0);
+    if (useValue1) {
+      moveTo(globalCell, MacroCell::Value1); 
+      copyField(globalCell, MacroCell::Payload1);
+    }
 
-  // Clear local slot
-  moveTo(localSlot, MacroCell::Value0); zeroCell();
-  moveTo(localSlot, MacroCell::Value1); zeroCell();
+    // Bring payload back
+    moveToOriginFrame(useValue1 ? 2 : 1);
 
-  // Move the payload into the local slot
-  moveTo(0, MacroCell::Payload0);
-  moveField(localSlot, MacroCell::Value0);
-  if (useValue1) {
-    moveTo(0, MacroCell::Payload1);
-    moveField(localSlot, MacroCell::Value1);    
+    // Move the payload into the local slot 
+    moveTo(localCell, MacroCell::Value0); // TODO: factor this out into assign
+    zeroCell();
+    moveTo(0, MacroCell::Payload0);
+    moveField(localCell, MacroCell::Value0);
+    if (useValue1) {
+      moveTo(localCell, MacroCell::Value1);
+      zeroCell();
+      moveTo(0, MacroCell::Payload1);
+      moveField(localCell, MacroCell::Value1);    
+    }
   }
   
   popPtr();
@@ -40,66 +47,42 @@ void Compiler::putGlobal(Slot const &globalSlot, Slot const &localSlot) {
   assert(types::match(*globalSlot.type, *localSlot.type));
   assert(globalSlot.size() == localSlot.size());
 
+  
   pushPtr();
   bool const useValue1 = globalSlot.type->usesValue1();
+  int const size = globalSlot.type->size();
 
-  // Load the payload int and move it into the global frame
-  moveTo(localSlot, MacroCell::Value0);
-  copyField(0, MacroCell::Payload0);
-  if (useValue1) {
-    moveTo(localSlot, MacroCell::Value1);
-    copyField(0, MacroCell::Payload1);
-  }
+  for (int i = 0; i != size; ++i) {
+    int const globalCell = globalSlot + i;
+    int const localCell = localSlot + i;
 
-  moveToGlobalFrame(useValue1 ? 2 : 1);
+    
+    // Load the payload int and move it into the global frame
+    moveTo(localCell, MacroCell::Value0);
+    copyField(0, MacroCell::Payload0);
+    if (useValue1) {
+      moveTo(localCell, MacroCell::Value1);
+      copyField(0, MacroCell::Payload1);
+    }
 
-  // Clear the target slot
-  moveTo(globalSlot, MacroCell::Value0);
-  zeroCell();
+    moveToGlobalFrame(useValue1 ? 2 : 1);
 
-  // Move payload into target
-  moveTo(0, MacroCell::Payload0);
-  moveField(globalSlot, MacroCell::Value0);
-  if (useValue1) {
-    moveTo(0, MacroCell::Payload1);
-    moveField(globalSlot, MacroCell::Value1);
+    // Move payload into global slot
+    moveTo(globalCell, MacroCell::Value0);
+    zeroCell();
+    moveTo(0, MacroCell::Payload0);
+    moveField(globalCell, MacroCell::Value0);
+    if (useValue1) {
+      moveTo(globalCell, MacroCell::Value1);
+      zeroCell();
+      moveTo(0, MacroCell::Payload1);
+      moveField(globalCell, MacroCell::Value1);
+    }
+  
+    // Return to origin
+    moveToOriginFrame();
   }
   
-  // Return to origin
-  moveToOriginFrame();
-
   popPtr();
 }
 
-void Compiler::syncGlobalToLocal() {
-  auto const &locals = _currentFunction->frame.locals;
-  auto const &globals = _program.globals;
-      
-  for (auto const &[localName, localSlot]: locals) {
-    if (localSlot.storageType != Slot::GlobalReference) continue;
-    std::string globalName = localName.substr(std::string("__g_").size());
-    assert(globals.contains(globalName));
-
-    Slot const &globalSlot = globals.at(globalName);
-    assert(globalSlot.size() == localSlot.size());
-
-    fetchGlobal(globalSlot, localSlot);
-  }  
-}
-
-
-void Compiler::syncLocalToGlobal() {
-  auto const &locals = _currentFunction->frame.locals;
-  auto const &globals = _program.globals;
-      
-  for (auto const &[localName, localSlot]: locals) {
-    if (localSlot.storageType != Slot::GlobalReference) continue;
-    std::string globalName = localName.substr(std::string("__g_").size());
-    assert(globals.contains(globalName));
-
-    Slot const &globalSlot = globals.at(globalName);
-    assert(globalSlot.size() == localSlot.size());
-
-    putGlobal(globalSlot, localSlot);
-  }  
-}

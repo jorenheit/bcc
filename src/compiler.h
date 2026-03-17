@@ -105,8 +105,32 @@ private:
   // Global Data (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
   void putGlobal(Slot const &globalSlot, Slot const &localSlot);
-  void syncGlobalToLocal();
-  void syncLocalToGlobal();
+
+  template <auto FetchOrPut>
+  void syncGlobals() {
+    auto const &locals = _currentFunction->frame.locals;
+    auto const &globals = _program.globals;
+      
+    for (auto const &[localName, localSlot]: locals) {
+      if (localSlot.storageType != Slot::GlobalReference) continue;
+      std::string globalName = localName.substr(std::string("__g_").size());
+      assert(globals.contains(globalName));
+
+      Slot const &globalSlot = globals.at(globalName);
+      assert(globalSlot.size() == localSlot.size());
+
+      (this->*FetchOrPut)(globalSlot, localSlot);
+    }  
+  }
+
+  void syncGlobalToLocal() {
+    syncGlobals<&Compiler::fetchGlobal>();
+  }
+
+  void syncLocalToGlobal() {
+    syncGlobals<&Compiler::putGlobal>();
+  }
+  
   
   // Codeblock construction (compiler_codeblocks.cc)
   void blockOpen();

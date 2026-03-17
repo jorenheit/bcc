@@ -176,6 +176,7 @@ Slot &Compiler::declareGlobal(std::string const &name, std::shared_ptr<types::Ty
 Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.storageType == Slot::Global);
   assert(_currentFunction != nullptr);
+  assert(_currentBlock != nullptr && _currentBlock->name.starts_with("__prologue_"));
   
   FrameLayout &frame = _currentFunction->frame;
   int const offset = FrameLayout::LocalBase + frame.localAreaSize();

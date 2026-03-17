@@ -6,7 +6,7 @@
 // Frame layout
 // ============================================================
 
-struct FrameLayout {
+struct FrameLayout { // TODO: rename to Frame
 
   enum Offsets {
     TargetBlock,

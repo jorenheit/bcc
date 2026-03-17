@@ -8,9 +8,9 @@ struct Slot {
   enum StorageType {
     Local,
     Global,
-    GlobalReference,
-    TempUsed,
-    TempFree
+    GlobalReference
+    //    TempUsed,
+    //    TempFree
   };
 
   std::string name;  

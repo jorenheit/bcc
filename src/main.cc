@@ -1,7 +1,7 @@
 #include <iostream>
 #include "compiler.h"
 
-#if 0
+#if 1
 int main() {
   Compiler c;
   c.setEntryPoint("main");
