@@ -14,7 +14,7 @@ struct Slot {
   };
 
   std::string name;  
-  std::shared_ptr<types::Type> type;
+  types::TypePtr type;
   StorageType storageType;
   int offset;
 	 

@@ -3,7 +3,7 @@
 // TODO: verify that size>1 works as expected
 
 void Compiler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
-  assert(types::match(globalSlot.type, localSlot.type));
+  assert(globalSlot.type == localSlot.type);
   assert(globalSlot.size() == localSlot.size());
 
   pushPtr();
@@ -44,7 +44,7 @@ void Compiler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
 }
 
 void Compiler::putGlobal(Slot const &globalSlot, Slot const &localSlot) {
-  assert(types::match(globalSlot.type, localSlot.type));
+  assert(globalSlot.type == localSlot.type);
   assert(globalSlot.size() == localSlot.size());
 
   

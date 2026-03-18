@@ -134,7 +134,7 @@ void Compiler::setNextBlock(std::string f, std::string b) {
 }
 
 
-Slot &Compiler::declareGlobal(std::string const &name, std::shared_ptr<types::Type> type) {
+Slot &Compiler::declareGlobal(std::string const &name, types::TypePtr type) {
   // TODO: very similar to declareLocal, could probably be refactored nicely
   assert(_currentFunction == nullptr);
   assert(!_program.globals.contains(name));
@@ -153,7 +153,7 @@ Slot &Compiler::declareGlobal(std::string const &name, std::shared_ptr<types::Ty
 }
 
 
-Slot &Compiler::declareLocal(std::string const& name, std::shared_ptr<types::Type> type) {
+Slot &Compiler::declareLocal(std::string const& name, types::TypePtr type) {
   assert(_currentFunction != nullptr);
   assert(!_currentFunction->frame.locals.contains(name));
 
@@ -279,7 +279,7 @@ void Compiler::returnConstFromFunction(int value) {
   // 3. Restore caller's frame (move pointer back until it hits the frame-marker)
 
   // Check if return-type is single integer
-  assert(types::isInteger(_currentFunction->returnType));
+  assert(_currentFunction->returnType->isInteger());
 
   // Populate the return-value slot
   moveTo(FrameLayout::ReturnValueStart, MacroCell::Value0);
@@ -307,7 +307,7 @@ void Compiler::returnFromFunction(std::string const &varName) {
   if (not varName.empty()) {
     // Check if return variable matches the function's type
     Slot const &slot = local(varName);
-    assert(types::match(slot.type, _currentFunction->returnType)); // TODO: convert API-level asserts exceptions/errors
+    assert(slot.type == _currentFunction->returnType); // TODO: convert API-level asserts exceptions/errors
 
     // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
     for (int i = 0; i != slot.type->size(); ++i) {
@@ -324,7 +324,7 @@ void Compiler::returnFromFunction(std::string const &varName) {
     }
   }
   else {
-    assert(_currentFunction->returnType->getType() == types::VOID);
+    assert(_currentFunction->returnType == _ts.voidT());
   }
   
   // Sync and pop
@@ -335,7 +335,7 @@ void Compiler::returnFromFunction(std::string const &varName) {
 
 void Compiler::assignConst(std::string const &var, int value) {
   Slot const &slot = local(var);
-  assert(types::isInteger(slot.type));
+  assert(slot.type->isInteger());
 
   moveTo(slot, MacroCell::Value0);
   setToValue(value & 0xff);
@@ -356,7 +356,7 @@ void Compiler::assignConst(int offset, int value) {
 
 void Compiler::writeOut(std::string const &var) {
   Slot const &slot = local(var);
-  assert(types::isInteger(slot.type));
+  assert(slot.type->isInteger());
 
   writeOut(slot, MacroCell::Value0);
   if (slot.type->usesValue1()) {

@@ -1,64 +1,85 @@
 #pragma once
 #include <memory>
+#include <vector>
 
 namespace types {
 
-  enum TypeEnum {
-    VOID, I8, I16, ARRAY, STRUCT
-  };
-  
   struct Type {
-    virtual int size() const  = 0;
+    virtual ~Type() = default;
+
+    virtual int size() const = 0;
     virtual bool usesValue1() const = 0;
-    virtual TypeEnum getType() const = 0;
+    virtual bool isInteger() const = 0;
+    virtual bool isArray() const = 0;
+    virtual bool isStruct() const = 0;
+    virtual bool isPointer() const = 0;
   };
 
-  using TypePtr = std::shared_ptr<Type>;
-
-  struct Void: Type {
-    virtual int size() const override { return 0; }
-    virtual bool usesValue1() const override { return false; }
-    virtual TypeEnum getType() const override { return VOID; }
-  };
-  
-  struct i8: Type {
-    virtual int size() const override { return 1; }
-    virtual bool usesValue1() const override { return false; }
-    virtual TypeEnum getType() const override { return I8; }
-  };
-  
-  struct i16: Type {
-    virtual int size() const override { return 1; }
-    virtual bool usesValue1() const override { return true; }
-    virtual TypeEnum getType() const override { return I16; }
+  struct VoidType : Type {
+    inline int size() const override { return 0; }
+    inline bool usesValue1() const override { return false; }
+    inline virtual bool isInteger() const override { return false; }
+    inline virtual bool isArray() const override { return false; }
+    inline virtual bool isStruct() const override {return false; }
+    inline virtual bool isPointer() const override {return false; }
   };
 
-  template <int ElementWidth>
-  struct Array: Type {
-    static_assert(ElementWidth == 1 || ElementWidth == 2);
-    int _size;
+  struct IntegerType : Type {
+    int bits;
+    inline IntegerType(int bits_): bits(bits_) {}
+    inline int size() const override { return 1; }
+    inline bool usesValue1() const override { return bits > 8; }
+    inline virtual bool isInteger() const override { return true; }
+    inline virtual bool isArray() const override { return false; }
+    inline virtual bool isStruct() const override {return false; }
+    inline virtual bool isPointer() const override {return false; }
+  };  
 
-    Array(int sz): _size(sz) {}
+  struct ArrayType: Type {
+    Type const *elementType;
+    int length;
+
+    inline ArrayType(Type const *elem, int len):  elementType(elem), length(len) {}
+    inline int size() const override { return length * elementType->size(); }
+    inline bool usesValue1() const override { return elementType->usesValue1(); }
+    inline virtual bool isInteger() const override { return false; }
+    inline virtual bool isArray() const override { return true; }
+    inline virtual bool isStruct() const override {return false; }
+    inline virtual bool isPointer() const override {return false; }
+  };
+
+  class TypeSystem {
+    std::unique_ptr<VoidType> _void;
+    std::unique_ptr<IntegerType> _i8;
+    std::unique_ptr<IntegerType> _i16;
+
+    mutable std::vector<std::unique_ptr<ArrayType>> _arrayTypes;
     
-    virtual int size() const override { return _size; }
-    virtual bool usesValue1() const override { return ElementWidth == 1 ? 0 : 1; }
-    virtual TypeEnum getType() const override { return ARRAY; }
-  };
+  public:
+    TypeSystem():
+      _void(std::make_unique<VoidType>()),
+      _i8(std::make_unique<IntegerType>(8)),
+      _i16(std::make_unique<IntegerType>(16))
+    {}
 
-
-  inline bool match(TypePtr const &t1, TypePtr const &t2) {
-    return t1->getType() == t2->getType() && t1->size() == t2->size();
-  }
-
-  template <typename T>
-  bool match(TypePtr const &t) {
-    return dynamic_cast<T const *>(t.get()) != nullptr;
-  }
-
-  inline bool isInteger(TypePtr const &t) {
-    return match<i8>(t) || match<i16>(t);
-  }
-
+    TypeSystem(TypeSystem const &) = delete;
+    TypeSystem &operator=(TypeSystem const &) = delete;
+    
+    inline Type const *voidT() const { return _void.get(); }
+    inline Type const *i8() const    { return _i8.get(); }
+    inline Type const *i16() const   { return _i16.get(); }
+    inline Type const *array(Type const* elem, int length) const {
+      for (auto const &ptr: _arrayTypes) {
+	if (ptr->elementType == elem && ptr->length == length) return ptr.get();
+      }
+      
+      _arrayTypes.emplace_back(std::make_unique<ArrayType>(elem, length));
+      return _arrayTypes.back().get();
+    }
+  };  
+  
+  using TypePtr = Type const *;
+  
   // TODO: implicit conversion I16 -> I8
   
 }

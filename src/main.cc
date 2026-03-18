@@ -5,13 +5,14 @@
 
 int main1() { // AF
   Compiler c;
+  types::TypeSystem &ts = c.typeSystem();
   c.setEntryPoint("main");
     
   c.begin(); {
-    c.declareGlobal<types::i8>("g");
+    c.declareGlobal("g", ts.i8());
 
-    c.beginFunction<void>("main"); {
-      c.declareLocal<types::i8>("x");
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.i8());
       c.referGlobals({"g"});
 
       c.beginBlock("entry"); {
@@ -27,7 +28,7 @@ int main1() { // AF
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction<void>("foo"); {
+    c.beginFunction("foo"); {
       c.referGlobals({"g"});
 
       c.beginBlock("entry"); {
@@ -36,22 +37,24 @@ int main1() { // AF
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
-
+  
   } c.end();
   
   std::cout << c.dumpBrainfuck() << "\n";
   return 0;
 }
 
+
 int main2() { // A1B2ab12...
   Compiler c;
+  auto &ts = c.typeSystem();
   c.setEntryPoint("main");
 
   c.begin(); {
-    c.declareGlobal<types::i8>("g1");
-    c.declareGlobal<types::i8>("g2");
-    c.declareGlobal<types::i8>("g3");
-    c.declareGlobal<types::i8>("g4");
+    c.declareGlobal("g1", ts.i8());
+    c.declareGlobal("g2", ts.i8());
+    c.declareGlobal("g3", ts.i8());
+    c.declareGlobal("g4", ts.i8());
 
     c.beginFunction("main"); {
       c.referGlobals({"g1", "g2", "g3", "g4"});
@@ -135,13 +138,14 @@ int main2() { // A1B2ab12...
 
 int main3() { // X
   Compiler c;
+  auto &ts = c.typeSystem();
   c.setEntryPoint("main");
 
   c.begin(); {
 
     // main: void
-    c.beginFunction<void>("main"); {
-      c.declareLocal<types::i8>("x");
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.i8());
 
       c.beginBlock("entry"); {
         c.callFunction("foo", "after_foo", "x");
@@ -156,7 +160,7 @@ int main3() { // X
 
 
     // foo: returns i8
-    c.beginFunction<types::i8>("foo"); {
+    c.beginFunction("foo", ts.i8()); {
 
       c.beginBlock("entry"); {
         c.returnConstFromFunction('X');
@@ -172,12 +176,13 @@ int main3() { // X
 
 int main4() { // XY
   Compiler c;
+  auto &ts = c.typeSystem();
   c.setEntryPoint("main");
 
   c.begin(); {
 
-    c.beginFunction<void>("main"); {
-      c.declareLocal<types::i8>("x");
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.i8());
 
       c.beginBlock("entry"); {
 	c.assignConst("x", 'X');
@@ -193,8 +198,8 @@ int main4() { // XY
     } c.endFunction();
 
 
-    c.beginFunction<types::i8>("foo"); {
-      c.declareLocal<types::i8>("y");
+    c.beginFunction("foo", ts.i8()); {
+      c.declareLocal("y", ts.i8());
 
       c.beginBlock("entry"); {
         c.assignConst("y", 'Y');
@@ -209,16 +214,16 @@ int main4() { // XY
   return 0;
 }
 
-
 int main5() { // GG
   Compiler c;
+  auto &ts = c.typeSystem();
   c.setEntryPoint("main");
 
   c.begin(); {
-    c.declareGlobal<types::i8>("g");
+    c.declareGlobal("g", ts.i8());
 
-    c.beginFunction<void>("main"); {
-      c.declareLocal<types::i8>("x");
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.i8());
       
       c.beginBlock("entry"); {
         c.callFunction("foo", "after_foo", "x");
@@ -235,7 +240,7 @@ int main5() { // GG
       
     } c.endFunction();
 
-    c.beginFunction<types::i8>("foo"); {
+    c.beginFunction("foo", ts.i8()); {
       c.referGlobals({"g"});
       c.beginBlock("entry"); {
 	c.assignConst("g", 'G');
@@ -243,7 +248,7 @@ int main5() { // GG
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction<void>("bar"); {
+    c.beginFunction("bar"); {
       c.referGlobals({"g"});
       c.beginBlock("entry"); {
 	c.writeOut("g");
@@ -259,12 +264,13 @@ int main5() { // GG
 
 int main6() { // YY
   Compiler c;
+  auto &ts = c.typeSystem();
   c.setEntryPoint("main");
 
   c.begin(); {
-    c.declareGlobal<types::i8>("g");
+    c.declareGlobal("g", ts.i8());
 
-    c.beginFunction<void>("main"); {
+    c.beginFunction("main"); {
       c.referGlobals({"g"});
       
       c.beginBlock("entry"); {
@@ -282,15 +288,15 @@ int main6() { // YY
       
     } c.endFunction();
 
-    c.beginFunction<types::i8>("foo"); {
-      c.declareLocal<types::i8>("y");
+    c.beginFunction("foo", ts.i8()); {
+      c.declareLocal("y", ts.i8());
       c.beginBlock("entry"); {
         c.assignConst("y", 'Y');
         c.returnFromFunction("y");
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction<void>("bar"); {
+    c.beginFunction("bar"); {
       c.referGlobals({"g"});
       c.beginBlock("entry"); {
 	c.writeOut("g");
@@ -306,12 +312,13 @@ int main6() { // YY
 
 int main7() { // B
   Compiler c;
+  auto &ts = c.typeSystem();
   c.setEntryPoint("main");
 
   c.begin(); {
-    c.declareGlobal<types::i8>("g");
+    c.declareGlobal("g", ts.i8());
 
-    c.beginFunction<void>("main"); {
+    c.beginFunction("main"); {
       c.referGlobals({"g"});
       
       c.beginBlock("entry"); {
@@ -331,23 +338,23 @@ int main7() { // B
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction<types::i8>("foo"); {
-      c.declareLocal<types::i8>("x");
+    c.beginFunction("foo", ts.i8()); {
+      c.declareLocal("x", ts.i8());
       c.beginBlock("entry"); {
         c.assignConst("x", 'A');
         c.returnFromFunction("x");
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction<types::i8>("bar"); {
-      c.declareLocal<types::i8>("y");
+    c.beginFunction("bar", ts.i8()); {
+      c.declareLocal("y", ts.i8());
       c.beginBlock("entry"); {
         c.assignConst("y", 'B');
         c.returnFromFunction("y");
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction<void>("baz"); {
+    c.beginFunction("baz"); {
       c.referGlobals({"g"});
       c.beginBlock("entry"); {
         c.writeOut("g");
@@ -360,3 +367,4 @@ int main7() { // B
   std::cout << c.dumpBrainfuck() << "\n";
   return 0;
 }
+
