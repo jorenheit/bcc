@@ -86,8 +86,47 @@ void Compiler::constructMetaBlocks() {
     MetaBlock const &m = _metaBlocks[idx];
     
     _currentFunction = &_program.function(m.caller);
+    Function const *callee = &_program.function(m.callee);
+
+    // If a return-variable was provided, check that its type matches the returntype of the callee
+    if (not m.returnVar.empty()) {
+      assert(types::match(callee->returnType, local(m.returnVar).type));
+    }
+    
     beginBlock(m.name); {
-      fetchReturnData();
+
+      // Get or create the return slot to copy the return-variable into
+      auto const getReturnSlot = [&](){
+	if (not m.returnVar.empty()) return local(m.returnVar);
+	
+	static int retVarID = 0;
+	std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
+
+	switch (callee->returnType->getType()) {
+	case types::I8:  return declareLocal<types::i8>(retVarName);
+	case types::I16: return declareLocal<types::i16>(retVarName);
+	case types::ARRAY: {
+	  if (not callee->returnType->usesValue1()) {
+	    return declareLocal<types::Array<1>>(retVarName, callee->returnType->size());
+	  }
+	  else {
+	    return declareLocal<types::Array<2>>(retVarName, callee->returnType->size());
+	  }
+	}
+	default: assert(false && "type not supported yet");
+	}
+      };
+
+      // Copy the return value into the return slot
+      if (types::match<types::Void>(callee->returnType)) fetchReturnData();
+      else {
+	Slot const &returnSlot = getReturnSlot();
+	fetchReturnData(returnSlot);
+	//      If we just wrote to a global, immediately sync this
+	if (returnSlot.storageType == Slot::GlobalReference) {
+	  syncGlobal<&Compiler::putGlobal>(returnSlot);
+	}
+      }
 
       // Check if the run-state has become 0. If so, unwind the stack
       moveTo(FrameLayout::RunState, MacroCell::Value0);

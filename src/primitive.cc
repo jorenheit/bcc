@@ -18,7 +18,7 @@ std::string primitive::Sequence::dumpCode(Context const &ctx) {
 
 
 namespace Algorithm {
-
+  
   // Each algorithm leaves the pointer in the cell indicated by
   // its first argument. All algorithms except movePtr take
   // the current cell as their first arg, so those algorithms

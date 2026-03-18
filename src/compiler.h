@@ -20,6 +20,8 @@ class Compiler {
   struct MetaBlock {
     std::string name;
     std::string caller;
+    std::string callee;
+    std::string returnVar;
     std::string nextBlockName;
   };
   std::vector<MetaBlock> _metaBlocks;
@@ -38,18 +40,21 @@ public:
   void setEntryPoint(std::string functionName);
   void begin();
   void end();
-  void beginFunction(std::string name);
   void endFunction();
   void beginBlock(std::string name);
   void endBlock();
-  void assignConst(int offset, int value);
-  void writeOut(int offset, MacroCell::Field field = MacroCell::Value0);
   void setNextBlock(int index);
   void setNextBlock(std::string f, std::string b = "");
-  void returnFromFunction();
+  void returnFromFunction(std::string const &var = "");
+  void returnConstFromFunction(int value);
   void abortProgram();
-  void callFunction(std::string const& functionName, std::string const& nextBlockName);
   void referGlobals(std::vector<std::string> const &names);      
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, std::string const &returnVar = "");
+
+  void assignConst(std::string const &var, int value); 
+  void assignConst(int offset, int value); 
+  void writeOut(std::string const &var); 
+  void writeOut(int offset, MacroCell::Field field = MacroCell::Value0);
 
   Slot &declareLocal(std::string const& name, std::shared_ptr<types::Type>);
   Slot &declareGlobal(std::string const &name, std::shared_ptr<types::Type>);
@@ -59,22 +64,36 @@ public:
 
   template <typename T, typename ... Args>
   Slot &declareLocal(std::string const& name, Args&& ... args) {
-    auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
-    return declareLocal(name, std::move(ptr));
+    auto type = std::make_shared<T>(std::forward<Args>(args)...);
+    return declareLocal(name, std::move(type));
   }
 
   template <typename T, typename ... Args>
   Slot &declareGlobal(std::string const& name, Args&& ... args) {
-    auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
-    return declareGlobal(name, std::move(ptr));
+    auto type = std::make_shared<T>(std::forward<Args>(args)...);
+    return declareGlobal(name, std::move(type));
   }
-  
+
+  template <typename T, typename ... Args>
+  void beginFunction(std::string const &name, Args&& ... args) {
+    assert(_currentFunction == nullptr);
+    if constexpr (std::is_same_v<T, void> || std::is_same_v<T, types::Void>) {
+      static_assert(sizeof ... (Args) == 0, "Void-type does not take any arguments");
+      _currentFunction = &_program.createFunction(name, std::make_shared<types::Void>());
+    }
+    else {
+      static_assert(std::is_base_of_v<types::Type, T>, "Return type must be derived from types::Type");
+      auto type = std::make_shared<T>(std::forward<Args>(args)...);
+      _currentFunction = &_program.createFunction(name, type);
+    }
+  }
+
+  inline void beginFunction(std::string name) {
+    beginFunction<void>(name);
+  }
+
 
 private:
-  // Memory management (compiler_memory.cc)
-  // Slot &allocateTemp(int size = 1);
-  // void freeTemp(Slot &slot);
-  
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(int frameOffset);  
   void moveTo(int frameOffset, MacroCell::Field field);
@@ -101,25 +120,31 @@ private:
   void moveToGlobalFrame(int payload = 0);  
   void moveToOriginFrame(int payload = 0);
   void fetchReturnData();
+  void fetchReturnData(Slot const &returnSlot);
 
-  // Global Data (compiler_globals.cc)
+  // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
   void putGlobal(Slot const &globalSlot, Slot const &localSlot);
 
   template <auto FetchOrPut>
+  void syncGlobal(Slot const &localSlot) {
+    assert(localSlot.storageType == Slot::GlobalReference);
+    
+    std::string globalName = localSlot.name.substr(std::string("__g_").size());
+    assert(_program.globals.contains(globalName));
+
+    Slot const &globalSlot = _program.globals.at(globalName);
+    assert(globalSlot.size() == localSlot.size());
+
+    (this->*FetchOrPut)(globalSlot, localSlot);
+  }  
+
+  template <auto FetchOrPut>
   void syncGlobals() {
     auto const &locals = _currentFunction->frame.locals;
-    auto const &globals = _program.globals;
-      
     for (auto const &[localName, localSlot]: locals) {
       if (localSlot.storageType != Slot::GlobalReference) continue;
-      std::string globalName = localName.substr(std::string("__g_").size());
-      assert(globals.contains(globalName));
-
-      Slot const &globalSlot = globals.at(globalName);
-      assert(globalSlot.size() == localSlot.size());
-
-      (this->*FetchOrPut)(globalSlot, localSlot);
+      syncGlobal<FetchOrPut>(localSlot);
     }  
   }
 

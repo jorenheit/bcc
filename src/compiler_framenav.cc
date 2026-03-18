@@ -159,3 +159,31 @@ void Compiler::fetchReturnData() {
 
   popPtr();
 }
+
+void Compiler::fetchReturnData(Slot const &returnSlot) {
+
+  primitive::DInt const stackFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
+    return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
+  };
+
+  pushPtr();
+  for (int i = 0; i != returnSlot.type->size(); ++i) {
+    primitive::DInt const diff = stackFrameSize - (returnSlot + i - FrameLayout::ReturnValueStart) * MacroCell::FieldCount;
+    
+    moveTo(returnSlot + i, MacroCell::Value0);
+    zeroCell();
+    emit<primitive::MovePointerRelative>(diff);
+    emit<primitive::MoveData>(-diff);
+    emit<primitive::MovePointerRelative>(-diff);
+
+    if (returnSlot.type->usesValue1()) {
+      moveTo(returnSlot + i, MacroCell::Value1);
+      zeroCell();
+      emit<primitive::MovePointerRelative>(diff);
+      emit<primitive::MoveData>(-diff);
+      emit<primitive::MovePointerRelative>(-diff);
+    }
+  }
+  fetchReturnData(); // fetch the rest
+  popPtr();
+}

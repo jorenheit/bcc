@@ -49,11 +49,6 @@ void Compiler::end() {
 }
 
 
-void Compiler::beginFunction(std::string name) {
-  assert(_currentFunction == nullptr);
-  _currentFunction = &_program.createFunction(std::move(name));
-}
-
 void Compiler::endFunction() {
   assert(_currentFunction != nullptr);
   assert(_currentBlock == nullptr);
@@ -138,25 +133,9 @@ void Compiler::setNextBlock(std::string f, std::string b) {
   popPtr();
 }
 
-Slot &Compiler::declareLocal(std::string const& name, std::shared_ptr<types::Type> type) {
-  assert(_currentFunction != nullptr);
-  assert(!_currentFunction->frame.locals.contains(name));
-
-  FrameLayout &frame = _currentFunction->frame;
-  int const offset = FrameLayout::LocalBase + frame.localAreaSize();
-  Slot slot {
-    .name = name,
-    .type = type,
-    .storageType = Slot::Local,
-    .offset = offset
-  };
-
-  auto [it, success] = frame.locals.emplace(name, std::move(slot));
-  assert(success);
-  return it->second;
-}
 
 Slot &Compiler::declareGlobal(std::string const &name, std::shared_ptr<types::Type> type) {
+  // TODO: very similar to declareLocal, could probably be refactored nicely
   assert(_currentFunction == nullptr);
   assert(!_program.globals.contains(name));
 
@@ -173,13 +152,33 @@ Slot &Compiler::declareGlobal(std::string const &name, std::shared_ptr<types::Ty
   return it->second;
 }
 
+
+Slot &Compiler::declareLocal(std::string const& name, std::shared_ptr<types::Type> type) {
+  assert(_currentFunction != nullptr);
+  assert(!_currentFunction->frame.locals.contains(name));
+
+  FrameLayout &frame = _currentFunction->frame;
+  int const offset = frame.localBase() + frame.localAreaSize();
+  Slot slot {
+    .name = name,
+    .type = type,
+    .storageType = Slot::Local,
+    .offset = offset
+  };
+
+  auto [it, success] = frame.locals.emplace(name, std::move(slot));
+  assert(success);
+  return it->second;
+}
+
+
 Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.storageType == Slot::Global);
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr && _currentBlock->name.starts_with("__prologue_"));
   
   FrameLayout &frame = _currentFunction->frame;
-  int const offset = FrameLayout::LocalBase + frame.localAreaSize();
+  int const offset = frame.localBase() + frame.localAreaSize();
   Slot slot {
     .name = std::string("__g_") + globalSlot.name,
     .type = globalSlot.type,
@@ -191,6 +190,7 @@ Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
   assert(success);
   return it->second;
 }
+
 
 void Compiler::referGlobals(std::vector<std::string> const &names) {
   assert(_currentFunction != nullptr);
@@ -229,23 +229,27 @@ Slot &Compiler::global(std::string const& name) {
   return it->second;
 }
 
-void Compiler::callFunction(std::string const& functionName,
-			    std::string const& nextBlockName) {
+void Compiler::callFunction(std::string const &functionName,
+			    std::string const &nextBlockName,
+			    std::string const &returnVar) {
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr);
   assert(_currentSeq != nullptr);
-  
+
   syncLocalToGlobal();
 
   auto const metaBlockName = std::string("__ret_meta_") 
     + _currentFunction->name + "_"
     + std::to_string(_metaBlocks.size());
-  
+
+
   setNextBlock(_currentFunction->name, metaBlockName);
   _metaBlocks.push_back({
       .name = metaBlockName,
       .caller = _currentFunction->name,
-      .nextBlockName = nextBlockName
+      .callee = functionName,
+      .returnVar = returnVar,
+      .nextBlockName = nextBlockName,
     });
 
   pushFrame();
@@ -260,19 +264,85 @@ void Compiler::abortProgram() {
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   zeroCell();
-  returnFromFunction();
+
+  // Sync and pop
+  popFrame();
+  _nextBlockIsSet = true;
 }
 
-void Compiler::returnFromFunction() {
+void Compiler::returnConstFromFunction(int value) {
   assert(_currentBlock != nullptr);
-  
-  // On return:
-  // 1. Copy globals back. TODO: skip read-only globals
-  // 2. Restore caller's frame (move pointer back until it hits the frame-marker)
 
+  // On return:
+  // 1. Populate return-value slot
+  // 2. Sync globals. TODO: skip read-only globals
+  // 3. Restore caller's frame (move pointer back until it hits the frame-marker)
+
+  // Check if return-type is single integer
+  assert(types::isInteger(_currentFunction->returnType));
+
+  // Populate the return-value slot
+  moveTo(FrameLayout::ReturnValueStart, MacroCell::Value0);
+  setToValue(value & 0xff);
+  if (_currentFunction->returnType->usesValue1()) {
+    moveTo(FrameLayout::ReturnValueStart, MacroCell::Value1);
+    setToValue((value >> 8) & 0xff);
+  }  
+  
+  // Sync and pop
   syncLocalToGlobal();
   popFrame();
   _nextBlockIsSet = true;
+}
+
+
+void Compiler::returnFromFunction(std::string const &varName) {
+  assert(_currentBlock != nullptr);
+
+  // On return:
+  // 1. Populate return-value slot
+  // 2. Sync globals. TODO: skip read-only globals
+  // 3. Restore caller's frame (move pointer back until it hits the frame-marker)
+
+  if (not varName.empty()) {
+    // Check if return variable matches the function's type
+    Slot const &slot = local(varName);
+    assert(types::match(slot.type, _currentFunction->returnType)); // TODO: convert API-level asserts exceptions/errors
+
+    // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
+    for (int i = 0; i != slot.type->size(); ++i) {
+      moveTo(FrameLayout::ReturnValueStart + i, MacroCell::Value0);
+      zeroCell();
+      moveTo(slot + i, MacroCell::Value0);
+      copyField(FrameLayout::ReturnValueStart + i, MacroCell::Value0);
+      if (slot.type->usesValue1()) {
+	moveTo(FrameLayout::ReturnValueStart + i, MacroCell::Value1);
+	zeroCell();
+	moveTo(slot + i, MacroCell::Value1);
+	copyField(FrameLayout::ReturnValueStart + i, MacroCell::Value1);
+      }
+    }
+  }
+  else {
+    assert(_currentFunction->returnType->getType() == types::VOID);
+  }
+  
+  // Sync and pop
+  syncLocalToGlobal();
+  popFrame();
+  _nextBlockIsSet = true;
+}
+
+void Compiler::assignConst(std::string const &var, int value) {
+  Slot const &slot = local(var);
+  assert(types::isInteger(slot.type));
+
+  moveTo(slot, MacroCell::Value0);
+  setToValue(value & 0xff);
+  if (slot.type->usesValue1()) {
+    moveTo(slot, MacroCell::Value1);
+    setToValue( (value >> 8) & 0xff);
+  }
 }
 
 void Compiler::assignConst(int offset, int value) {
@@ -282,6 +352,16 @@ void Compiler::assignConst(int offset, int value) {
   setToValue(low);
   moveTo(offset, MacroCell::Value1);
   setToValue(high);
+}
+
+void Compiler::writeOut(std::string const &var) {
+  Slot const &slot = local(var);
+  assert(types::isInteger(slot.type));
+
+  writeOut(slot, MacroCell::Value0);
+  if (slot.type->usesValue1()) {
+    writeOut(slot, MacroCell::Value1);
+  }
 }
 
 void Compiler::writeOut(int offset, MacroCell::Field field) {

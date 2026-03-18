@@ -1,4 +1,5 @@
 #pragma once
+#include "types.h"
 #include "primitive.h"
 #include "function.h"
 #include <vector>
@@ -19,13 +20,15 @@ struct Program {
   std::unordered_map<std::string, Slot> globals;
   std::vector<Function::Block*> globalBlockOrder;
 
-  inline Function& createFunction(std::string name) {
+  inline Function& createFunction(std::string name, types::TypePtr returnType) {
     assert(!functionByName.contains(name));
     size_t idx = functions.size();
     functionByName[name] = idx;
     functions.push_back(Function{
 	.functionIndex = idx,
-	.name = std::move(name)
+	.name = std::move(name),
+	.frame = FrameLayout{returnType->size()},
+	.returnType = std::move(returnType)
       });
     return functions.back();
   }
