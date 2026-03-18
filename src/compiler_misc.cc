@@ -49,3 +49,34 @@ std::string Compiler::simplifyProgram(std::string const &bf) {
   
   return cancel(cancel(bf, '>', '<'), '+', '-');
 }
+
+void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
+					  std::string const &callee,
+					  std::vector<Function::Arg> const &args) {
+  _deferredFunctionCallTypeChecks.emplace_back(FunctionCall{
+      .caller = caller,
+      .callee = callee,
+      .args = args
+    });
+}
+
+void Compiler::functionCallTypeChecks() {
+  assert(_currentFunction == nullptr);
+
+  for (auto const &[caller, callee, args]: _deferredFunctionCallTypeChecks) {
+    auto const &params = _program.function(callee).sig.params;
+    assert(params.size() == args.size());
+
+    _currentFunction = &_program.function(caller);
+    for (size_t i = 0; i != args.size(); ++i) {
+      if (args[i].kind == Function::Arg::Constant) {
+	assert(params[i].type->isInteger());
+      }
+      else {
+	Slot const &varSlot = local(args[i].varName);
+	assert(params[i].type == varSlot.type);
+      }
+    }
+    _currentFunction = nullptr;
+  }
+}

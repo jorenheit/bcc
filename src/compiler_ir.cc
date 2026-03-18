@@ -9,6 +9,8 @@ void Compiler::begin() {
 }
 
 void Compiler::end() {
+  functionCallTypeChecks();
+  
   // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
   constructMetaBlocks();
 
@@ -48,13 +50,12 @@ void Compiler::end() {
   loopClose("main loop");
 }
 
-void Compiler::beginFunction(std::string const &name, types::TypePtr returnType) {
-  assert(_currentFunction == nullptr);
-  _currentFunction = &_program.createFunction(name, returnType);
-}
 
-void Compiler::beginFunction(std::string const &name) {
-  _currentFunction = &_program.createFunction(name, _ts.voidT());
+void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig) {
+  _currentFunction = &_program.createFunction(name, sig);
+  for (FunctionParameter const &p: sig.params) {
+    declareLocal(p.name, p.type);
+  }
 }
 
 void Compiler::endFunction() {
@@ -258,6 +259,7 @@ Slot Compiler::arrayElementConst(std::string const &name, int index) {
 
 void Compiler::callFunction(std::string const &functionName,
 			    std::string const &nextBlockName,
+			    std::vector<Function::Arg> const &args,
 			    std::string const &returnVar) {
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr);
@@ -279,10 +281,12 @@ void Compiler::callFunction(std::string const &functionName,
       .nextBlockName = nextBlockName,
     });
 
+  deferFunctionCallTypeCheck(_currentFunction->name, functionName, args);
+  copyArgsToNextFrame(functionName, args);
   pushFrame();
   setNextBlock(functionName);
 }
-  
+
 
 void Compiler::abortProgram() {
   assert(_currentBlock != nullptr);
@@ -304,12 +308,12 @@ void Compiler::returnConstFromFunction(int value) {
   // 3. Restore caller's frame (move pointer back until it hits the frame-marker)
 
   // Check if return-type is single integer
-  assert(_currentFunction->returnType->isInteger());
+  assert(_currentFunction->sig.returnType->isInteger());
 
   // Populate the return-value slot
   moveTo(FrameLayout::ReturnValueStart, MacroCell::Value0);
   setToValue(value & 0xff);
-  if (_currentFunction->returnType->usesValue1()) {
+  if (_currentFunction->sig.returnType->usesValue1()) {
     moveTo(FrameLayout::ReturnValueStart, MacroCell::Value1);
     setToValue((value >> 8) & 0xff);
   }  
@@ -332,7 +336,7 @@ void Compiler::returnFromFunction(std::string const &varName) {
   if (not varName.empty()) {
     // Check if return variable matches the function's type
     Slot const &slot = local(varName);
-    assert(slot.type == _currentFunction->returnType); // TODO: convert API-level asserts exceptions/errors
+    assert(slot.type == _currentFunction->sig.returnType); // TODO: convert API-level asserts exceptions/errors
 
     // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
     for (int i = 0; i != slot.type->size(); ++i) {
@@ -349,7 +353,7 @@ void Compiler::returnFromFunction(std::string const &varName) {
     }
   }
   else {
-    assert(_currentFunction->returnType == _ts.voidT());
+    assert(_currentFunction->sig.returnType == _ts.voidT());
   }
   
   // Sync and pop

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "compiler.h"
 
-#define main10 main
+#define main13 main
 
 int main1() { // AF
   Compiler c;
@@ -525,3 +525,120 @@ int main10() { // ABCDEFGH
 }
 
 
+int main11() { // AB
+  Compiler c;
+  auto &ts = c.typeSystem();
+  c.setEntryPoint("main");
+
+  c.begin(); {
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.i8());
+      c.declareLocal("y", ts.i8());
+       
+      c.beginBlock("entry"); {
+	c.assignConst("x", 'A');
+	c.callFunction("foo", "after_foo", {
+	    Function::Arg('B'),
+	    Function::Arg("x")
+	  }, "y");
+      } c.endBlock();
+
+      c.beginBlock("after_foo"); {
+	c.writeOut("x");
+	c.writeOut("y");
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo", ts.i8(), "arg1", ts.i8(), "arg2", ts.i8()); {
+      c.beginBlock("entry"); {
+	c.returnFromFunction("arg1");
+      } c.endBlock();
+    } c.endFunction();
+  } c.end();
+
+  std::cout << c.dumpBrainfuck() << "\n";  
+  return 0;
+}
+
+int main12() { // ABCDABCD
+  Compiler c;
+  auto &ts = c.typeSystem();
+  c.setEntryPoint("main");
+
+  c.begin(); {
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.array(ts.i8(), 4));
+       
+      c.beginBlock("entry"); {
+	Slot x0 = c.arrayElementConst("x", 0);
+	Slot x1 = c.arrayElementConst("x", 1);
+	Slot x2 = c.arrayElementConst("x", 2);
+	Slot x3 = c.arrayElementConst("x", 3);
+
+	c.assignConst(x0, 'A');
+	c.assignConst(x1, 'B');
+	c.assignConst(x2, 'C');
+	c.assignConst(x3, 'D');
+
+	c.writeOut("x");
+	c.callFunction("foo", "after_foo", {
+	    Function::Arg("x")
+	  });
+      } c.endBlock();
+
+      c.beginBlock("after_foo"); {
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo", ts.voidT(), "x", ts.array(ts.i8(), 4)); {
+      c.beginBlock("entry"); {
+	c.writeOut("x");
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+  } c.end();
+
+  std::cout << c.dumpBrainfuck() << "\n";  
+  return 0;
+}
+
+
+int main13() { // GHG
+  Compiler c;
+  auto &ts = c.typeSystem();
+  c.setEntryPoint("main");
+
+  c.begin(); {
+    c.declareGlobal("g", ts.i8());
+    
+    c.beginFunction("main"); {
+      c.referGlobals({"g"});
+      
+      c.beginBlock("entry"); {
+	c.assignConst("g", 'G');
+	c.callFunction("foo", "after_foo", {
+	    Function::Arg("g")
+	  });
+      } c.endBlock();
+
+      c.beginBlock("after_foo"); {
+	c.writeOut("g");
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo", ts.voidT(), "arg1", ts.i8()); {
+      c.beginBlock("entry"); {
+	c.writeOut("arg1");
+	c.assignConst("arg1", 'H');
+	c.writeOut("arg1");
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+  } c.end();
+
+  std::cout << c.dumpBrainfuck() << "\n";  
+  return 0;
+}

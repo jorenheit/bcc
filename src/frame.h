@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include "slot.h"
+#include "functionsignature.h"
 
 // ============================================================
 // Frame layout

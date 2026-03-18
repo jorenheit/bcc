@@ -14,6 +14,7 @@ namespace primitive {
     int fieldCount;
     std::unordered_map<std::string, int> blockIDtoIndex;
     std::unordered_map<std::string, int> stackFrameSize;
+    std::unordered_map<std::string, int> localBaseOffset;
 
     int getBlockIndex(std::string const &f, std::string const &b = "") const {      
       std::string const id = f + (b.empty() ? "" : (std::string(".") + b));
@@ -21,7 +22,13 @@ namespace primitive {
     }
 
     int getStackFrameSize(std::string const &f) const {
+      assert(stackFrameSize.contains(f));
       return stackFrameSize.at(f);
+    }
+
+    int getLocalBaseOffset(std::string const &f) const {
+      assert(localBaseOffset.contains(f));
+      return localBaseOffset.at(f);
     }
   };
 

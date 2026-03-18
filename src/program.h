@@ -20,15 +20,15 @@ struct Program {
   std::unordered_map<std::string, Slot> globals;
   std::vector<Function::Block*> globalBlockOrder;
 
-  inline Function& createFunction(std::string name, types::TypePtr returnType) {
+  inline Function& createFunction(std::string name, FunctionSignature sig) {
     assert(!functionByName.contains(name));
     size_t idx = functions.size();
     functionByName[name] = idx;
     functions.push_back(Function{
 	.functionIndex = idx,
 	.name = std::move(name),
-	.frame = FrameLayout{returnType->size()},
-	.returnType = std::move(returnType)
+	.frame = FrameLayout{sig.returnType->size()},
+	.sig = std::move(sig)
       });
     return functions.back();
   }

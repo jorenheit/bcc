@@ -33,7 +33,13 @@ class Compiler {
   };
   std::stack<PointerState> _ptrStack;
 
-public:
+  struct FunctionCall {
+    std::string caller, callee;
+    std::vector<Function::Arg> args;
+  };
+  std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
+  
+  public:
   inline types::TypeSystem &typeSystem() { return _ts; }
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
@@ -42,8 +48,7 @@ public:
   void setEntryPoint(std::string functionName);
   void begin();
   void end();
-  void beginFunction(std::string const &name, types::TypePtr returnType);
-  void beginFunction(std::string const &name);  
+  void beginFunction(std::string const &name, FunctionSignature const &sig);
   void endFunction();
   void beginBlock(std::string name);
   void endBlock();
@@ -52,9 +57,14 @@ public:
   void returnFromFunction(std::string const &var = "");
   void returnConstFromFunction(int value);
   void abortProgram();
-  void referGlobals(std::vector<std::string> const &names);      
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, std::string const &returnVar = "");
-
+  void referGlobals(std::vector<std::string> const &names);
+  void callFunction(std::string const& functionName, std::string const& nextBlockName,
+		    std::vector<Function::Arg> const &args, std::string const &returnVar = "");
+  
+  inline void callFunction(std::string const& functionName, std::string const& nextBlockName, std::string const &returnVar = "") {
+    callFunction(functionName, nextBlockName, {}, returnVar);
+  }
+  
   void assignConst(std::string const &var, int value); 
   void assignConst(int offset, int value); 
   void writeOut(std::string const &var); 
@@ -70,6 +80,22 @@ public:
   Slot &declareGlobal(std::string const &name, types::TypePtr type);
 
   Slot arrayElementConst(std::string const &name, int index);
+
+  
+  template <typename ... Args>
+  void beginFunction(std::string const &name, types::TypePtr returnType, Args&& ... args) {
+    assert(_currentFunction == nullptr);
+
+    beginFunction(name, FunctionSignature{
+	returnType,
+	std::forward<Args>(args)...
+      });
+  }
+
+  inline void beginFunction(std::string const &name) {
+    // convenience overload for void f(void)
+    beginFunction(name, _ts.voidT());
+  }
   
 private:
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
@@ -93,6 +119,7 @@ private:
   // Frame Navigation (compiler_framenav.cc)
   void pushFrame();
   void popFrame();
+  void copyArgsToNextFrame(std::string const &functionName, std::vector<Function::Arg> const &args);
   void markStartOfOriginFrame();  
   void moveToPreviousFrame();
   void moveToGlobalFrame(int payload = 0);  
@@ -152,6 +179,9 @@ private:
   void popPtr();
 
   // Post processing/optimization (compiler_misc.cc)
+  void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee, std::vector<Function::Arg> const &args);
+  void functionCallTypeChecks();
+  
   static std::string simplifyProgram(std::string const &bf);
   
   // General helpers (inline definitions)

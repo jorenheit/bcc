@@ -9,7 +9,8 @@ struct Slot {
     Local,
     Global,
     GlobalReference,
-    ArrayElement
+    ArrayElement,
+    Dummy
     //    TempUsed,
     //    TempFree
   };

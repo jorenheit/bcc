@@ -30,6 +30,69 @@ void Compiler::pushFrame() {
   setToValue(1);  
 }
 
+void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<Function::Arg> const &args) {
+  assert(_currentBlock != nullptr);
+  assert(_currentFunction != nullptr);
+  assert(_currentSeq != nullptr);
+
+  // Type checking will be done later. Just copy all the arguments into the start of the
+  // next stack frame. The callee will assume they are there in order.
+
+  
+  primitive::DInt const currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
+    return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
+  };
+  
+  pushPtr();
+
+  int offset = 0;
+  for (size_t i = 0; i != args.size(); ++i) {
+    Function::Arg const &arg = args[i];
+
+    primitive::DInt const paramStart = [callee = functionName](primitive::Context const &ctx) {
+      return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
+    };
+    
+    if (arg.kind == Function::Arg::Constant) {
+      // Constuct the value in-place
+      int const value = arg.value;
+      moveTo(0, MacroCell::Value0);
+      primitive::DInt const diff = currentFrameSize + paramStart + offset;
+      emit<primitive::MovePointerRelative>(diff);
+      setToValue(value & 0xff);
+      if (value & 0xff00) {
+	switchField(MacroCell::Value1);
+	setToValue((value >> 8) & 0xff);
+	switchField(MacroCell::Value0);
+      }
+      emit<primitive::MovePointerRelative>(-diff);
+      offset += MacroCell::FieldCount;
+    }
+    else {
+      // Copy the variable
+      Slot const &varSlot = local(arg.varName);
+      for (int i = 0; i != varSlot.type->size(); ++i) {
+	int const varIndex0 = getFieldIndex(varSlot + i, MacroCell::Value0);
+	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
+	primitive::DInt const scratchIndex = paramIndex0 + (MacroCell::Scratch0 - MacroCell::Value0);
+
+	moveTo(varSlot + i, MacroCell::Value0);
+	emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
+	if (varSlot.type->usesValue1()) {
+	  int const varIndex1 = getFieldIndex(varSlot + i, MacroCell::Value1);
+	  primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
+
+	  moveTo(varSlot + i, MacroCell::Value1);
+	  emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
+	}
+
+	offset += MacroCell::FieldCount;
+      }
+    }
+  }
+  popPtr();
+}
+
 void Compiler::moveToPreviousFrame() {
   pushPtr();
   moveToOrigin();

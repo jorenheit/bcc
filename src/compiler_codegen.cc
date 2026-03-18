@@ -28,11 +28,20 @@ primitive::Context Compiler::constructContext() const {
     }
     return result;
   };
+
+  auto const constructLocalBaseOffsetMap = [&](){
+    std::unordered_map<std::string, int> result;
+    for (auto const &f: _program.functions) {
+      result[f.name] = f.frame.localBase();
+    }
+    return result;
+  };
   
   return primitive::Context {
     .fieldCount = MacroCell::FieldCount,
     .blockIDtoIndex = constructBlockIDtoIndexMap(),
-    .stackFrameSize = constructStackFrameSizeMap()
+    .stackFrameSize = constructStackFrameSizeMap(),
+    .localBaseOffset = constructLocalBaseOffsetMap()
   };
 }
 

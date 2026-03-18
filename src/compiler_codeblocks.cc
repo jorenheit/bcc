@@ -90,19 +90,19 @@ void Compiler::constructMetaBlocks() {
 
     // If a return-variable was provided, check that its type matches the returntype of the callee
     if (not m.returnVar.empty()) {
-      assert(callee->returnType == local(m.returnVar).type);
+      assert(callee->sig.returnType == local(m.returnVar).type);
     }
     
     beginBlock(m.name); {
 
-      if (callee->returnType == _ts.voidT()) fetchReturnData();
+      if (callee->sig.returnType == _ts.voidT()) fetchReturnData();
       else {
 	// Get or create the return slot to copy the return-variable into
 	Slot const &returnSlot = [&](){
 	  if (not m.returnVar.empty()) return local(m.returnVar);
 	  static int retVarID = 0;
 	  std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
-	  return declareLocal(retVarName, callee->returnType);
+	  return declareLocal(retVarName, callee->sig.returnType);
 	}();
 	
 	fetchReturnData(returnSlot);
