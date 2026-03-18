@@ -1,7 +1,7 @@
 #include <iostream>
 #include "compiler.h"
 
-#define main7 main
+#define main9 main
 
 int main1() { // AF
   Compiler c;
@@ -367,4 +367,116 @@ int main7() { // B
   std::cout << c.dumpBrainfuck() << "\n";
   return 0;
 }
+
+int main8() { // ABCD
+  Compiler c;
+  auto &ts = c.typeSystem();
+  c.setEntryPoint("main");
+
+  c.begin(); {
+    c.declareGlobal("x", ts.array(ts.i8(), 10));
+    
+    c.beginFunction("main"); {
+      c.referGlobals({"x"});
+      
+      c.beginBlock("entry"); {
+	Slot x0 = c.arrayElementConst("x", 0);
+	Slot x1 = c.arrayElementConst("x", 1);
+	Slot x2 = c.arrayElementConst("x", 2);
+	Slot x3 = c.arrayElementConst("x", 3);
+	
+	c.assignConst(x0, 'A');
+	c.assignConst(x1, 'B');
+	c.assignConst(x2, 'C');
+	c.assignConst(x3, 'D');
+
+	c.callFunction("foo", "after_foo");
+      } c.endBlock();
+
+      c.beginBlock("after_foo"); {
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo"); {
+      c.referGlobals({"x"});
+      
+      c.beginBlock("entry"); {
+	Slot x0 = c.arrayElementConst("x", 0);
+	Slot x1 = c.arrayElementConst("x", 1);
+	Slot x2 = c.arrayElementConst("x", 2);
+	Slot x3 = c.arrayElementConst("x", 3);
+	
+	c.writeOut(x0);
+	c.writeOut(x1);
+	c.writeOut(x2);
+	c.writeOut(x3);
+
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+  } c.end();
+  
+  std::cout << c.dumpBrainfuck() << "\n";
+  return 0;
+  
+}
+
+int main9() { // ABCDABCD
+  Compiler c;
+  auto &ts = c.typeSystem();
+  c.setEntryPoint("main");
+
+  c.begin(); {
+    
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.array(ts.i8(), 10));
+      
+      c.beginBlock("entry"); {
+	c.callFunction("foo", "after_foo", "x");
+      } c.endBlock();
+
+      c.beginBlock("after_foo"); {
+	Slot x0 = c.arrayElementConst("x", 0);
+	Slot x1 = c.arrayElementConst("x", 1);
+	Slot x2 = c.arrayElementConst("x", 2);
+	Slot x3 = c.arrayElementConst("x", 3);
+	
+	c.writeOut(x0);
+	c.writeOut(x1);
+	c.writeOut(x2);
+	c.writeOut(x3);
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo", ts.array(ts.i8(), 10)); {
+      c.declareLocal("x", ts.array(ts.i8(), 10));
+      
+      c.beginBlock("entry"); {
+	Slot x0 = c.arrayElementConst("x", 0);
+	Slot x1 = c.arrayElementConst("x", 1);
+	Slot x2 = c.arrayElementConst("x", 2);
+	Slot x3 = c.arrayElementConst("x", 3);
+
+	c.assignConst(x0, 'A');
+	c.assignConst(x1, 'B');
+	c.assignConst(x2, 'C');
+	c.assignConst(x3, 'D');
+
+	c.writeOut(x0);
+	c.writeOut(x1);
+	c.writeOut(x2);
+	c.writeOut(x3);
+	
+	c.returnFromFunction("x");
+      } c.endBlock();
+    } c.endFunction();
+  } c.end();
+  
+  std::cout << c.dumpBrainfuck() << "\n";
+  return 0;
+  
+}
+
 

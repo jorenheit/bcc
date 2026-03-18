@@ -10,7 +10,7 @@ void Compiler::pushFrame() {
   
   // To push a frame, we need to move the pointer into the cell that marks the start of a fresh
   // frame, starting just beyond the current one. We also initialize the FrameID of this frame
-  // with the current ID + 1.
+  // with the current ID + 1 and set its run-state to 1.
 
   primitive::DInt currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
@@ -23,8 +23,11 @@ void Compiler::pushFrame() {
 			    currentFrameSize + MacroCell::Scratch0);
   emit<primitive::MovePointerRelative>(currentFrameSize);
   addConst(1);
-
+  
   popPtr();
+
+  moveTo(FrameLayout::RunState, MacroCell::Value0);
+  setToValue(1);  
 }
 
 void Compiler::moveToPreviousFrame() {
@@ -168,7 +171,7 @@ void Compiler::fetchReturnData(Slot const &returnSlot) {
 
   pushPtr();
   for (int i = 0; i != returnSlot.type->size(); ++i) {
-    primitive::DInt const diff = stackFrameSize - (returnSlot + i - FrameLayout::ReturnValueStart) * MacroCell::FieldCount;
+    primitive::DInt const diff = stackFrameSize - (returnSlot - FrameLayout::ReturnValueStart) * MacroCell::FieldCount;
     
     moveTo(returnSlot + i, MacroCell::Value0);
     zeroCell();

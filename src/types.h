@@ -79,6 +79,9 @@ namespace types {
   };  
   
   using TypePtr = Type const *;
+
+  template <typename T>
+  T const *cast(Type const *ptr) { return static_cast<T const *>(ptr); }
   
   // TODO: implicit conversion I16 -> I8
   

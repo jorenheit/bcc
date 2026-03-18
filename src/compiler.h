@@ -42,6 +42,8 @@ public:
   void setEntryPoint(std::string functionName);
   void begin();
   void end();
+  void beginFunction(std::string const &name, types::TypePtr returnType);
+  void beginFunction(std::string const &name);  
   void endFunction();
   void beginBlock(std::string name);
   void endBlock();
@@ -64,50 +66,11 @@ public:
   Slot &local(std::string const& name);
   Slot &global(std::string const& name);
 
-
   Slot &declareLocal(std::string const &name, types::TypePtr type);
   Slot &declareGlobal(std::string const &name, types::TypePtr type);
 
+  Slot arrayElementConst(std::string const &name, int index);
   
-  // template <typename T, typename ... Args>
-  // Slot &declareLocal(std::string const& name, Args&& ... args) {
-  //   auto type = std::make_shared<T>(std::forward<Args>(args)...);
-  //   return declareLocal(name, std::move(type));
-  // }
-
-  // template <typename T, typename ... Args>
-  // Slot &declareGlobal(std::string const& name, Args&& ... args) {
-  //   auto type = std::make_shared<T>(std::forward<Args>(args)...);
-  //   return declareGlobal(name, std::move(type));
-  // }
-
-  void beginFunction(std::string const &name, types::TypePtr returnType) {
-    _currentFunction = &_program.createFunction(name, returnType);
-  }
-
-  void beginFunction(std::string const &name) {
-    _currentFunction = &_program.createFunction(name, _ts.voidT());
-  }
-  
-  // template <typename T, typename ... Args>
-  // void beginFunction(std::string const &name, Args&& ... args) {
-  //   assert(_currentFunction == nullptr);
-  //   if constexpr (std::is_same_v<T, void> || std::is_same_v<T, types::Void>) {
-  //     static_assert(sizeof ... (Args) == 0, "Void-type does not take any arguments");
-  //     _currentFunction = &_program.createFunction(name, std::make_shared<types::Void>());
-  //   }
-  //   else {
-  //     static_assert(std::is_base_of_v<types::Type, T>, "Return type must be derived from types::Type");
-  //     auto type = std::make_shared<T>(std::forward<Args>(args)...);
-  //     _currentFunction = &_program.createFunction(name, type);
-  //   }
-  // }
-
-  // inline void beginFunction(std::string name) {
-  //   beginFunction<void>(name);
-  // }
-
-
 private:
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(int frameOffset);  

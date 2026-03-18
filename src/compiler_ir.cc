@@ -48,6 +48,14 @@ void Compiler::end() {
   loopClose("main loop");
 }
 
+void Compiler::beginFunction(std::string const &name, types::TypePtr returnType) {
+  assert(_currentFunction == nullptr);
+  _currentFunction = &_program.createFunction(name, returnType);
+}
+
+void Compiler::beginFunction(std::string const &name) {
+  _currentFunction = &_program.createFunction(name, _ts.voidT());
+}
 
 void Compiler::endFunction() {
   assert(_currentFunction != nullptr);
@@ -229,6 +237,25 @@ Slot &Compiler::global(std::string const& name) {
   return it->second;
 }
 
+Slot Compiler::arrayElementConst(std::string const &name, int index) {
+  assert(_currentFunction != nullptr);
+
+  // Check to see if this is an actual array and if the index is within bounds
+  Slot const &arraySlot = local(name);
+  assert(arraySlot.type->isArray());
+  auto const *array = types::cast<types::ArrayType>(arraySlot.type);
+  assert(index < array->length);
+
+  // Create a new slot that represents the element
+  return Slot {
+    .name = std::string("__elem_") + name + "_" + std::to_string(index),
+    .type = array->elementType,
+    .storageType = Slot::ArrayElement,
+    .offset = arraySlot.offset + (index * array->elementType->size())
+  };
+}
+
+
 void Compiler::callFunction(std::string const &functionName,
 			    std::string const &nextBlockName,
 			    std::string const &returnVar) {
@@ -253,8 +280,6 @@ void Compiler::callFunction(std::string const &functionName,
     });
 
   pushFrame();
-  moveTo(FrameLayout::RunState, MacroCell::Value0);
-  setToValue(1);
   setNextBlock(functionName);
 }
   
@@ -368,3 +393,4 @@ void Compiler::writeOut(int offset, MacroCell::Field field) {
   moveTo(offset, field);
   emit<primitive::Out>();
 }
+

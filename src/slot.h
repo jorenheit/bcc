@@ -8,7 +8,8 @@ struct Slot {
   enum StorageType {
     Local,
     Global,
-    GlobalReference
+    GlobalReference,
+    ArrayElement
     //    TempUsed,
     //    TempFree
   };

@@ -95,20 +95,18 @@ void Compiler::constructMetaBlocks() {
     
     beginBlock(m.name); {
 
-      // Get or create the return slot to copy the return-variable into
-      auto const getReturnSlot = [&](){
-	if (not m.returnVar.empty()) return local(m.returnVar);
-	static int retVarID = 0;
-	std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
-	return declareLocal(retVarName, callee->returnType);
-      };
-
-      // Copy the return value into the return slot
       if (callee->returnType == _ts.voidT()) fetchReturnData();
       else {
-	Slot const &returnSlot = getReturnSlot();
+	// Get or create the return slot to copy the return-variable into
+	Slot const &returnSlot = [&](){
+	  if (not m.returnVar.empty()) return local(m.returnVar);
+	  static int retVarID = 0;
+	  std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
+	  return declareLocal(retVarName, callee->returnType);
+	}();
+	
 	fetchReturnData(returnSlot);
-	//      If we just wrote to a global, immediately sync this
+	// If we just wrote to a global, immediately sync this
 	if (returnSlot.storageType == Slot::GlobalReference) {
 	  syncGlobal<&Compiler::putGlobal>(returnSlot);
 	}
