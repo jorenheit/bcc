@@ -76,9 +76,6 @@ void Compiler::blockClose() {
 }
 
 void Compiler::constructMetaBlocks() {
-  static bool ran = false;
-  assert(!ran);
-  
   assert(_currentFunction == nullptr);
   assert(_currentBlock == nullptr);
 
@@ -140,5 +137,4 @@ void Compiler::constructMetaBlocks() {
 
   _currentFunction = nullptr;
   assert(_currentBlock == nullptr);
-  ran = true;
 }
