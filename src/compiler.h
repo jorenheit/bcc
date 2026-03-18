@@ -58,7 +58,7 @@ public:
   void assignConst(std::string const &var, int value); 
   void assignConst(int offset, int value); 
   void writeOut(std::string const &var); 
-  void writeOut(int offset, MacroCell::Field field = MacroCell::Value0);
+  void writeOut(Slot const &slot);
 
   Slot &declareLocal(std::string const& name, std::shared_ptr<types::Type>);
   Slot &declareGlobal(std::string const &name, std::shared_ptr<types::Type>);

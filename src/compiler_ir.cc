@@ -380,17 +380,17 @@ void Compiler::assignConst(int offset, int value) {
 }
 
 void Compiler::writeOut(std::string const &var) {
-  Slot const &slot = local(var);
-  assert(slot.type->isInteger());
-
-  writeOut(slot, MacroCell::Value0);
-  if (slot.type->usesValue1()) {
-    writeOut(slot, MacroCell::Value1);
-  }
+  writeOut(local(var));
 }
 
-void Compiler::writeOut(int offset, MacroCell::Field field) {
-  moveTo(offset, field);
-  emit<primitive::Out>();
+void Compiler::writeOut(Slot const &slot) {
+  for (int i = 0; i != slot.type->size(); ++i) {
+    moveTo(slot + i, MacroCell::Value0);
+    emit<primitive::Out>();
+    if (slot.type->usesValue1()) {
+      moveTo(slot + i, MacroCell::Value1);
+      emit<primitive::Out>();
+    }
+  }
 }
 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "compiler.h"
 
-#define main9 main
+#define main10 main
 
 int main1() { // AF
   Compiler c;
@@ -430,7 +430,7 @@ int main9() { // ABCDABCD
   c.begin(); {
     
     c.beginFunction("main"); {
-      c.declareLocal("x", ts.array(ts.i8(), 10));
+      c.declareLocal("x", ts.array(ts.i8(), 4));
       
       c.beginBlock("entry"); {
 	c.callFunction("foo", "after_foo", "x");
@@ -450,8 +450,8 @@ int main9() { // ABCDABCD
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction("foo", ts.array(ts.i8(), 10)); {
-      c.declareLocal("x", ts.array(ts.i8(), 10));
+    c.beginFunction("foo", ts.array(ts.i8(), 4)); {
+      c.declareLocal("x", ts.array(ts.i8(), 4));
       
       c.beginBlock("entry"); {
 	Slot x0 = c.arrayElementConst("x", 0);
@@ -476,7 +476,52 @@ int main9() { // ABCDABCD
   
   std::cout << c.dumpBrainfuck() << "\n";
   return 0;
+}
+
+
+#define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
+
+int main10() { // ABCDEFGH
+  Compiler c;
+  auto &ts = c.typeSystem();
+  c.setEntryPoint("main");
+
+  c.begin(); {
+    
+    c.beginFunction("main"); {
+      c.declareLocal("x", ts.array(ts.i16(), 4));
+      
+      c.beginBlock("entry"); {
+	c.callFunction("foo", "after_foo", "x");
+      } c.endBlock();
+
+      c.beginBlock("after_foo"); {
+	c.writeOut("x");
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo", ts.array(ts.i16(), 4)); {
+      c.declareLocal("x", ts.array(ts.i16(), 4));
+      
+      c.beginBlock("entry"); {
+	Slot x0 = c.arrayElementConst("x", 0);
+	Slot x1 = c.arrayElementConst("x", 1);
+	Slot x2 = c.arrayElementConst("x", 2);
+	Slot x3 = c.arrayElementConst("x", 3);
+
+	c.assignConst(x0, CAT('A','B'));
+	c.assignConst(x1, CAT('C','D'));
+	c.assignConst(x2, CAT('E','F'));
+	c.assignConst(x3, CAT('G','H'));
+
+	c.returnFromFunction("x");
+      } c.endBlock();
+    } c.endFunction();
+  } c.end();
   
+  std::cout << c.dumpBrainfuck() << "\n";
+  return 0;
 }
 
 
