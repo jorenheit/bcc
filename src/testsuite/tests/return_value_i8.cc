@@ -16,7 +16,7 @@ c.begin(); {
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
-      c.writeOut("x");
+      c.writeOut(values::var("x"));
       c.returnFromFunction();
     } c.endBlock();
 

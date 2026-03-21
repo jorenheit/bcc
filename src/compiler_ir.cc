@@ -291,8 +291,15 @@ Slot Compiler::arrayElementConst(Slot const &slot, int index) {
 
 void Compiler::callFunction(std::string const &functionName,
 			    std::string const &nextBlockName,
+			    values::Var const &returnVar) {
+  callFunction(functionName, nextBlockName, {}, returnVar);
+}
+
+void Compiler::callFunction(std::string const &functionName,
+			    std::string const &nextBlockName,
 			    std::vector<values::Value> const &args,
-			    std::string const &returnVar) {
+			    values::Var const &returnVar) {
+  
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr);
   assert(_currentSeq != nullptr);
@@ -309,7 +316,7 @@ void Compiler::callFunction(std::string const &functionName,
       .name = metaBlockName,
       .caller = _currentFunction->name,
       .callee = functionName,
-      .returnVar = returnVar,
+      .returnVar = (returnVar != nullptr) ? returnVar->varName() : "",
       .nextBlockName = nextBlockName,
     });
 
@@ -371,8 +378,8 @@ void Compiler::returnFromFunction(values::Value const &value) {
   returnFromFunction();
 }
 
-void Compiler::returnFromFunction(std::string const &varName) {
-  return returnFromFunction(local(varName));
+void Compiler::returnFromFunction(values::Var const &var) {
+  return returnFromFunction(local(var->varName()));
 }
 
 
@@ -428,17 +435,17 @@ void Compiler::assign(Slot const &slot, values::Value const &value) {
   constructInSlot(constructInSlot, slot, value);
 }
 
-void Compiler::assign(Slot const &slot, std::string const &var) {
-  assign(slot, local(var));
+void Compiler::assign(Slot const &slot, values::Var const &var) {
+  assign(slot, local(var->varName()));
 }
 
-void Compiler::assign(std::string const &var, values::Value const &value) {
-  assign(local(var), value);
+void Compiler::assign(values::Var const &var, values::Value const &value) {
+  assign(local(var->varName()), value);
 }
 
 
-void Compiler::assign(std::string const &destVar, std::string const &srcVar) {
-  assign(local(destVar), local(srcVar));
+void Compiler::assign(values::Var const &destVar, values::Var const &srcVar) {
+  assign(local(destVar->varName()), local(srcVar->varName()));
 }
 
 void Compiler::writeOut(values::Value const &value) {
@@ -448,8 +455,8 @@ void Compiler::writeOut(values::Value const &value) {
   writeOut(tmp);
 }
 
-void Compiler::writeOut(std::string const &var) {
-  writeOut(local(var));
+void Compiler::writeOut(values::Var const &var) {
+  writeOut(local(var->varName()));
 }
 
 void Compiler::writeOut(Slot const &slot) {

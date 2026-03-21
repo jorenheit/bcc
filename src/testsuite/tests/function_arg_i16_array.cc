@@ -18,7 +18,7 @@ c.begin(); {
       c.assign(x1, values::value(ts.i16(), CAT('C', 'D')));
 
       c.writeOut("x");
-      c.callFunction("foo", "after_foo", {
+      c.callFunction("foo", "after_foo", values::List{
 	  values::var("x")
 	});
     } c.endBlock();

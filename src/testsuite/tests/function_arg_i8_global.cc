@@ -12,7 +12,7 @@ c.begin(); {
       
     c.beginBlock("entry"); {
       c.assign("g", values::value(ts.i8(), 'G'));
-      c.callFunction("foo", "after_foo", {
+      c.callFunction("foo", "after_foo", values::List{
 	  values::var("g")
 	});
     } c.endBlock();

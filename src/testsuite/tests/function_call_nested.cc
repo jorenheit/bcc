@@ -19,7 +19,7 @@ c.begin(); {
 
   c.beginFunction("foo", ts.voidT(), "x", ts.i8()); {
     c.beginBlock("entry"); {
-      c.callFunction("bar", "after_bar", {
+      c.callFunction("bar", "after_bar", values::List{
 	  values::var("x")
 	});
     } c.endBlock();

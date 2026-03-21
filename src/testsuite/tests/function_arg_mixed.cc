@@ -23,7 +23,7 @@ c.begin(); {
       c.assign(arr1, values::value(ts.i8(), 'E'));
       c.assign(arr2, values::value(ts.i8(), 'F'));
 
-      c.callFunction("foo", "after_foo", {
+      c.callFunction("foo", "after_foo", values::List{
 	  values::var("a"),
 	  values::var("b"),
 	  values::var("arr")

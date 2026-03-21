@@ -58,30 +58,29 @@ class Compiler {
   void endBlock();
   void setNextBlock(int index);
   void setNextBlock(std::string f, std::string b = "");
+  void abortProgram();
+  void referGlobals(std::vector<std::string> const &names);
+
+
+  void callFunction(std::string const& functionName, std::string const& nextBlockName,
+		    std::vector<values::Value> const &args, values::Var const &returnVar = {});
+  void callFunction(std::string const& functionName, std::string const& nextBlockName,
+		    values::Var const &returnVar = {});
 
   void returnFromFunction();
-  void returnFromFunction(std::string const &var);
+  void returnFromFunction(values::Var const &var);
   void returnFromFunction(Slot const &slot);
   void returnFromFunction(values::Value const &value);
   
-  void abortProgram();
-  void referGlobals(std::vector<std::string> const &names);
-  void callFunction(std::string const& functionName, std::string const& nextBlockName,
-		    std::vector<values::Value> const &args,
-		    std::string const &returnVar = "");
-  
-  inline void callFunction(std::string const& functionName, std::string const& nextBlockName, std::string const &returnVar = "") {
-    callFunction(functionName, nextBlockName, {}, returnVar);
-  }
-
+		      
   void assign(Slot const &dest, Slot const &src);
-  void assign(Slot const &slot, std::string const &var);
+  void assign(Slot const &slot, values::Var const &var);
   void assign(Slot const &slot, values::Value const &value);
-  void assign(std::string const &var, Slot const &src);
-  void assign(std::string const &var, values::Value const &value);
-  void assign(std::string const &destVar, std::string const &srcVar);
+  void assign(values::Var const &var, Slot const &src);
+  void assign(values::Var const &var, values::Value const &value);
+  void assign(values::Var const &destVar, values::Var const &srcVar);
     
-  void writeOut(std::string const &var); 
+  void writeOut(values::Var const &var); 
   void writeOut(Slot const &slot);
   void writeOut(values::Value const &val);
 

@@ -23,7 +23,7 @@ c.begin(); {
       c.assign(x3, values::value(ts.i8(), 'D'));
 
       c.writeOut("x");
-      c.callFunction("foo", "after_foo", {
+      c.callFunction("foo", "after_foo", values::List{
 	  values::var("x")
 	});
     } c.endBlock();
