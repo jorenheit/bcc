@@ -553,8 +553,12 @@ static std::vector<bftest::TestCase> buildTests() {
 			       "ABXCDA", []() {
 #include "tests/shadowing_local_variables.cc"
 			       }));
-  
 
+  tests.push_back(expectOutput("WriteOut Temp",
+			       "A", []() {
+#include "tests/writeout_with_temporary_cell.cc"
+			       }));
+  
   
   return tests;
 }

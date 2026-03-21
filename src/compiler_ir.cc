@@ -82,15 +82,7 @@ void Compiler::endScope() {
   assert(_currentFunction != nullptr);
   assert(_currentScope != nullptr);
   
-  for (auto &slot: _currentFunction->frame.locals) {
-    if (slot.scope == _currentScope) {
-      slot.name = "";
-      slot.type = _ts.raw(slot.type->size());
-      slot.kind = Slot::Available;
-      slot.scope = nullptr;
-    }
-  }
-  
+  freeScope(_currentScope);
   _currentScope = _currentScope->parent;
 }
 
@@ -174,8 +166,7 @@ void Compiler::setNextBlock(std::string f, std::string b) {
 }
 
 
-Slot &Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
-  // TODO: very similar to declareLocal, could probably be refactored nicely
+Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
   assert(_currentFunction == nullptr);
   assert(!_program.globals.contains(name));
 
@@ -194,7 +185,7 @@ Slot &Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
 }
 
 
-Slot &Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
+Slot Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
   assert(_currentFunction != nullptr);
 
   // Check if name is available in this scope
@@ -207,54 +198,11 @@ Slot &Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
     }
   }
   assert(available && "variable with same name declared in this scope");
-
-  // Now check if there is an existing slot that fits this type
-  for (auto &slot: frame.locals) {
-    if (slot.kind == Slot::Available && slot.type->size() >= type->size()) {
-      int const diff = slot.type->size() - type->size();
-
-      std::cerr << "Reusing slot\n";
-      // Reuse this slot
-      slot.name = name;
-      slot.type = type;
-      slot.kind = Slot::Local;
-      slot.scope = _currentScope;
-
-      // Split the slot if there is still room
-      auto const dummyName = []() {
-	static int counter = 0; return std::string("__dummy_") + std::to_string(counter++);
-      };
-      
-      if (diff > 0) {
-	Slot second {
-	  .name = dummyName(),
-	  .type = _ts.raw(diff),
-	  .kind = Slot::Available,
-	  .offset = slot.offset + type->size(),
-	  .scope = nullptr
-	};
-
-	frame.locals.emplace_back(std::move(second));
-	return frame.locals.back();
-      }
-    }
-  }
-
-  // If we arrive here, no existing slot was available -> create a new one at the end of the frame
-  Slot newSlot {
-    .name = name,
-    .type = type,
-    .kind = Slot::Local,
-    .offset = frame.localBase() + frame.localAreaSize(),
-    .scope = _currentScope
-  };
-  
-  frame.locals.emplace_back(std::move(newSlot));
-  return frame.locals.back();
+  return allocSlot(name, type, Slot::Local);
 }
 
 
-Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
+Slot Compiler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.kind == Slot::Global);
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr && _currentBlock->name.starts_with("__prologue_"));
@@ -290,7 +238,7 @@ void Compiler::referGlobals(std::vector<std::string> const &names) {
   } endBlock();
 }
     
-Slot &Compiler::local(std::string const& varName, bool globalReference) {
+Slot Compiler::local(std::string const& varName, bool globalReference) {
   assert(_currentFunction != nullptr);
 
   Function::Scope *targetScope = _currentScope;
@@ -313,7 +261,7 @@ Slot &Compiler::local(std::string const& varName, bool globalReference) {
   std::unreachable();
 }
 
-Slot &Compiler::global(std::string const& name) {
+Slot Compiler::global(std::string const& name) {
   assert(false && "I don't think this should be used.");
   assert(_currentFunction != nullptr);
   auto &globals = _program.globals;
@@ -496,10 +444,8 @@ void Compiler::assign(std::string const &destVar, std::string const &srcVar) {
 void Compiler::writeOut(values::Value const &value) {
   if (value->type(_ts) == types::null) return writeOut(value->varName());
 
-  assert(false && "writeOut not implemented for temporaries");
-  // Slot const tmp = getTemp(value.type(_ts));
-  // assign(tmp, value);
-  // writeOut(tmp);
+  Slot const tmp = getTemp(value);
+  writeOut(tmp);
 }
 
 void Compiler::writeOut(std::string const &var) {

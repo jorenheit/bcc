@@ -11,7 +11,8 @@ struct Slot {
     GlobalReference,
     ArrayElement,
     Dummy,
-    Available
+    Available,
+    Temp
   };
 
   std::string name;  

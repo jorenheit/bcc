@@ -1,5 +1,6 @@
 #pragma once
 #include <stack>
+#include <optional>
 #include "program.h"
 #include "function.h"
 #include "data.h"
@@ -88,11 +89,11 @@ class Compiler {
   Slot arrayElementConst(std::string const &name, int index);
   Slot arrayElementConst(Slot const &slot, int index);
 
-  Slot &declareLocal(std::string const &name, types::TypeHandle type);
-  Slot &declareGlobal(std::string const &name, types::TypeHandle type);
-  Slot &declareGlobalReference(Slot const &globalSlot);
-  Slot &local(std::string const& name, bool globalReference = false);
-  Slot &global(std::string const& name);
+  Slot declareLocal(std::string const &name, types::TypeHandle type);
+  Slot declareGlobal(std::string const &name, types::TypeHandle type);
+  Slot declareGlobalReference(Slot const &globalSlot);
+  Slot local(std::string const& name, bool globalReference = false);
+  Slot global(std::string const& name);
 
   
   template <typename ... Args>
@@ -140,9 +141,14 @@ private:
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
 
-  // Temporaries
+  // Temporaries and memory management
+  void freeSlot(Slot &slot);
+  void freeTemps();
+  void freeScope(Function::Scope const *scope);
+  Slot allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind);
   Slot getTemp(types::TypeHandle type);
   Slot getTemp(values::Value const &val);
+  
 	       
   // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
