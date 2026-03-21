@@ -554,9 +554,19 @@ static std::vector<bftest::TestCase> buildTests() {
 #include "tests/shadowing_local_variables.cc"
 			       }));
 
-  tests.push_back(expectOutput("WriteOut Temp",
+  tests.push_back(expectOutput("WriteOut Temp i8",
 			       "A", []() {
 #include "tests/writeout_with_temporary_cell.cc"
+			       }));
+
+  tests.push_back(expectOutput("WriteOut Temp i16",
+			       "AB", []() {
+#include "tests/writeout_with_temporary_cell_i16.cc"
+			       }));
+
+  tests.push_back(expectOutput("WriteOut Temp Array",
+			       "ABCD", []() {
+#include "tests/writeout_with_temporary_array.cc"
 			       }));
   
   

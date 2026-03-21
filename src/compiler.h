@@ -141,7 +141,7 @@ private:
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
 
-  // Temporaries and memory management
+  // Temporaries and memory management (compiler_memory.cc)
   void freeSlot(Slot &slot);
   void freeTemps();
   void freeScope(Function::Scope const *scope);
@@ -149,7 +149,6 @@ private:
   Slot getTemp(types::TypeHandle type);
   Slot getTemp(values::Value const &val);
   
-	       
   // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
   void putGlobal(Slot const &globalSlot, Slot const &localSlot);
