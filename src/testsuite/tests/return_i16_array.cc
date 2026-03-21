@@ -31,10 +31,10 @@ c.begin(); {
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assign(x0, values::constant(ts.i16(), CAT('A','B')));
-      c.assign(x1, values::constant(ts.i16(), CAT('C','D')));
-      c.assign(x2, values::constant(ts.i16(), CAT('E','F')));
-      c.assign(x3, values::constant(ts.i16(), CAT('G','H')));
+      c.assign(x0, values::value(ts.i16(), CAT('A','B')));
+      c.assign(x1, values::value(ts.i16(), CAT('C','D')));
+      c.assign(x2, values::value(ts.i16(), CAT('E','F')));
+      c.assign(x3, values::value(ts.i16(), CAT('G','H')));
 
       c.returnFromFunction("x");
     } c.endBlock();

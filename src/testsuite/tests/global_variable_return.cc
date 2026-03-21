@@ -29,7 +29,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
     c.referGlobals({"g"});
     c.beginBlock("entry"); {
-      c.assign("g", values::constant(ts.i8(), 'G'));
+      c.assign("g", values::value(ts.i8(), 'G'));
       c.returnFromFunction("g");
     } c.endBlock();
   } c.endFunction();

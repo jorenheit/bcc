@@ -12,7 +12,8 @@ class Compiler {
   Program _program;
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
-  primitive::Sequence* _currentSeq = nullptr;
+  Function::Scope* _currentScope = nullptr;
+  primitive::Sequence* _currentSeq = nullptr;  
   bool _nextBlockIsSet = false;
 
   types::TypeSystem _ts;
@@ -50,6 +51,8 @@ class Compiler {
   void end();
   void beginFunction(std::string const &name, FunctionSignature const &sig);
   void endFunction();
+  void beginScope();
+  void endScope();
   void beginBlock(std::string name);
   void endBlock();
   void setNextBlock(int index);
@@ -77,16 +80,18 @@ class Compiler {
   void assign(std::string const &var, values::Value const &value);
   void assign(std::string const &destVar, std::string const &srcVar);
     
-
   void writeOut(std::string const &var); 
   void writeOut(Slot const &slot);
+  void writeOut(values::Value const &val);
+
+  // TODO: make generic arrayElement that is overloaded to take int, values::Value, Slot, string
   Slot arrayElementConst(std::string const &name, int index);
   Slot arrayElementConst(Slot const &slot, int index);
 
   Slot &declareLocal(std::string const &name, types::TypeHandle type);
   Slot &declareGlobal(std::string const &name, types::TypeHandle type);
   Slot &declareGlobalReference(Slot const &globalSlot);
-  Slot &local(std::string const& name);
+  Slot &local(std::string const& name, bool globalReference = false);
   Slot &global(std::string const& name);
 
   
@@ -105,7 +110,7 @@ class Compiler {
     beginFunction(name, _ts.voidT());
   }
   
-private:
+private:  
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(int frameOffset);  
   void moveTo(int frameOffset, MacroCell::Field field);
@@ -135,13 +140,17 @@ private:
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
 
+  // Temporaries
+  Slot getTemp(types::TypeHandle type);
+  Slot getTemp(values::Value const &val);
+	       
   // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
   void putGlobal(Slot const &globalSlot, Slot const &localSlot);
 
   template <auto FetchOrPut>
   void syncGlobal(Slot const &localSlot) {
-    assert(localSlot.storageType == Slot::GlobalReference);
+    assert(localSlot.kind == Slot::GlobalReference);
     
     std::string globalName = localSlot.name.substr(std::string("__g_").size());
     assert(_program.globals.contains(globalName));
@@ -155,8 +164,8 @@ private:
   template <auto FetchOrPut>
   void syncGlobals() {
     auto const &locals = _currentFunction->frame.locals;
-    for (auto const &[localName, localSlot]: locals) {
-      if (localSlot.storageType != Slot::GlobalReference) continue;
+    for (auto const &localSlot: locals) {
+      if (localSlot.kind != Slot::GlobalReference) continue;
       syncGlobal<FetchOrPut>(localSlot);
     }  
   }

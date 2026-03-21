@@ -26,7 +26,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
 
     c.beginBlock("entry"); {
-      c.returnFromFunction(values::constant(ts.i8(), 'X'));
+      c.returnFromFunction(values::value(ts.i8(), 'X'));
     } c.endBlock();
 
   } c.endFunction();

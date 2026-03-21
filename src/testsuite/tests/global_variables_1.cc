@@ -13,7 +13,7 @@ c.begin(); {
     c.referGlobals({"g"});
 
     c.beginBlock("entry"); {
-      c.assign("g", values::constant(ts.i8(), 'A'));
+      c.assign("g", values::value(ts.i8(), 'A'));
       c.callFunction("foo", "after");
     } c.endBlock();
 
@@ -28,7 +28,7 @@ c.begin(); {
 
     c.beginBlock("entry"); {
       c.writeOut("g");          // should print 'A'
-      c.assign("g", values::constant(ts.i8(), 'F'));  // modify global shadow
+      c.assign("g", values::value(ts.i8(), 'F'));  // modify global shadow
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();

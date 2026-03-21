@@ -10,7 +10,7 @@ c.begin(); {
 
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", {
-	  values::constant(ts.i8(), 'Z')
+	  values::value(ts.i8(), 'Z')
 	}, "r");
     } c.endBlock();
 

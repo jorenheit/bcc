@@ -11,9 +11,9 @@ c.begin(); {
   c.beginFunction("main"); {
     c.declareLocal("x", ts.i8());
     c.beginBlock("entry"); {
-      c.assign("x", values::constant(ts.i8(), 'B'));
+      c.assign("x", values::value(ts.i8(), 'B'));
       c.callFunction("foo", "after_foo", {
-	  values::constant(array2, 'A', "x")
+	  values::value(array2, 'A', "x")
 	});
     } c.endBlock();
 

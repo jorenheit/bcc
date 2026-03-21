@@ -10,7 +10,7 @@ c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", {
-	  values::constant(array4, 'A', 'B', 'C', 'D')
+	  values::value(array4, 'A', 'B', 'C', 'D')
 	});
     } c.endBlock();
 

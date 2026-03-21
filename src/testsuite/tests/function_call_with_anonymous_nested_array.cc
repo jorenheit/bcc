@@ -11,10 +11,10 @@ using namespace types;
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      auto ab = values::constant(array2, 'A', 'B');
-      auto cd = values::constant(array2, 'C', 'D');
+      auto ab = values::value(array2, 'A', 'B');
+      auto cd = values::value(array2, 'C', 'D');
       c.callFunction("foo", "after_foo", {
-	  values::constant(array22, ab, cd)
+	  values::value(array22, ab, cd)
 	});
     } c.endBlock();
 

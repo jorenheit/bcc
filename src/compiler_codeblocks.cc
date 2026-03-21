@@ -104,7 +104,7 @@ void Compiler::constructMetaBlocks() {
 	
 	fetchReturnData(returnSlot);
 	// If we just wrote to a global, immediately sync this
-	if (returnSlot.storageType == Slot::GlobalReference) {
+	if (returnSlot.kind == Slot::GlobalReference) {
 	  syncGlobal<&Compiler::putGlobal>(returnSlot);
 	}
       }

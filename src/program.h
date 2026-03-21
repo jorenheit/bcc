@@ -30,6 +30,7 @@ struct Program {
 	.frame = FrameLayout{sig.returnType->size()},
 	.sig = std::move(sig)
       });
+    functions.back().createScope(nullptr);
     return functions.back();
   }
 

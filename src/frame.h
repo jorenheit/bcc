@@ -21,13 +21,14 @@ struct FrameLayout { // TODO: rename to Frame
   };
 
   int returnValueSize = 1;
-  std::unordered_map<std::string, Slot> locals;
+  //  std::unordered_map<std::string, Slot> locals;
+  std::vector<Slot> locals;
 
   FrameLayout(int retSize): returnValueSize(retSize) {}
   
   inline int localAreaSize() const {
     int result = 0;
-    for (auto const &[_, slot]: locals) result += slot.size();
+    for (auto const &slot: locals) result += slot.size();
     return result;
   }
 

@@ -8,9 +8,9 @@ c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", {
-	  values::constant(ts.i8(), 'A'),
-	  values::constant(ts.i8(), 'B'),
-	  values::constant(ts.i8(), 'C')
+	  values::value(ts.i8(), 'A'),
+	  values::value(ts.i8(), 'B'),
+	  values::value(ts.i8(), 'C')
 	});
     } c.endBlock();
 

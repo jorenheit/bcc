@@ -5,48 +5,49 @@ int main() {
   Compiler c;
   auto &ts = c.typeSystem();
 
-  types::TypeHandle array2 = ts.array(ts.i8(), 2);
-  types::TypeHandle array22 = ts.array(array2, 2);
   
   c.setEntryPoint("main");
 
   using namespace types;
   c.begin(); {
     c.beginFunction("main"); {
-      c.declareLocal("B1", ts.i8());
-      c.declareLocal("B2", ts.i8());
-      c.declareLocal("E", ts.i8());
+      c.declareLocal("x", ts.i8());
 
       c.beginBlock("entry"); {
-	auto B = values::constant(ts.i8(), 'B');
-	auto C = values::constant(ts.i8(), 'C');
-	c.assign("B1", B);
-	c.assign("B2", "B1");
-	auto arr0 = values::constant(array2, 'A', "B2");
-	auto arr1 = values::constant(array2, C, 'D');
-	auto arrarr = values::constant(array22, arr0, arr1);
-	
-	c.callFunction("foo", "after_foo", { arrarr }, "E");
+	c.assign("x", values::value(ts.i8(), 'A'));
+	c.writeOut("x");
+	c.setNextBlock("main", "next");
       } c.endBlock();
 
-      c.beginBlock("after_foo"); {
-	c.writeOut("E");
+      c.beginScope(); {
+	c.declareLocal("x", ts.array(ts.i8(), 2));
+	c.beginBlock("next"); {
+	  c.assign("x", values::value(ts.array(ts.i8(), 2), 'B', 'X'));
+	  c.writeOut("x");
+	  c.setNextBlock("main", "next2");
+	} c.endBlock();
+	
+	c.beginScope(); {
+	  c.declareLocal("x", ts.i8());
+	  c.declareLocal("y", ts.i8());	
+	  c.beginBlock("next2"); {
+	    c.assign("x", values::value(ts.i8(), 'C'));
+	    c.assign("y", values::value(ts.i8(), 'D'));
+	    c.writeOut("x");
+	    c.writeOut("y");	  
+	    c.setNextBlock("main", "last");
+	  } c.endBlock();
+	} c.endScope();
+	
+      } c.endScope();
+
+      c.beginBlock("last"); {
+	c.writeOut("x");
 	c.returnFromFunction();
       } c.endBlock();
-    } c.endFunction();
 
-    c.beginFunction("foo", ts.i8(), "arr", array22); {
-      c.declareLocal("E", ts.i8());
-      c.beginBlock("entry"); {
-	c.writeOut("arr");
-	auto E = values::constant(ts.i8(), 'E');
-	c.assign("E", E);
-	
-	c.returnFromFunction("E");
-      } c.endBlock();
     } c.endFunction();
   } c.end();
 
   std::cout << c.dumpBrainfuck() << '\n';
-
 }

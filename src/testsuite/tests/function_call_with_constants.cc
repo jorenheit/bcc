@@ -10,13 +10,13 @@ c.begin(); {
     c.declareLocal("b", ts.i8());
 
     c.beginBlock("entry"); {
-      c.assign("a", values::constant(ts.i8(), 'Z'));
-      c.assign("b", values::constant(ts.i8(), 'Y'));
+      c.assign("a", values::value(ts.i8(), 'Z'));
+      c.assign("b", values::value(ts.i8(), 'Y'));
 
       c.callFunction("foo", "after_foo", {
-	  values::constant(ts.i8(), 'A'),
+	  values::value(ts.i8(), 'A'),
 	  values::var("a"),
-	  values::constant(ts.i8(), 'B'),
+	  values::value(ts.i8(), 'B'),
 	  values::var("b")
 	});
     } c.endBlock();

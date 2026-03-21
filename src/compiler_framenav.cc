@@ -69,8 +69,7 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
       else if (types::isArray(argType)) {
 	// recursive call for each element
 	for (int i = 0; i != argType->length(); ++i) {
-	  auto const *elem = arg->element(i);
-	  self(self, offset, elem);
+	  self(self, offset, arg->element(i));
 	}
       }
       else {

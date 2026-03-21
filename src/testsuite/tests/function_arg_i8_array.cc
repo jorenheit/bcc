@@ -17,10 +17,10 @@ c.begin(); {
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assign(x0, values::constant(ts.i8(), 'A'));
-      c.assign(x1, values::constant(ts.i8(), 'B'));
-      c.assign(x2, values::constant(ts.i8(), 'C'));
-      c.assign(x3, values::constant(ts.i8(), 'D'));
+      c.assign(x0, values::value(ts.i8(), 'A'));
+      c.assign(x1, values::value(ts.i8(), 'B'));
+      c.assign(x2, values::value(ts.i8(), 'C'));
+      c.assign(x3, values::value(ts.i8(), 'D'));
 
       c.writeOut("x");
       c.callFunction("foo", "after_foo", {

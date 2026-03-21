@@ -52,7 +52,11 @@ void Compiler::end() {
 
 
 void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig) {
-  _currentFunction = &_program.createFunction(name, sig);
+  assert(_currentFunction == nullptr);
+  assert(_currentScope == nullptr);
+  assert(_currentBlock == nullptr);
+  
+  _currentFunction = &_program.createFunction(name, sig);  
   for (FunctionParam const &p: sig.params) {
     declareLocal(p.name, p.type);
   }
@@ -62,8 +66,34 @@ void Compiler::beginFunction(std::string const &name, FunctionSignature const &s
 void Compiler::endFunction() {
   assert(_currentFunction != nullptr);
   assert(_currentBlock == nullptr);
+  assert(_currentScope == nullptr);
+  
   _currentFunction = nullptr;
 }
+
+void Compiler::beginScope() {
+  assert(_currentFunction != nullptr);
+  assert(_currentBlock == nullptr);
+  
+  _currentScope = &_currentFunction->createScope(_currentScope);
+}
+
+void Compiler::endScope() {
+  assert(_currentFunction != nullptr);
+  assert(_currentScope != nullptr);
+  
+  for (auto &slot: _currentFunction->frame.locals) {
+    if (slot.scope == _currentScope) {
+      slot.name = "";
+      slot.type = _ts.raw(slot.type->size());
+      slot.kind = Slot::Available;
+      slot.scope = nullptr;
+    }
+  }
+  
+  _currentScope = _currentScope->parent;
+}
+
 
 void Compiler::beginBlock(std::string name) {
   assert(_currentFunction != nullptr);
@@ -89,7 +119,7 @@ void Compiler::endBlock() {
   assert(_currentBlock != nullptr);
   assert(_dp.isStatic());
   assert(_nextBlockIsSet);
-      
+
   blockClose();
   _currentBlock = nullptr;
 }
@@ -153,8 +183,9 @@ Slot &Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
   Slot slot {
     .name = name,
     .type = type,
-    .storageType = Slot::Global,
-    .offset = offset
+    .kind = Slot::Global,
+    .offset = offset,
+    .scope = nullptr
   };
 
   auto [it, success] = _program.globals.emplace(name, std::move(slot));
@@ -165,25 +196,66 @@ Slot &Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
 
 Slot &Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
   assert(_currentFunction != nullptr);
-  assert(!_currentFunction->frame.locals.contains(name));
 
-  FrameLayout &frame = _currentFunction->frame;
-  int const offset = frame.localBase() + frame.localAreaSize();
-  Slot slot {
+  // Check if name is available in this scope
+  auto &frame = _currentFunction->frame;
+  bool available = true;
+  for (auto const &slot: frame.locals) {
+    if (slot.name == name && slot.scope == _currentScope) {
+      available = false;
+      break;
+    }
+  }
+  assert(available && "variable with same name declared in this scope");
+
+  // Now check if there is an existing slot that fits this type
+  for (auto &slot: frame.locals) {
+    if (slot.kind == Slot::Available && slot.type->size() >= type->size()) {
+      int const diff = slot.type->size() - type->size();
+
+      std::cerr << "Reusing slot\n";
+      // Reuse this slot
+      slot.name = name;
+      slot.type = type;
+      slot.kind = Slot::Local;
+      slot.scope = _currentScope;
+
+      // Split the slot if there is still room
+      auto const dummyName = []() {
+	static int counter = 0; return std::string("__dummy_") + std::to_string(counter++);
+      };
+      
+      if (diff > 0) {
+	Slot second {
+	  .name = dummyName(),
+	  .type = _ts.raw(diff),
+	  .kind = Slot::Available,
+	  .offset = slot.offset + type->size(),
+	  .scope = nullptr
+	};
+
+	frame.locals.emplace_back(std::move(second));
+	return frame.locals.back();
+      }
+    }
+  }
+
+  // If we arrive here, no existing slot was available -> create a new one at the end of the frame
+  Slot newSlot {
     .name = name,
     .type = type,
-    .storageType = Slot::Local,
-    .offset = offset
+    .kind = Slot::Local,
+    .offset = frame.localBase() + frame.localAreaSize(),
+    .scope = _currentScope
   };
-
-  auto [it, success] = frame.locals.emplace(name, std::move(slot));
-  assert(success);
-  return it->second;
+  
+  frame.locals.emplace_back(std::move(newSlot));
+  return frame.locals.back();
 }
 
 
 Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
-  assert(globalSlot.storageType == Slot::Global);
+  assert(globalSlot.kind == Slot::Global);
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr && _currentBlock->name.starts_with("__prologue_"));
   
@@ -192,13 +264,12 @@ Slot &Compiler::declareGlobalReference(Slot const &globalSlot) {
   Slot slot {
     .name = std::string("__g_") + globalSlot.name,
     .type = globalSlot.type,
-    .storageType = Slot::GlobalReference,
-    .offset = offset
+    .kind = Slot::GlobalReference,
+    .offset = offset,
+    .scope = _currentScope
   };
-
-  auto [it, success] = frame.locals.emplace(slot.name, std::move(slot));
-  assert(success);
-  return it->second;
+  frame.locals.emplace_back(std::move(slot));
+  return frame.locals.back();
 }
 
 
@@ -219,15 +290,27 @@ void Compiler::referGlobals(std::vector<std::string> const &names) {
   } endBlock();
 }
     
-Slot &Compiler::local(std::string const& name) {
+Slot &Compiler::local(std::string const& varName, bool globalReference) {
   assert(_currentFunction != nullptr);
-  auto &locals = _currentFunction->frame.locals;
-  auto it = locals.find(name);
-  if (it == locals.end()) {
-    it = locals.find(std::string("__g_") + name);
+
+  Function::Scope *targetScope = _currentScope;
+  while (true) {
+    for (auto &slot: _currentFunction->frame.locals) {
+      if (slot.name == varName && slot.scope == targetScope) {
+	return slot;
+      }
+    }
+    if (targetScope == nullptr) break;
+    targetScope = targetScope->parent;
   }
-  assert(it != locals.end());
-  return it->second;
+
+  if (not globalReference) {
+    std::string const globalReferenceName = std::string("__g_") + varName;
+    return local(globalReferenceName, true);
+  }
+
+  assert(false && "variable not in scope");
+  std::unreachable();
 }
 
 Slot &Compiler::global(std::string const& name) {
@@ -252,7 +335,7 @@ Slot Compiler::arrayElementConst(Slot const &slot, int index) {
   return Slot {
     .name = std::string("__elem_") + slot.name + "_" + std::to_string(index),
     .type = slot.type->elementType(),
-    .storageType = Slot::ArrayElement,
+    .kind = Slot::ArrayElement,
     .offset = slot.offset + (index * slot.type->elementType()->size())
   };
 }
@@ -315,8 +398,9 @@ void Compiler::returnFromFunction(Slot const &slot) {
   Slot returnSlot = {
     .name = "__return_slot",
     .type = slot.type,
-    .storageType = Slot::Dummy,
-    .offset = FrameLayout::ReturnValueStart
+    .kind = Slot::Dummy,
+    .offset = FrameLayout::ReturnValueStart,
+    .scope = nullptr
   };
 
   assign(returnSlot, slot);
@@ -330,8 +414,9 @@ void Compiler::returnFromFunction(values::Value const &value) {
   Slot returnSlot = {
     .name = "__return_slot",
     .type = value->type(_ts),
-    .storageType = Slot::Dummy,
-    .offset = FrameLayout::ReturnValueStart
+    .kind = Slot::Dummy,
+    .offset = FrameLayout::ReturnValueStart,
+    .scope = nullptr
   };
 
   assign(returnSlot, value);
@@ -372,7 +457,7 @@ void Compiler::assign(Slot const &slot, values::Value const &value) {
   // Constant -> construct in slot
   assert(slot.type == value->type(_ts));
   
-  auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Base const *val) -> void {
+  auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Value const &val) -> void {
     if (types::isInteger(slot.type)) {
       int const x = val->value();
       moveTo(slot, MacroCell::Value0);
@@ -392,7 +477,7 @@ void Compiler::assign(Slot const &slot, values::Value const &value) {
     }
   };
 
-  constructInSlot(constructInSlot, slot, value.get());
+  constructInSlot(constructInSlot, slot, value);
 }
 
 void Compiler::assign(Slot const &slot, std::string const &var) {
@@ -408,26 +493,14 @@ void Compiler::assign(std::string const &destVar, std::string const &srcVar) {
   assign(local(destVar), local(srcVar));
 }
 
-// void Compiler::assignConst(std::string const &var, int value) {
-//   Slot const &slot = local(var);
-//   assert(types::isInteger(slot.type));
+void Compiler::writeOut(values::Value const &value) {
+  if (value->type(_ts) == types::null) return writeOut(value->varName());
 
-//   moveTo(slot, MacroCell::Value0);
-//   setToValue(value & 0xff);
-//   if (slot.type->usesValue1()) {
-//     moveTo(slot, MacroCell::Value1);
-//     setToValue( (value >> 8) & 0xff);
-//   }
-// }
-
-// void Compiler::assignConst(int offset, int value) {
-//   int const low = value & 0xff;
-//   int const high = (value >> 8) & 0xff;
-//   moveTo(offset, MacroCell::Value0);
-//   setToValue(low);
-//   moveTo(offset, MacroCell::Value1);
-//   setToValue(high);
-// }
+  assert(false && "writeOut not implemented for temporaries");
+  // Slot const tmp = getTemp(value.type(_ts));
+  // assign(tmp, value);
+  // writeOut(tmp);
+}
 
 void Compiler::writeOut(std::string const &var) {
   writeOut(local(var));

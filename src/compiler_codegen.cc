@@ -47,7 +47,7 @@ primitive::Context Compiler::constructContext() const {
 
 primitive::Sequence Compiler::compilePrimitives() const {
   // TODO: assert that the program has been fully specified
-  
+
   primitive::Sequence result = _program.bootstrap;
   for (auto const &fn: _program.functions) {
     for (auto const &block:  fn.blocks) {

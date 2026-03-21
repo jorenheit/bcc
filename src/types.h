@@ -11,7 +11,7 @@
 namespace types {
 
   enum TypeTag {
-    VOID, I8, I16, ARRAY, STRUCT, POINTER
+    VOID, RAW, I8, I16, ARRAY, STRUCT, POINTER
   };
   
   struct Type {
@@ -24,7 +24,14 @@ namespace types {
   };
 
   using TypeHandle = Type const *;
+  static constexpr TypeHandle null = nullptr;
 
+  struct RawType: Type {
+    int const _size;
+    RawType(int n): _size(n) {}
+    virtual TypeTag tag() const { return RAW; }
+    virtual int size() const { return _size; }
+  };
   
   struct VoidType: Type {
     virtual TypeTag tag() const override { return VOID; }
@@ -33,7 +40,7 @@ namespace types {
   };
 
   struct IntegerType : Type {
-    int bits;
+    int const bits;
     IntegerType(int bits_): bits(bits_) {}
     virtual TypeTag tag() const override { return bits > 8 ? I16 : I8; }
     virtual bool usesValue1() const override { return bits > 8; }
@@ -60,6 +67,7 @@ namespace types {
     std::unique_ptr<IntegerType> _i8;
     std::unique_ptr<IntegerType> _i16;
 
+    mutable std::vector<std::unique_ptr<RawType>> _rawTypes;    
     mutable std::vector<std::unique_ptr<ArrayType>> _arrayTypes;
     
   public:
@@ -76,12 +84,21 @@ namespace types {
     inline TypeHandle voidT() const { return _void.get(); }
     inline TypeHandle i8() const    { return _i8.get(); }
     inline TypeHandle i16() const   { return _i16.get(); }
+
     inline TypeHandle array(TypeHandle elem, int length) const {
       for (auto const &ptr: _arrayTypes) {
 	if (ptr->elementType() == elem && ptr->length() == length) return ptr.get();
       }
       _arrayTypes.emplace_back(std::make_unique<ArrayType>(elem, length));
       return _arrayTypes.back().get();
+    }
+    
+    inline TypeHandle raw(int n) const {
+      for (auto const &ptr: _rawTypes) {
+	if (ptr->size() == n) return ptr.get();
+      }
+      _rawTypes.emplace_back(std::make_unique<RawType>(n));
+      return _rawTypes.back().get();
     }
   };  
   
@@ -93,10 +110,10 @@ namespace values {
   struct Base {
     virtual ~Base() = default;
     virtual types::TypeHandle type(types::TypeSystem const &) const = 0;
-    virtual std::unique_ptr<Base> clone() const = 0;
+    virtual std::shared_ptr<Base> clone() const = 0;
     virtual int value() const { assert(false); return 0; }
     virtual std::string varName() const { assert(false); return ""; }
-    virtual Base const *element(size_t idx) const { assert(false); return nullptr; }
+    virtual std::shared_ptr<Base> element(size_t idx) const { assert(false); return nullptr; }
   };
 
   struct Var: Base {
@@ -107,12 +124,7 @@ namespace values {
     Var(...) { assert(false); }
     virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return nullptr; }
     virtual std::string varName() const { return _varName; }
-    std::unique_ptr<Base> clone() const override { return std::make_unique<Var>(*this); }      
-  };
-
-  struct voidT: Base {
-    // virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.voidT(); }
-    // std::unique_ptr<Base> clone() const override { return std::make_unique<voidT>(*this); }
+    std::shared_ptr<Base> clone() const override { return std::make_shared<Var>(*this); }      
   };
 
   struct i8: Base {
@@ -122,7 +134,7 @@ namespace values {
     i8(...): _value(0) { assert(false); }      
     virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.i8(); }
     virtual int value() const override { return _value; }
-    std::unique_ptr<Base> clone() const override { return std::make_unique<i8>(*this); }      
+    std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }      
   };
 
   struct i16: Base {
@@ -132,24 +144,20 @@ namespace values {
     i16(...): _value(0) { assert(false); }      
     virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.i16(); }
     virtual int value() const override { return _value; }
-    std::unique_ptr<Base> clone() const override { return std::make_unique<i16>(*this); }      
+    std::shared_ptr<Base> clone() const override { return std::make_shared<i16>(*this); }      
   };      
 
   struct array: Base {
     types::TypeHandle elementType;
-    std::vector<std::unique_ptr<Base>> arr;
+    std::vector<std::shared_ptr<Base>> arr;
 
     template <typename... Values>
-    array(types::TypeHandle elementType, Values&&... values):
-      elementType(elementType)
-    {
+    array(types::TypeHandle elementType, Values&&... values): elementType(elementType) {
       arr.reserve(sizeof...(Values));
       (arr.emplace_back(make_array_item(std::forward<Values>(values))), ...);
     }
       
-    array(array const &other):
-      elementType(other.elementType)
-    {
+    array(array const &other): elementType(other.elementType) {
       arr.reserve(other.arr.size());
       for (auto const& elem: other.arr) {
 	arr.emplace_back(make_array_item(elem));
@@ -158,27 +166,29 @@ namespace values {
 
     array(...) { assert(false); }      
       
-    virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.array(elementType, arr.size()); }
-    virtual Base const *element(size_t idx) const override {
-      assert(idx < arr.size());
-      return arr[idx].get();
+    virtual types::TypeHandle type(types::TypeSystem const &ts) const override {
+      return ts.array(elementType, arr.size());
     }
-    std::unique_ptr<Base> clone() const override { return std::make_unique<array>(*this); }      
+    virtual std::shared_ptr<Base> element(size_t idx) const override {
+      assert(idx < arr.size());
+      return arr[idx];
+    }
+    
+    std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
 
       
   private:
     template <typename Arg>
-    std::unique_ptr<Base> make_array_item(Arg&& arg) {
-      if constexpr (std::same_as<std::remove_cvref_t<Arg>, std::shared_ptr<Base>> ||
-		    std::same_as<std::remove_cvref_t<Arg>, std::unique_ptr<Base>>) {
+    std::shared_ptr<Base> make_array_item(Arg&& arg) {
+      if constexpr (std::same_as<std::remove_cvref_t<Arg>, std::shared_ptr<Base>>) {
 	return arg->clone();
       } else if constexpr (std::constructible_from<std::string, Arg>) {
-	return std::make_unique<Var>(std::string(std::forward<Arg>(arg)));
+	return std::make_shared<Var>(std::string(std::forward<Arg>(arg)));
       } else {
 	switch (elementType->tag()) {
-	case types::I8: return std::make_unique<i8>(std::forward<Arg>(arg));
-	case types::I16: return std::make_unique<i16>(std::forward<Arg>(arg));
-	case types::ARRAY: return std::make_unique<array>(std::forward<Arg>(arg));
+	case types::I8: return std::make_shared<i8>(std::forward<Arg>(arg));
+	case types::I16: return std::make_shared<i16>(std::forward<Arg>(arg));
+	case types::ARRAY: return std::make_shared<array>(std::forward<Arg>(arg));
 	default: assert(false);
 	}
       }
@@ -188,7 +198,7 @@ namespace values {
   using Value = std::shared_ptr<Base>;
 
   template <typename ... Args> 
-  Value constant(types::TypeHandle type, Args&& ... args) {
+  Value value(types::TypeHandle type, Args&& ... args) {
     switch (type->tag()) {
     case types::I8:    return std::make_shared<i8>(std::forward<Args>(args)...);
     case types::I16:   return std::make_shared<i16>(std::forward<Args>(args)...);
@@ -200,6 +210,5 @@ namespace values {
   inline Value var(std::string const &varName) {
     return std::make_shared<Var>(varName);
   }
-
 } // namespace values
 

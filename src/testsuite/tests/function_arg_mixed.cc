@@ -17,11 +17,11 @@ c.begin(); {
       Slot arr1 = c.arrayElementConst("arr", 1);
       Slot arr2 = c.arrayElementConst("arr", 2);
 
-      c.assign("a", values::constant(ts.i8(), 'A'));
-      c.assign("b", values::constant(ts.i16(), CAT('B', 'C')));
-      c.assign(arr0, values::constant(ts.i8(), 'D'));
-      c.assign(arr1, values::constant(ts.i8(), 'E'));
-      c.assign(arr2, values::constant(ts.i8(), 'F'));
+      c.assign("a", values::value(ts.i8(), 'A'));
+      c.assign("b", values::value(ts.i16(), CAT('B', 'C')));
+      c.assign(arr0, values::value(ts.i8(), 'D'));
+      c.assign(arr1, values::value(ts.i8(), 'E'));
+      c.assign(arr2, values::value(ts.i8(), 'F'));
 
       c.callFunction("foo", "after_foo", {
 	  values::var("a"),

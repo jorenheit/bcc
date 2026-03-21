@@ -5,20 +5,20 @@
 
 struct Slot {
 
-  enum StorageType {
+  enum Kind {
     Local,
     Global,
     GlobalReference,
     ArrayElement,
-    Dummy
-    //    TempUsed,
-    //    TempFree
+    Dummy,
+    Available
   };
 
   std::string name;  
   types::TypeHandle type;
-  StorageType storageType;
+  Kind kind;
   int offset;
+  void const *scope;
 	 
   int size() const { return type->size(); }
   operator int() const { return offset; }

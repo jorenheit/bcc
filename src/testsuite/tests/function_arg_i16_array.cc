@@ -14,8 +14,8 @@ c.begin(); {
       Slot x0 = c.arrayElementConst("x", 0);
       Slot x1 = c.arrayElementConst("x", 1);
 
-      c.assign(x0, values::constant(ts.i16(), CAT('A', 'B')));
-      c.assign(x1, values::constant(ts.i16(), CAT('C', 'D')));
+      c.assign(x0, values::value(ts.i16(), CAT('A', 'B')));
+      c.assign(x1, values::value(ts.i16(), CAT('C', 'D')));
 
       c.writeOut("x");
       c.callFunction("foo", "after_foo", {

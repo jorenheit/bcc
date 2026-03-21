@@ -22,6 +22,10 @@ struct Function {
     std::string id;
     primitive::Sequence code;
   };
+
+  struct Scope {
+    Scope *parent = nullptr;
+  };
   
   size_t functionIndex = 0;
   std::string name;
@@ -30,7 +34,8 @@ struct Function {
   
   std::vector<std::unique_ptr<Block>> blocks;
   std::unordered_map<std::string, size_t> blockByName;
-
+  std::vector<std::unique_ptr<Scope>> scopes;
+  
   size_t entryBlockIndex = 0;
 
   inline Block &createBlock(std::string blockName, size_t globalBlockIndex) {
@@ -56,5 +61,18 @@ struct Function {
 
   inline bool isBlockDefined(std::string const &b) const {
     return blockByName.find(b) != blockByName.end();
+  }
+
+  inline Scope &createScope(Scope *parent) {
+    bool valid = false;
+    for (auto const &scope: scopes) {
+      if (scope.get() == parent) {
+	valid = true;
+	break;
+      }
+    }
+    assert(valid || parent == nullptr);
+    scopes.emplace_back(std::make_unique<Scope>(parent));
+    return *scopes.back();
   }
 };

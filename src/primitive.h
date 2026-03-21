@@ -18,6 +18,7 @@ namespace primitive {
 
     int getBlockIndex(std::string const &f, std::string const &b = "") const {      
       std::string const id = f + (b.empty() ? "" : (std::string(".") + b));
+      assert(blockIDtoIndex.contains(id));
       return blockIDtoIndex.at(id);
     }
 

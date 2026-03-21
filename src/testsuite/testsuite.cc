@@ -543,6 +543,16 @@ static std::vector<bftest::TestCase> buildTests() {
 			       "AB", []() {
 #include "tests/function_call_with_anonymous_array_containing_vars.cc"
 			       }));
+
+  tests.push_back(expectOutput("Passing Arrays of Arrays Mixed Init",
+			       "ABCDE", []() {
+#include "tests/passing_arrays_of_arrays_mixed_init.cc"
+			       }));
+
+  tests.push_back(expectOutput("Shadowing Local Variables in Nested Scopes",
+			       "ABXCDA", []() {
+#include "tests/shadowing_local_variables.cc"
+			       }));
   
 
   

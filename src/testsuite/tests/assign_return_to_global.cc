@@ -30,7 +30,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
     c.declareLocal("y", ts.i8());
     c.beginBlock("entry"); {
-      c.assign("y", values::constant(ts.i8(), 'Y'));
+      c.assign("y", values::value(ts.i8(), 'Y'));
       c.returnFromFunction("y");
     } c.endBlock();
   } c.endFunction();
