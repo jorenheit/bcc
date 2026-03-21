@@ -7,17 +7,17 @@
 // Function Signature
 // ============================================================
 
-struct FunctionParameter {
+struct FunctionParam {
   std::string name;
-  types::TypePtr type;
+  types::TypeHandle type;
 };
 
 struct FunctionSignature {
-  types::TypePtr returnType;
-  std::vector<FunctionParameter> params;
+  types::TypeHandle returnType;
+  std::vector<FunctionParam> params;
 
   template <typename ... Args>
-  explicit FunctionSignature(types::TypePtr ret, Args&&...args):
+  explicit FunctionSignature(types::TypeHandle ret, Args&&...args):
     returnType(ret)
   {
     static_assert(sizeof ... (Args) % 2 == 0);
@@ -26,7 +26,7 @@ struct FunctionSignature {
     
     auto allArgs = std::make_tuple(std::forward<Args>(args)...);    
     [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (params.emplace_back(FunctionParameter{
+      (params.emplace_back(FunctionParam{
 	  .name = std::get<2 * I>(allArgs),
 	  .type = std::get<2 * I + 1>(allArgs)	  
 	}), ...);

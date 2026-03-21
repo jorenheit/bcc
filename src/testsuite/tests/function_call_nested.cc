@@ -8,7 +8,7 @@ c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", {
-	  Function::Arg('A')
+	  values::constant(ts.i8(), 'A')
 	});
     } c.endBlock();
 
@@ -20,7 +20,7 @@ c.begin(); {
   c.beginFunction("foo", ts.voidT(), "x", ts.i8()); {
     c.beginBlock("entry"); {
       c.callFunction("bar", "after_bar", {
-	  Function::Arg("x")
+	  values::var("x")
 	});
     } c.endBlock();
 

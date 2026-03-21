@@ -5,9 +5,11 @@ Compiler c;
 auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
+auto array4 = ts.array(ts.i8(), 4);
+
 c.begin(); {
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.array(ts.i8(), 4));
+    c.declareLocal("x", array4);
        
     c.beginBlock("entry"); {
       Slot x0 = c.arrayElementConst("x", 0);
@@ -15,14 +17,14 @@ c.begin(); {
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assignConst(x0, 'A');
-      c.assignConst(x1, 'B');
-      c.assignConst(x2, 'C');
-      c.assignConst(x3, 'D');
+      c.assign(x0, values::constant(ts.i8(), 'A'));
+      c.assign(x1, values::constant(ts.i8(), 'B'));
+      c.assign(x2, values::constant(ts.i8(), 'C'));
+      c.assign(x3, values::constant(ts.i8(), 'D'));
 
       c.writeOut("x");
       c.callFunction("foo", "after_foo", {
-	  Function::Arg("x")
+	  values::var("x")
 	});
     } c.endBlock();
 
@@ -31,7 +33,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.voidT(), "x", ts.array(ts.i8(), 4)); {
+  c.beginFunction("foo", ts.voidT(), "x", array4); {
     c.beginBlock("entry"); {
       c.writeOut("x");
       c.returnFromFunction();

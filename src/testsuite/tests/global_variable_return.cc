@@ -1,7 +1,8 @@
 // Tests returning a global value into a caller local while preserving the global for later reads.
 // GG
+using namespace types;
 Compiler c;
-auto &ts = c.typeSystem();
+auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
@@ -28,7 +29,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
     c.referGlobals({"g"});
     c.beginBlock("entry"); {
-      c.assignConst("g", 'G');
+      c.assign("g", values::constant(ts.i8(), 'G'));
       c.returnFromFunction("g");
     } c.endBlock();
   } c.endFunction();

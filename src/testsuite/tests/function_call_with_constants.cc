@@ -10,14 +10,14 @@ c.begin(); {
     c.declareLocal("b", ts.i8());
 
     c.beginBlock("entry"); {
-      c.assignConst("a", 'Z');
-      c.assignConst("b", 'Y');
+      c.assign("a", values::constant(ts.i8(), 'Z'));
+      c.assign("b", values::constant(ts.i8(), 'Y'));
 
       c.callFunction("foo", "after_foo", {
-	  Function::Arg('A'),
-	  Function::Arg("a"),
-	  Function::Arg('B'),
-	  Function::Arg("b")
+	  values::constant(ts.i8(), 'A'),
+	  values::var("a"),
+	  values::constant(ts.i8(), 'B'),
+	  values::var("b")
 	});
     } c.endBlock();
 
@@ -26,8 +26,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo",
-		  ts.voidT(),
+  c.beginFunction("foo", ts.voidT(),
 		  "p0", ts.i8(),
 		  "p1", ts.i8(),
 		  "p2", ts.i8(),

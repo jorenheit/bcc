@@ -10,10 +10,10 @@ c.begin(); {
     c.declareLocal("y", ts.i16());
 
     c.beginBlock("entry"); {
-      c.assignConst("x", CAT('C', 'D'));
+      c.assign("x", values::constant(ts.i16(), CAT('C', 'D')));
       c.callFunction("foo", "after_foo", {
-	  Function::Arg(CAT('A', 'B')),
-	  Function::Arg("x")
+	  values::constant(ts.i16(), CAT('A', 'B')),
+	  values::var("x")
 	}, "y");
     } c.endBlock();
 

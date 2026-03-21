@@ -30,7 +30,8 @@ void Compiler::pushFrame() {
   setToValue(1);  
 }
 
-void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<Function::Arg> const &args) {
+void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<values::Value> const &args) {
+
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
   assert(_currentSeq != nullptr);
@@ -38,39 +39,48 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
   // Type checking will be done later. Just copy all the arguments into the start of the
   // next stack frame. The callee will assume they are there in order.
 
-  
   primitive::DInt const currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
   };
+
+  primitive::DInt const paramStart = [callee = functionName](primitive::Context const &ctx) {
+    return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
+  };
   
-  pushPtr();
+  auto const constructInNextFrame = [&](auto&& self, int &offset, auto&& arg) -> void {
+    types::TypeHandle argType = arg->type(_ts);
 
-  int offset = 0;
-  for (size_t i = 0; i != args.size(); ++i) {
-    Function::Arg const &arg = args[i];
-
-    primitive::DInt const paramStart = [callee = functionName](primitive::Context const &ctx) {
-      return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
-    };
-    
-    if (arg.kind == Function::Arg::Constant) {
-      // Constuct the value in-place
-      int const value = arg.value;
-      moveTo(0, MacroCell::Value0);
-      primitive::DInt const diff = currentFrameSize + paramStart + offset;
-      emit<primitive::MovePointerRelative>(diff);
-      setToValue(value & 0xff);
-      if (value & 0xff00) {
-	switchField(MacroCell::Value1);
-	setToValue((value >> 8) & 0xff);
-	switchField(MacroCell::Value0);
+    if (argType != nullptr) {
+	
+      if (types::isInteger(argType)) {
+	int const value = arg->value();
+	moveTo(0, MacroCell::Value0);
+	primitive::DInt const diff = currentFrameSize + paramStart + offset;
+	emit<primitive::MovePointerRelative>(diff);
+	setToValue(value & 0xff);
+	if (argType->usesValue1()) {
+	  switchField(MacroCell::Value1);
+	  setToValue((value >> 8) & 0xff);
+	  switchField(MacroCell::Value0);
+	}
+	emit<primitive::MovePointerRelative>(-diff);
+	offset += MacroCell::FieldCount;
       }
-      emit<primitive::MovePointerRelative>(-diff);
-      offset += MacroCell::FieldCount;
+      else if (types::isArray(argType)) {
+	// recursive call for each element
+	for (int i = 0; i != argType->length(); ++i) {
+	  auto const *elem = arg->element(i);
+	  self(self, offset, elem);
+	}
+      }
+      else {
+	assert(false && "passing this type as arg is not supported yet");
+      }
     }
     else {
-      // Copy the variable
-      Slot const &varSlot = local(arg.varName);
+      // This is a variable -> find its slot and copy the data into the next frame
+      Slot const &varSlot = local(arg->varName());
+      
       for (int i = 0; i != varSlot.type->size(); ++i) {
 	int const varIndex0 = getFieldIndex(varSlot + i, MacroCell::Value0);
 	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
@@ -89,7 +99,13 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
 	offset += MacroCell::FieldCount;
       }
     }
-  }
+  };
+
+  pushPtr();
+  int offset = 0;
+  for (auto const &arg: args) {
+    constructInNextFrame(constructInNextFrame, offset, arg.get());
+  }      
   popPtr();
 }
 

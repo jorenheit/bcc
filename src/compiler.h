@@ -35,7 +35,7 @@ class Compiler {
 
   struct FunctionCall {
     std::string caller, callee;
-    std::vector<Function::Arg> args;
+    std::vector<types::TypeHandle> args;
   };
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
   
@@ -54,36 +54,44 @@ class Compiler {
   void endBlock();
   void setNextBlock(int index);
   void setNextBlock(std::string f, std::string b = "");
-  void returnFromFunction(std::string const &var = "");
-  void returnConstFromFunction(int value);
+
+  void returnFromFunction();
+  void returnFromFunction(std::string const &var);
+  void returnFromFunction(Slot const &slot);
+  void returnFromFunction(values::Value const &value);
+  
   void abortProgram();
   void referGlobals(std::vector<std::string> const &names);
   void callFunction(std::string const& functionName, std::string const& nextBlockName,
-		    std::vector<Function::Arg> const &args, std::string const &returnVar = "");
+		    std::vector<values::Value> const &args,
+		    std::string const &returnVar = "");
   
   inline void callFunction(std::string const& functionName, std::string const& nextBlockName, std::string const &returnVar = "") {
     callFunction(functionName, nextBlockName, {}, returnVar);
   }
-  
-  void assignConst(std::string const &var, int value); 
-  void assignConst(int offset, int value); 
+
+  void assign(Slot const &dest, Slot const &src);
+  void assign(Slot const &slot, std::string const &var);
+  void assign(Slot const &slot, values::Value const &value);
+  void assign(std::string const &var, Slot const &src);
+  void assign(std::string const &var, values::Value const &value);
+  void assign(std::string const &destVar, std::string const &srcVar);
+    
+
   void writeOut(std::string const &var); 
   void writeOut(Slot const &slot);
+  Slot arrayElementConst(std::string const &name, int index);
+  Slot arrayElementConst(Slot const &slot, int index);
 
-  Slot &declareLocal(std::string const& name, std::shared_ptr<types::Type>);
-  Slot &declareGlobal(std::string const &name, std::shared_ptr<types::Type>);
+  Slot &declareLocal(std::string const &name, types::TypeHandle type);
+  Slot &declareGlobal(std::string const &name, types::TypeHandle type);
   Slot &declareGlobalReference(Slot const &globalSlot);
   Slot &local(std::string const& name);
   Slot &global(std::string const& name);
 
-  Slot &declareLocal(std::string const &name, types::TypePtr type);
-  Slot &declareGlobal(std::string const &name, types::TypePtr type);
-
-  Slot arrayElementConst(std::string const &name, int index);
-
   
   template <typename ... Args>
-  void beginFunction(std::string const &name, types::TypePtr returnType, Args&& ... args) {
+  void beginFunction(std::string const &name, types::TypeHandle returnType, Args&& ... args) {
     assert(_currentFunction == nullptr);
 
     beginFunction(name, FunctionSignature{
@@ -119,7 +127,7 @@ private:
   // Frame Navigation (compiler_framenav.cc)
   void pushFrame();
   void popFrame();
-  void copyArgsToNextFrame(std::string const &functionName, std::vector<Function::Arg> const &args);
+  void copyArgsToNextFrame(std::string const &functionName, std::vector<values::Value> const &args);
   void markStartOfOriginFrame();  
   void moveToPreviousFrame();
   void moveToGlobalFrame(int payload = 0);  
@@ -179,7 +187,9 @@ private:
   void popPtr();
 
   // Post processing/optimization (compiler_misc.cc)
-  void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee, std::vector<Function::Arg> const &args);
+  void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
+				  std::vector<values::Value> const &args);
+
   void functionCallTypeChecks();
   
   static std::string simplifyProgram(std::string const &bf);

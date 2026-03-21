@@ -11,10 +11,10 @@ c.begin(); {
     c.declareLocal("y", ts.i8());
        
     c.beginBlock("entry"); {
-      c.assignConst("x", 'A');
+      c.assign("x", values::constant(ts.i8(), 'A'));
       c.callFunction("foo", "after_foo", {
-	  Function::Arg('B'),
-	  Function::Arg("x")
+	  values::constant(ts.i8(), 'B'),
+	  values::var("x")
 	}, "y");
     } c.endBlock();
 

@@ -8,9 +8,9 @@ c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", {
-	  Function::Arg('A'),
-	  Function::Arg('B'),
-	  Function::Arg('C')
+	  values::constant(ts.i8(), 'A'),
+	  values::constant(ts.i8(), 'B'),
+	  values::constant(ts.i8(), 'C')
 	});
     } c.endBlock();
 
@@ -19,8 +19,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo",
-		  ts.voidT(),
+  c.beginFunction("foo", ts.voidT(),
 		  "x", ts.i8(),
 		  "y", ts.i8(),
 		  "z", ts.i8()); {
@@ -30,9 +29,9 @@ c.begin(); {
       c.writeOut("z");
 
       c.callFunction("foo", "after_recurse", {
-	  Function::Arg("x"),
-	  Function::Arg("y"),
-	  Function::Arg("z")
+	  values::var("x"),
+	  values::var("y"),
+	  values::var("z")
 	});
     } c.endBlock();
 

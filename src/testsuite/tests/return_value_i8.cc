@@ -1,8 +1,8 @@
 // Tests basic i8 return-value propagation from callee to caller local.
 // Expected: X
-
+using namespace types;
 Compiler c;
-auto &ts = c.typeSystem();
+auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
@@ -26,7 +26,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
 
     c.beginBlock("entry"); {
-      c.returnConstFromFunction('X');
+      c.returnFromFunction(values::constant(ts.i8(), 'X'));
     } c.endBlock();
 
   } c.endFunction();

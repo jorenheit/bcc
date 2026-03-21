@@ -53,9 +53,10 @@ void Compiler::end() {
 
 void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig) {
   _currentFunction = &_program.createFunction(name, sig);
-  for (FunctionParameter const &p: sig.params) {
+  for (FunctionParam const &p: sig.params) {
     declareLocal(p.name, p.type);
   }
+
 }
 
 void Compiler::endFunction() {
@@ -143,7 +144,7 @@ void Compiler::setNextBlock(std::string f, std::string b) {
 }
 
 
-Slot &Compiler::declareGlobal(std::string const &name, types::TypePtr type) {
+Slot &Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
   // TODO: very similar to declareLocal, could probably be refactored nicely
   assert(_currentFunction == nullptr);
   assert(!_program.globals.contains(name));
@@ -162,7 +163,7 @@ Slot &Compiler::declareGlobal(std::string const &name, types::TypePtr type) {
 }
 
 
-Slot &Compiler::declareLocal(std::string const& name, types::TypePtr type) {
+Slot &Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
   assert(_currentFunction != nullptr);
   assert(!_currentFunction->frame.locals.contains(name));
 
@@ -240,26 +241,26 @@ Slot &Compiler::global(std::string const& name) {
 
 Slot Compiler::arrayElementConst(std::string const &name, int index) {
   assert(_currentFunction != nullptr);
+  return arrayElementConst(local(name), index);
+}
 
-  // Check to see if this is an actual array and if the index is within bounds
-  Slot const &arraySlot = local(name);
-  assert(arraySlot.type->isArray());
-  auto const *array = types::cast<types::ArrayType>(arraySlot.type);
-  assert(index < array->length);
+Slot Compiler::arrayElementConst(Slot const &slot, int index) {
+  assert(types::isArray(slot.type));  
+  assert(index < slot.type->length());
 
   // Create a new slot that represents the element
   return Slot {
-    .name = std::string("__elem_") + name + "_" + std::to_string(index),
-    .type = array->elementType,
+    .name = std::string("__elem_") + slot.name + "_" + std::to_string(index),
+    .type = slot.type->elementType(),
     .storageType = Slot::ArrayElement,
-    .offset = arraySlot.offset + (index * array->elementType->size())
+    .offset = slot.offset + (index * slot.type->elementType()->size())
   };
 }
 
 
 void Compiler::callFunction(std::string const &functionName,
 			    std::string const &nextBlockName,
-			    std::vector<Function::Arg> const &args,
+			    std::vector<values::Value> const &args,
 			    std::string const &returnVar) {
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr);
@@ -299,89 +300,134 @@ void Compiler::abortProgram() {
   _nextBlockIsSet = true;
 }
 
-void Compiler::returnConstFromFunction(int value) {
-  assert(_currentBlock != nullptr);
 
-  // On return:
-  // 1. Populate return-value slot
-  // 2. Sync globals. TODO: skip read-only globals
-  // 3. Restore caller's frame (move pointer back until it hits the frame-marker)
-
-  // Check if return-type is single integer
-  assert(_currentFunction->sig.returnType->isInteger());
-
-  // Populate the return-value slot
-  moveTo(FrameLayout::ReturnValueStart, MacroCell::Value0);
-  setToValue(value & 0xff);
-  if (_currentFunction->sig.returnType->usesValue1()) {
-    moveTo(FrameLayout::ReturnValueStart, MacroCell::Value1);
-    setToValue((value >> 8) & 0xff);
-  }  
-  
-  // Sync and pop
+void Compiler::returnFromFunction() {
   syncLocalToGlobal();
   popFrame();
   _nextBlockIsSet = true;
 }
 
+void Compiler::returnFromFunction(Slot const &slot) {
+  assert(_currentBlock != nullptr);
+  assert(slot.type == _currentFunction->sig.returnType); // TODO: convert API-level asserts exceptions/errors
+
+  // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
+  Slot returnSlot = {
+    .name = "__return_slot",
+    .type = slot.type,
+    .storageType = Slot::Dummy,
+    .offset = FrameLayout::ReturnValueStart
+  };
+
+  assign(returnSlot, slot);
+  returnFromFunction();
+}
+
+void Compiler::returnFromFunction(values::Value const &value) {
+  assert(_currentBlock != nullptr);
+  assert(value->type(_ts) == _currentFunction->sig.returnType); // TODO: convert API-level asserts exceptions/errors
+
+  Slot returnSlot = {
+    .name = "__return_slot",
+    .type = value->type(_ts),
+    .storageType = Slot::Dummy,
+    .offset = FrameLayout::ReturnValueStart
+  };
+
+  assign(returnSlot, value);
+  returnFromFunction();
+}
 
 void Compiler::returnFromFunction(std::string const &varName) {
-  assert(_currentBlock != nullptr);
+  return returnFromFunction(local(varName));
+}
 
-  // On return:
-  // 1. Populate return-value slot
-  // 2. Sync globals. TODO: skip read-only globals
-  // 3. Restore caller's frame (move pointer back until it hits the frame-marker)
 
-  if (not varName.empty()) {
-    // Check if return variable matches the function's type
-    Slot const &slot = local(varName);
-    assert(slot.type == _currentFunction->sig.returnType); // TODO: convert API-level asserts exceptions/errors
-
-    // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
-    for (int i = 0; i != slot.type->size(); ++i) {
-      moveTo(FrameLayout::ReturnValueStart + i, MacroCell::Value0);
+void Compiler::assign(Slot const &dest, Slot const &src) {
+  assert(dest.type == src.type);
+  types::TypeHandle const type = dest.type;
+  
+  // Copy src into dest
+  for (int i = 0; i != type->size(); ++i) {
+    moveTo(dest + i, MacroCell::Value0);
+    zeroCell();
+    moveTo(src + i, MacroCell::Value0);
+    copyField(dest + i, MacroCell::Value0);
+    if (type->usesValue1()) {
+      moveTo(dest + i, MacroCell::Value1);
       zeroCell();
-      moveTo(slot + i, MacroCell::Value0);
-      copyField(FrameLayout::ReturnValueStart + i, MacroCell::Value0);
-      if (slot.type->usesValue1()) {
-	moveTo(FrameLayout::ReturnValueStart + i, MacroCell::Value1);
-	zeroCell();
-	moveTo(slot + i, MacroCell::Value1);
-	copyField(FrameLayout::ReturnValueStart + i, MacroCell::Value1);
-      }
+      moveTo(src + i, MacroCell::Value1);
+      copyField(dest + i, MacroCell::Value1);
     }
   }
-  else {
-    assert(_currentFunction->sig.returnType == _ts.voidT());
+}
+
+void Compiler::assign(Slot const &slot, values::Value const &value) {
+
+  if (value->type(_ts) == nullptr) {
+    // Variable, assign from slot.
+    return assign(slot, value->varName());
   }
+
+  // Constant -> construct in slot
+  assert(slot.type == value->type(_ts));
   
-  // Sync and pop
-  syncLocalToGlobal();
-  popFrame();
-  _nextBlockIsSet = true;
+  auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Base const *val) -> void {
+    if (types::isInteger(slot.type)) {
+      int const x = val->value();
+      moveTo(slot, MacroCell::Value0);
+      setToValue(x & 0xff);
+      if (slot.type->usesValue1()) {
+	moveTo(slot, MacroCell::Value1);
+	setToValue( (x >> 8) & 0xff);
+      }
+    }
+    else if (types::isArray(slot.type)) {
+      for (int i = 0; i != val->type(_ts)->length(); ++i) {
+	self(self, arrayElementConst(slot, i), val->element(i));
+      }
+    }
+    else {
+      assert(false && "not implemented");
+    }
+  };
+
+  constructInSlot(constructInSlot, slot, value.get());
 }
 
-void Compiler::assignConst(std::string const &var, int value) {
-  Slot const &slot = local(var);
-  assert(slot.type->isInteger());
-
-  moveTo(slot, MacroCell::Value0);
-  setToValue(value & 0xff);
-  if (slot.type->usesValue1()) {
-    moveTo(slot, MacroCell::Value1);
-    setToValue( (value >> 8) & 0xff);
-  }
+void Compiler::assign(Slot const &slot, std::string const &var) {
+  assign(slot, local(var));
 }
 
-void Compiler::assignConst(int offset, int value) {
-  int const low = value & 0xff;
-  int const high = (value >> 8) & 0xff;
-  moveTo(offset, MacroCell::Value0);
-  setToValue(low);
-  moveTo(offset, MacroCell::Value1);
-  setToValue(high);
+void Compiler::assign(std::string const &var, values::Value const &value) {
+  assign(local(var), value);
 }
+
+
+void Compiler::assign(std::string const &destVar, std::string const &srcVar) {
+  assign(local(destVar), local(srcVar));
+}
+
+// void Compiler::assignConst(std::string const &var, int value) {
+//   Slot const &slot = local(var);
+//   assert(types::isInteger(slot.type));
+
+//   moveTo(slot, MacroCell::Value0);
+//   setToValue(value & 0xff);
+//   if (slot.type->usesValue1()) {
+//     moveTo(slot, MacroCell::Value1);
+//     setToValue( (value >> 8) & 0xff);
+//   }
+// }
+
+// void Compiler::assignConst(int offset, int value) {
+//   int const low = value & 0xff;
+//   int const high = (value >> 8) & 0xff;
+//   moveTo(offset, MacroCell::Value0);
+//   setToValue(low);
+//   moveTo(offset, MacroCell::Value1);
+//   setToValue(high);
+// }
 
 void Compiler::writeOut(std::string const &var) {
   writeOut(local(var));

@@ -529,7 +529,21 @@ static std::vector<bftest::TestCase> buildTests() {
 #include "tests/function_call_nested_with_return.cc"
 			       }));
   
+  tests.push_back(expectOutput("Function Call with Anonymous Array",
+			       "ABCD", []() {
+#include "tests/function_call_with_anonymous_array.cc"
+			       }));
 
+  tests.push_back(expectOutput("Function Call with Nested Anonymous Array",
+			       "ABCD", []() {
+#include "tests/function_call_with_anonymous_nested_array.cc"
+			       }));
+
+  tests.push_back(expectOutput("Function Call with Anonymous Array Containing Vars",
+			       "AB", []() {
+#include "tests/function_call_with_anonymous_array_containing_vars.cc"
+			       }));
+  
 
   
   return tests;

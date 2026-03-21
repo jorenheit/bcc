@@ -1,8 +1,9 @@
 // Tests assigning a function return value directly into a global and reading it back in a later call.
 // Expected result: YY
 
+using namespace types;
 Compiler c;
-auto &ts = c.typeSystem();
+auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
@@ -29,7 +30,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
     c.declareLocal("y", ts.i8());
     c.beginBlock("entry"); {
-      c.assignConst("y", 'Y');
+      c.assign("y", values::constant(ts.i8(), 'Y'));
       c.returnFromFunction("y");
     } c.endBlock();
   } c.endFunction();

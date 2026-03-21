@@ -1,14 +1,16 @@
 // Tests returning an i16 array from a callee into a caller local array.
 // Expected: ABCDEFGH
-
+using namespace types;
 Compiler c;
-auto &ts = c.typeSystem();
+auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
+
+auto array4 = ts.array(ts.i16(), 4);
 
 c.begin(); {
     
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.array(ts.i16(), 4));
+    c.declareLocal("x", array4);
       
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", "x");
@@ -20,19 +22,19 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.array(ts.i16(), 4)); {
-    c.declareLocal("x", ts.array(ts.i16(), 4));
-      
+  c.beginFunction("foo", array4); {
+    c.declareLocal("x", array4);
+    
     c.beginBlock("entry"); {
       Slot x0 = c.arrayElementConst("x", 0);
       Slot x1 = c.arrayElementConst("x", 1);
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assignConst(x0, CAT('A','B'));
-      c.assignConst(x1, CAT('C','D'));
-      c.assignConst(x2, CAT('E','F'));
-      c.assignConst(x3, CAT('G','H'));
+      c.assign(x0, values::constant(ts.i16(), CAT('A','B')));
+      c.assign(x1, values::constant(ts.i16(), CAT('C','D')));
+      c.assign(x2, values::constant(ts.i16(), CAT('E','F')));
+      c.assign(x3, values::constant(ts.i16(), CAT('G','H')));
 
       c.returnFromFunction("x");
     } c.endBlock();

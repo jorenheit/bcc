@@ -52,11 +52,23 @@ std::string Compiler::simplifyProgram(std::string const &bf) {
 
 void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
 					  std::string const &callee,
-					  std::vector<Function::Arg> const &args) {
+					  std::vector<values::Value> const &args) {
+  auto const getHandles = [&](){
+    std::vector<types::TypeHandle> result;
+    for (auto const &arg: args) {
+      types::TypeHandle type = arg->type(_ts);
+      if (type == nullptr) {
+	type = local(arg->varName()).type;
+      }
+      result.push_back(type);
+    }
+    return result;
+  };
+
   _deferredFunctionCallTypeChecks.emplace_back(FunctionCall{
       .caller = caller,
       .callee = callee,
-      .args = args
+      .args = getHandles()
     });
 }
 
@@ -66,17 +78,8 @@ void Compiler::functionCallTypeChecks() {
   for (auto const &[caller, callee, args]: _deferredFunctionCallTypeChecks) {
     auto const &params = _program.function(callee).sig.params;
     assert(params.size() == args.size());
-
-    _currentFunction = &_program.function(caller);
     for (size_t i = 0; i != args.size(); ++i) {
-      if (args[i].kind == Function::Arg::Constant) {
-	assert(params[i].type->isInteger());
-      }
-      else {
-	Slot const &varSlot = local(args[i].varName);
-	assert(params[i].type == varSlot.type);
-      }
+      assert(args[i] == params[i].type);
     }
-    _currentFunction = nullptr;
   }
 }

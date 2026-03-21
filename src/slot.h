@@ -16,7 +16,7 @@ struct Slot {
   };
 
   std::string name;  
-  types::TypePtr type;
+  types::TypeHandle type;
   StorageType storageType;
   int offset;
 	 

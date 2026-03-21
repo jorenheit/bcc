@@ -11,9 +11,9 @@ c.begin(); {
     c.referGlobals({"g"});
       
     c.beginBlock("entry"); {
-      c.assignConst("g", 'G');
+      c.assign("g", values::constant(ts.i8(), 'G'));
       c.callFunction("foo", "after_foo", {
-	  Function::Arg("g")
+	  values::var("g")
 	});
     } c.endBlock();
 
@@ -26,7 +26,7 @@ c.begin(); {
   c.beginFunction("foo", ts.voidT(), "arg1", ts.i8()); {
     c.beginBlock("entry"); {
       c.writeOut("arg1");
-      c.assignConst("arg1", 'H');
+      c.assign("arg1", values::constant(ts.i8(), 'H'));
       c.writeOut("arg1");
       c.returnFromFunction();
     } c.endBlock();

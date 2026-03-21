@@ -15,29 +15,6 @@
 
 struct Function {
 
-  struct Arg {
-    enum { Constant, Variable } kind;
-    union {
-      int value;
-      std::string varName;
-    };
-    
-    inline Arg(int value): kind(Constant), value(value) {}
-    inline Arg(std::string var): kind(Variable) {
-      new (&varName) std::string(std::move(var));
-    }
-    inline Arg(Arg const &other):
-      kind(other.kind)
-    {
-      if (kind == Constant) value = other.value;
-      else varName = other.varName;
-    }
-
-    ~Arg(){
-      if (kind == Variable) varName.~basic_string();
-    }    
-  };
-  
   struct Block {
     size_t globalBlockIndex = 0;
     size_t parentFunctionIndex = 0;

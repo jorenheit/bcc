@@ -10,7 +10,7 @@ c.begin(); {
 
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo", {
-	  Function::Arg('Z')
+	  values::constant(ts.i8(), 'Z')
 	}, "r");
     } c.endBlock();
 
@@ -25,7 +25,7 @@ c.begin(); {
 
     c.beginBlock("entry"); {
       c.callFunction("bar", "after_bar", {
-	  Function::Arg("x")
+	  values::var("x")
 	}, "tmp");
     } c.endBlock();
 
