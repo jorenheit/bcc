@@ -5,10 +5,19 @@ void Compiler::setEntryPoint(std::string functionName) {
 }
 
 void Compiler::begin() {
-  assert(not _program.entryFunctionName.empty()); 
+  error_if(_program.entryFunctionName.empty(),
+	   "No entry point set before calling 'begin'; call 'setEntryPoint' first.");
+  error_if(_state.begun, "called 'begin' before ending previous program.");
+
+  _state.begun = true;
 }
 
 void Compiler::end() {
+  error_if(not _state.begun, "called 'end' before 'begin'.");
+  error_if(_currentFunction != nullptr, "called 'end' before ending function '", _currentFunction->name, "'."); 
+  error_if(_currentBlock != nullptr, "called 'end' before ending block '", _currentBlock->name, "'."); 
+  error_if(_currentScope != nullptr, "called 'end' before ending scope."); 
+  
   functionCallTypeChecks();
   
   // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
@@ -36,7 +45,7 @@ void Compiler::end() {
   switchField(MacroCell::FrameID);
   addConst(FrameLayout::FirstStackFrameID);
 
-  setNextBlock(_program.entryFunctionName);
+  setNextBlock(_program.entryFunctionName, "");
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   setToValue(1);
   loopOpen("main loop");
@@ -52,9 +61,11 @@ void Compiler::end() {
 
 
 void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig) {
-  assert(_currentFunction == nullptr);
-  assert(_currentScope == nullptr);
-  assert(_currentBlock == nullptr);
+  error_if(not _state.begun, "called 'beginFunction(", name, ")' outside of a program-block; call 'begin' first.");  
+  error_if(_currentFunction != nullptr, "called 'beginFunction(", name, ")' while in existing function-block; call 'endFunction' first.");
+  error_if(_currentScope != nullptr,    "called 'beginFunction(", name, ")' while in a scope-block; call 'endScope' first.");
+  error_if(_currentBlock != nullptr,    "called 'beginFunction(", name, ")' while in a code-block; call 'endBlock' first.");
+  _state.allowGlobalDefinitions = false;
   
   _currentFunction = &_program.createFunction(name, sig);  
   for (FunctionParam const &p: sig.params) {
@@ -63,24 +74,26 @@ void Compiler::beginFunction(std::string const &name, FunctionSignature const &s
 
 }
 
-void Compiler::endFunction() {
-  assert(_currentFunction != nullptr);
-  assert(_currentBlock == nullptr);
-  assert(_currentScope == nullptr);
+void Compiler::endFunction() {  
+  error_if(_currentFunction == nullptr, "called 'endFunction' outside of a function-block.");
+  error_if(_currentBlock != nullptr,    "called 'endFunction' (", _currentFunction->name, ") while inside a code-block (", _currentBlock->name, "); ""call 'endBlock' first.");
+  error_if(_currentScope != nullptr,    "called 'endFunction' (", _currentFunction->name, ") while inside a scope-block; call 'endScope' first.");
   
   _currentFunction = nullptr;
 }
 
 void Compiler::beginScope() {
-  assert(_currentFunction != nullptr);
-  assert(_currentBlock == nullptr);
+  error_if(not _state.begun, "called 'beginScope' outside of a program-block; call 'begin' first.");    
+  error_if(_currentFunction == nullptr, "called 'beginScope' outside of a function-block; scopes are only defined within functions.");
+  error_if(_currentBlock != nullptr,    "called 'beginScope' inside of a code-block (", _currentBlock->name, "); scopes can only enclose code-blocks.");
   
   _currentScope = &_currentFunction->createScope(_currentScope);
 }
 
 void Compiler::endScope() {
-  assert(_currentFunction != nullptr);
-  assert(_currentScope != nullptr);
+  error_if(_currentFunction == nullptr, "called 'endScope' outside of a function-block; scopes care only defined within functions.");
+  error_if(_currentScope == nullptr,    "called 'endScope' before calling 'beginScope'.");
+  error_if(_currentBlock != nullptr,    "called 'endScope' inside of a code-block (", _currentBlock->name, "); scopes can only enclose code-blocks.");
   
   freeScope(_currentScope);
   _currentScope = _currentScope->parent;
@@ -88,8 +101,9 @@ void Compiler::endScope() {
 
 
 void Compiler::beginBlock(std::string name) {
-  assert(_currentFunction != nullptr);
-  assert(_currentBlock == nullptr);
+  error_if(not _state.begun, "called 'beginBlock(", name, ")' outside of a program-block; call 'begin' first.");    
+  error_if(_currentFunction == nullptr, "called 'beginBlock(", name, ")' outside of a function-block; blocks are only defined within functions.");
+  error_if(_currentBlock != nullptr,    "called 'beginBlock(", name, ")' before ending the current block (", _currentBlock->name, ").");
 
   auto globalIdx = _program.nextGlobalBlockIndex();
   Function::Block &block = _currentFunction->createBlock(std::move(name), globalIdx);
@@ -108,11 +122,12 @@ void Compiler::beginBlock(std::string name) {
 }
 
 void Compiler::endBlock() {
-  assert(_currentBlock != nullptr);
+  error_if(_currentBlock == nullptr, "called 'endBlock' before calling 'beginBlock'.");
   assert(_dp.isStatic());
   assert(_nextBlockIsSet);
 
   blockClose();
+  freeTemps();
   _currentBlock = nullptr;
 }
 
@@ -167,8 +182,8 @@ void Compiler::setNextBlock(std::string f, std::string b) {
 
 
 Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
-  assert(_currentFunction == nullptr);
-  assert(!_program.globals.contains(name));
+  error_if(not _state.allowGlobalDefinitions, "Global variable '", name, "' must be defined before the first function.");
+  error_if(_program.isGlobal(name), "Multiple definitions of global variable '", name, "'.");
 
   int const offset = _program.globalVariableFrameSize();
   Slot slot {
@@ -179,9 +194,8 @@ Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
     .scope = nullptr
   };
 
-  auto [it, success] = _program.globals.emplace(name, std::move(slot));
-  assert(success);
-  return it->second;
+  _program.globals.emplace_back(slot);
+  return slot;
 }
 
 
@@ -202,6 +216,7 @@ Slot Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
 }
 
 
+// TODO: does not belong in public interface
 Slot Compiler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.kind == Slot::Global);
   assert(_currentFunction != nullptr);
@@ -222,22 +237,25 @@ Slot Compiler::declareGlobalReference(Slot const &globalSlot) {
 
 
 void Compiler::referGlobals(std::vector<std::string> const &names) {
-  assert(_currentFunction != nullptr);
-  assert(_currentBlock == nullptr);
+  error_if(_currentFunction == nullptr, "called 'referGlobals' outside a function block");
+  error_if(_currentBlock != nullptr, "called 'referGlobals' inside code-block");
 
   beginBlock(std::string("__prologue_") + _currentFunction->name); {
-    for (std::string const &name: names) {
-      assert(_program.globals.contains(name));
 
-      Slot const &globalSlot = _program.globals.at(name);
-      declareGlobalReference(globalSlot);
+    std::unordered_set<std::string> declared;
+    for (std::string const &name: names) {
+      error_if(not _program.isGlobal(name), "in function '", _currentFunction->name, "': symbol '", name, "' was not declared as a global variable.");
+      error_if(not declared.insert(name).second, "in function '", _currentFunction->name, "': symbol '", name, "' was referred to multiple times.");
+
+      declareGlobalReference(_program.globalSlot(name));      
     }
 
     syncGlobalToLocal();
     setNextBlock(_program.nextGlobalBlockIndex());
   } endBlock();
 }
-    
+
+// TODO: does not belong in public interface
 Slot Compiler::local(std::string const& varName, bool globalReference) {
   assert(_currentFunction != nullptr);
 
@@ -257,29 +275,21 @@ Slot Compiler::local(std::string const& varName, bool globalReference) {
     return local(globalReferenceName, true);
   }
 
-  assert(false && "variable not in scope");
+  error("variable '", varName, "' not declared in this scope (function '", _currentFunction, "').");
   std::unreachable();
 }
 
-Slot Compiler::global(std::string const& name) {
-  assert(false && "I don't think this should be used.");
-  assert(_currentFunction != nullptr);
-  auto &globals = _program.globals;
-  auto it = globals.find(name);
-  assert(it != globals.end());
-  return it->second;
-}
-
-Slot Compiler::arrayElementConst(std::string const &name, int index) {
-  assert(_currentFunction != nullptr);
-  return arrayElementConst(local(name), index);
+Slot Compiler::arrayElementConst(values::Var const &var, int index) {
+  return arrayElementConst(local(var->varName()), index);
 }
 
 Slot Compiler::arrayElementConst(Slot const &slot, int index) {
-  assert(types::isArray(slot.type));  
-  assert(index < slot.type->length());
+  error_if(_currentFunction == nullptr, "called 'arrayElementConst(", slot.name, ", ", index, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'arrayElementConst(", slot.name, ", ", index, ")' outside code-block.");
+  error_if(not types::isArray(slot.type), "tried to call 'arrayElementConst' on '", slot.name, "', which is not an array.");
+  error_if(index >= slot.type->length(), "index [", index, "] out of bounds for '", slot.name, "'.");
 
-  // Create a new slot that represents the element
+  // return a slot that represents the element 
   return Slot {
     .name = std::string("__elem_") + slot.name + "_" + std::to_string(index),
     .type = slot.type->elementType(),
@@ -299,9 +309,8 @@ void Compiler::callFunction(std::string const &functionName,
 			    std::string const &nextBlockName,
 			    std::vector<values::Value> const &args,
 			    values::Var const &returnVar) {
-  
-  assert(_currentFunction != nullptr);
-  assert(_currentBlock != nullptr);
+  error_if(_currentFunction == nullptr, "called 'callFunction(", functionName, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'callFunction(", functionName, ")' outside code-block.");
   assert(_currentSeq != nullptr);
 
   syncLocalToGlobal();
@@ -323,12 +332,13 @@ void Compiler::callFunction(std::string const &functionName,
   deferFunctionCallTypeCheck(_currentFunction->name, functionName, args);
   copyArgsToNextFrame(functionName, args);
   pushFrame();
-  setNextBlock(functionName);
+  setNextBlock(functionName, "");
 }
 
 
 void Compiler::abortProgram() {
-  assert(_currentBlock != nullptr);
+  error_if(_currentFunction == nullptr, "called 'abortProgram' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'abortProgram' outside code-block.");
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   zeroCell();
@@ -340,14 +350,20 @@ void Compiler::abortProgram() {
 
 
 void Compiler::returnFromFunction() {
+  error_if(_currentFunction == nullptr, "called 'returnFromFunction' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'returnFromFunction' outside code-block.");
+  
   syncLocalToGlobal();
   popFrame();
   _nextBlockIsSet = true;
 }
 
 void Compiler::returnFromFunction(Slot const &slot) {
-  assert(_currentBlock != nullptr);
-  assert(slot.type == _currentFunction->sig.returnType); // TODO: convert API-level asserts exceptions/errors
+  error_if(_currentFunction == nullptr, "called 'returnFromFunction(", slot.name,")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'returnFromFunction(", slot.name,")' outside code-block.");
+  error_if(slot.type != _currentFunction->sig.returnType,
+	   "type of return-value does not match function signature of '':"
+	   "expected '", _currentFunction->sig.returnType->str(), "', got '", slot.type->str(), "'.");
 
   // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
   Slot returnSlot = {
@@ -363,8 +379,11 @@ void Compiler::returnFromFunction(Slot const &slot) {
 }
 
 void Compiler::returnFromFunction(values::Value const &value) {
-  assert(_currentBlock != nullptr);
-  assert(value->type(_ts) == _currentFunction->sig.returnType); // TODO: convert API-level asserts exceptions/errors
+  error_if(_currentFunction == nullptr, "called 'returnFromFunction(", value->str(), ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'returnFromFunction(", value->str(), ")' outside code-block.");
+  error_if(value->type(_ts) != _currentFunction->sig.returnType,
+	   "type of return-value does not match function signature of '", _currentFunction->name, "': "
+	   "expected '", _currentFunction->sig.returnType->str(), "', got '", value->type(_ts)->str(), "'.");
 
   Slot returnSlot = {
     .name = "__return_slot",
@@ -384,7 +403,13 @@ void Compiler::returnFromFunction(values::Var const &var) {
 
 
 void Compiler::assign(Slot const &dest, Slot const &src) {
-  assert(dest.type == src.type);
+  error_if(_currentFunction == nullptr, "called 'assign(", dest.name, ", ", src.name, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'assign(",  dest.name, ", ", src.name, ")' outside code-block.");
+  error_if(dest.type != src.type,
+	   "type mismatch in 'assign(", dest.name, ", ", src.name, ")': '",
+	   dest.name, "' is of type '", dest.type->str(), "' while '", src.name, "' is of type '", src.type->str(), "'.");
+
+
   types::TypeHandle const type = dest.type;
   
   // Copy src into dest
@@ -403,11 +428,15 @@ void Compiler::assign(Slot const &dest, Slot const &src) {
 }
 
 void Compiler::assign(Slot const &slot, values::Value const &value) {
+  error_if(_currentFunction == nullptr, "called 'assign(", slot.name, ", ", value->str(), ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'assign(",  slot.name, ", ", value->str(), ")' outside code-block.");
+  error_if(slot.type != value->type(_ts),
+	   "type mismatch in 'assign(", slot.name, ", ", value->str(), ")': '",
+	   slot.name, "' is of type '", slot.type->str(), "' while '", value->str(), "' is of type '", value->type(_ts)->str(), "'.");
 
-  if (value->type(_ts) == nullptr) {
-    // Variable, assign from slot.
-    return assign(slot, value->varName());
-  }
+
+  // If variable, dispatch 
+  if (value->type(_ts) == nullptr) return assign(slot, value->varName());
 
   // Constant -> construct in slot
   assert(slot.type == value->type(_ts));
@@ -449,8 +478,10 @@ void Compiler::assign(values::Var const &destVar, values::Var const &srcVar) {
 }
 
 void Compiler::writeOut(values::Value const &value) {
+  error_if(_currentFunction == nullptr, "called 'writeOut(", value->str(), ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'writeOut(",  value->str(), ")' outside code-block.");
+  
   if (value->type(_ts) == types::null) return writeOut(value->varName());
-
   Slot const tmp = getTemp(value);
   writeOut(tmp);
 }
@@ -460,6 +491,9 @@ void Compiler::writeOut(values::Var const &var) {
 }
 
 void Compiler::writeOut(Slot const &slot) {
+  error_if(_currentFunction == nullptr, "called 'writeOut(", slot.name, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'writeOut(",  slot.name, ")' outside code-block.");
+  
   for (int i = 0; i != slot.type->size(); ++i) {
     moveTo(slot + i, MacroCell::Value0);
     emit<primitive::Out>();

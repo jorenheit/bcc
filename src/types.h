@@ -21,6 +21,7 @@ namespace types {
     virtual int length() const { return 1; }
     virtual bool usesValue1() const { return false; }
     virtual Type const *elementType() const { return nullptr; }
+    virtual std::string str() const = 0;
   };
 
   using TypeHandle = Type const *;
@@ -31,12 +32,14 @@ namespace types {
     RawType(int n): _size(n) {}
     virtual TypeTag tag() const { return RAW; }
     virtual int size() const { return _size; }
+    virtual std::string str() const { return std::string("raw<") + std::to_string(_size) + ">"; }
   };
   
   struct VoidType: Type {
     virtual TypeTag tag() const override { return VOID; }
     virtual int size() const override { return 0; }
     virtual int length() const { return 0; }
+    virtual std::string str() const { return "void"; }
   };
 
   struct IntegerType : Type {
@@ -44,6 +47,7 @@ namespace types {
     IntegerType(int bits_): bits(bits_) {}
     virtual TypeTag tag() const override { return bits > 8 ? I16 : I8; }
     virtual bool usesValue1() const override { return bits > 8; }
+    virtual std::string str() const { return tag() == I8 ? "i8" : "i16"; }
   };  
 
   struct ArrayType: Type {
@@ -56,6 +60,7 @@ namespace types {
     virtual int length() const { return _length; }
     virtual bool usesValue1() const override { return _elementType->usesValue1(); }
     virtual TypeHandle elementType() const override { return _elementType; }
+    virtual std::string str() const { return std::string("array<") + _elementType->str() + ", " + std::to_string(_length) + ">"; }
   };
 
   inline bool isInteger(TypeHandle t) { return t->tag() == I8 || t->tag() == I16; }
@@ -111,6 +116,7 @@ namespace values {
       virtual ~Base() = default;
       virtual types::TypeHandle type(types::TypeSystem const &) const = 0;
       virtual std::shared_ptr<Base> clone() const = 0;
+      virtual std::string str() const = 0;      
       virtual int value() const { assert(false); return 0; }
       virtual std::string varName() const { assert(false); return ""; }
       virtual std::shared_ptr<Base> element(size_t idx) const { assert(false); return nullptr; }
@@ -123,7 +129,9 @@ namespace values {
       Var(std::string const &name): _varName(name) {}
       Var(...) { assert(false); }
       virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return nullptr; }
-      virtual std::string varName() const { return _varName; }
+      virtual std::string varName() const override { return _varName; }
+      virtual std::string str() const override { return _varName; }
+      
       std::shared_ptr<Base> clone() const override { return std::make_shared<Var>(*this); }      
     };
 
@@ -134,7 +142,8 @@ namespace values {
       i8(...): _value(0) { assert(false); }      
       virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.i8(); }
       virtual int value() const override { return _value; }
-      std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }      
+      virtual std::string str() const override { return std::to_string(_value); }
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }      
     };
 
     struct i16: Base {
@@ -144,6 +153,7 @@ namespace values {
       i16(...): _value(0) { assert(false); }      
       virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.i16(); }
       virtual int value() const override { return _value; }
+      virtual std::string str() const override { return std::to_string(_value); }
       std::shared_ptr<Base> clone() const override { return std::make_shared<i16>(*this); }      
     };      
 
@@ -175,6 +185,16 @@ namespace values {
       }
     
       std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
+      virtual std::string str() const override {
+	std::ostringstream oss;
+	oss << "{";
+	for (size_t i = 0; i != arr.size(); ++i) {
+	  oss << arr[i]->str();
+	  if (i < arr.size() - 1) oss << ", ";
+	}
+	oss << "}";
+	return oss.str();
+      }
 
       
     private:

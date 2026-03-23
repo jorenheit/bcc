@@ -77,9 +77,13 @@ void Compiler::functionCallTypeChecks() {
 
   for (auto const &[caller, callee, args]: _deferredFunctionCallTypeChecks) {
     auto const &params = _program.function(callee).sig.params;
-    assert(params.size() == args.size());
+    error_if(params.size() != args.size(),
+	     "invalid number of arguments in call to '", callee, "' (in funcion '", caller, "'): ",
+	     "expected ", params.size(), ", got ", args.size(), ".");
     for (size_t i = 0; i != args.size(); ++i) {
-      assert(args[i] == params[i].type);
+      error_if(args[i] != params[i].type,
+	       "type mismatch in argument ", (i+1), " of call to '", callee, "' (in function '", caller, "'): ",
+	       "expected '", params[i].type->str(), "', got '", args[i]->str(), "'.");
     }
   }
 }

@@ -17,7 +17,8 @@ struct Program {
   
   std::vector<Function> functions;
   std::unordered_map<std::string, size_t> functionByName;
-  std::unordered_map<std::string, Slot> globals;
+  //  std::unordered_map<std::string, Slot> globals;
+  std::vector<Slot> globals;
   std::vector<Function::Block*> globalBlockOrder;
 
   inline Function& createFunction(std::string name, FunctionSignature sig) {
@@ -52,11 +53,25 @@ struct Program {
 
   inline int globalVariableFrameSize() const {
     int result = 0;
-    for (auto const &[_, slot]: globals) result += slot.size();
+    for (auto const &slot: globals) result += slot.size();
     return result;
   }
 
   inline bool isFunctionDefined(std::string const &f) const {
     return (functionByName.find(f) != functionByName.end());
+  }
+
+  inline int globalIndex(std::string const &name) const {
+    for (size_t i = 0; i != globals.size(); ++i) if (globals[i].name == name) return i;
+    return -1;
+  }
+
+  inline bool isGlobal(std::string const &name) const {
+    return globalIndex(name) != -1;
+  }
+  
+  inline Slot globalSlot(std::string const &name) const {
+    int idx = globalIndex(name); assert(idx != -1);
+    return globals[idx];
   }
 };

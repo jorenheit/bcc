@@ -1,6 +1,6 @@
 #pragma once
 #include <stack>
-#include <optional>
+#include <sstream>
 #include "program.h"
 #include "function.h"
 #include "data.h"
@@ -10,6 +10,7 @@
 // ============================================================
 
 class Compiler {
+
   Program _program;
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
@@ -17,6 +18,11 @@ class Compiler {
   primitive::Sequence* _currentSeq = nullptr;  
   bool _nextBlockIsSet = false;
 
+  struct {
+    bool begun = false;
+    bool allowGlobalDefinitions = true;
+  } _state;
+  
   types::TypeSystem _ts;
   DataPointer _dp;
 
@@ -40,7 +46,8 @@ class Compiler {
     std::vector<types::TypeHandle> args;
   };
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
-  
+
+
   public:
   inline types::TypeSystem &typeSystem() { return _ts; }
   std::string dumpPrimitives() const;
@@ -57,7 +64,7 @@ class Compiler {
   void beginBlock(std::string name);
   void endBlock();
   void setNextBlock(int index);
-  void setNextBlock(std::string f, std::string b = "");
+  void setNextBlock(std::string f, std::string b);
   void abortProgram();
   void referGlobals(std::vector<std::string> const &names);
 
@@ -85,20 +92,16 @@ class Compiler {
   void writeOut(values::Value const &val);
 
   // TODO: make generic arrayElement that is overloaded to take int, values::Value, Slot, string
-  Slot arrayElementConst(std::string const &name, int index);
+  Slot arrayElementConst(values::Var const &var, int index);
   Slot arrayElementConst(Slot const &slot, int index);
 
   Slot declareLocal(std::string const &name, types::TypeHandle type);
   Slot declareGlobal(std::string const &name, types::TypeHandle type);
   Slot declareGlobalReference(Slot const &globalSlot);
   Slot local(std::string const& name, bool globalReference = false);
-  Slot global(std::string const& name);
 
-  
   template <typename ... Args>
   void beginFunction(std::string const &name, types::TypeHandle returnType, Args&& ... args) {
-    assert(_currentFunction == nullptr);
-
     beginFunction(name, FunctionSignature{
 	returnType,
 	std::forward<Args>(args)...
@@ -157,9 +160,9 @@ private:
     assert(localSlot.kind == Slot::GlobalReference);
     
     std::string globalName = localSlot.name.substr(std::string("__g_").size());
-    assert(_program.globals.contains(globalName));
+    assert(_program.isGlobal(globalName));
 
-    Slot const &globalSlot = _program.globals.at(globalName);
+    Slot const &globalSlot = _program.globalSlot(globalName);
     assert(globalSlot.size() == localSlot.size());
 
     (this->*FetchOrPut)(globalSlot, localSlot);
@@ -245,5 +248,48 @@ private:
     assert(!(scratch0Used && scratch1Used));
     return scratch0Used ? MacroCell::Scratch1 : MacroCell::Scratch0;
   }
+
+  // Error Handling
+  struct Error: std::exception {
+
+    std::string msg;
+    Error(std::string const &msgHead): msg(msgHead) {}
+    
+    template <typename T>
+    Error &operator<<(T const &val) {
+      std::ostringstream oss;
+      oss << val;
+      msg += oss.str();
+      return *this;
+    }
+
+    virtual char const *what() const noexcept override {
+      return msg.c_str();
+    }
+  };
+
+  template <typename ... Args> requires (sizeof...(Args) > 0)
+  void error(Args&& ... args) const {
+    Error err("Backend error: "); (err << ... << args);
+    throw err;
+  }
+
+  template <typename ... Args> requires (sizeof...(Args) > 0)
+  void warning(Args&& ... args) const {
+    Error err("Backend warning: "); (err << ... << args);
+    throw err;
+  }
+  
+  template <typename ... Args> requires (sizeof...(Args) > 0)
+  void error_if(bool const condition, Args&& ... args) const {
+    if (condition) error(std::forward<Args>(args)...);
+  }
+
+  template <typename ... Args> requires (sizeof...(Args) > 0)
+  void warning_if(bool const condition, Args&& ... args) const {
+    if (condition) warning(std::forward<Args>(args)...);
+  }
+
+  
   
 };
