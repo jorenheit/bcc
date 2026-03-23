@@ -81,9 +81,11 @@ void Compiler::functionCallTypeChecks() {
 	     "invalid number of arguments in call to '", callee, "' (in funcion '", caller, "'): ",
 	     "expected ", params.size(), ", got ", args.size(), ".");
     for (size_t i = 0; i != args.size(); ++i) {
-      error_if(args[i] != params[i].type,
+      error_if(not params[i].type->isConstructibleFrom(args[i]),
 	       "type mismatch in argument ", (i+1), " of call to '", callee, "' (in function '", caller, "'): ",
 	       "expected '", params[i].type->str(), "', got '", args[i]->str(), "'.");
     }
   }
+
+  _deferredFunctionCallTypeChecks.clear();
 }

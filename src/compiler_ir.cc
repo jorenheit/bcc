@@ -286,7 +286,8 @@ Slot Compiler::arrayElementConst(values::Var const &var, int index) {
 Slot Compiler::arrayElementConst(Slot const &slot, int index) {
   error_if(_currentFunction == nullptr, "called 'arrayElementConst(", slot.name, ", ", index, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'arrayElementConst(", slot.name, ", ", index, ")' outside code-block.");
-  error_if(not types::isArray(slot.type), "tried to call 'arrayElementConst' on '", slot.name, "', which is not an array.");
+  error_if(not types::isArray(slot.type) && not types::isString(slot.type),
+	   "tried to call 'arrayElementConst' on '", slot.name, "', which is not an array.");
   error_if(index >= slot.type->length(), "index [", index, "] out of bounds for '", slot.name, "'.");
 
   // return a slot that represents the element 
@@ -405,7 +406,7 @@ void Compiler::returnFromFunction(values::Var const &var) {
 void Compiler::assign(Slot const &dest, Slot const &src) {
   error_if(_currentFunction == nullptr, "called 'assign(", dest.name, ", ", src.name, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'assign(",  dest.name, ", ", src.name, ")' outside code-block.");
-  error_if(dest.type != src.type,
+  error_if(not dest.type->isConstructibleFrom(src.type), //dest.type != src.type,
 	   "type mismatch in 'assign(", dest.name, ", ", src.name, ")': '",
 	   dest.name, "' is of type '", dest.type->str(), "' while '", src.name, "' is of type '", src.type->str(), "'.");
 
@@ -430,7 +431,7 @@ void Compiler::assign(Slot const &dest, Slot const &src) {
 void Compiler::assign(Slot const &slot, values::Value const &value) {
   error_if(_currentFunction == nullptr, "called 'assign(", slot.name, ", ", value->str(), ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'assign(",  slot.name, ", ", value->str(), ")' outside code-block.");
-  error_if(slot.type != value->type(_ts),
+  error_if(not slot.type->isConstructibleFrom(value->type(_ts)), //slot.type != value->type(_ts),
 	   "type mismatch in 'assign(", slot.name, ", ", value->str(), ")': '",
 	   slot.name, "' is of type '", slot.type->str(), "' while '", value->str(), "' is of type '", value->type(_ts)->str(), "'.");
 
@@ -439,8 +440,6 @@ void Compiler::assign(Slot const &slot, values::Value const &value) {
   if (value->type(_ts) == nullptr) return assign(slot, value->varName());
 
   // Constant -> construct in slot
-  assert(slot.type == value->type(_ts));
-  
   auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Value const &val) -> void {
     if (types::isInteger(slot.type)) {
       int const x = val->value();
@@ -451,7 +450,7 @@ void Compiler::assign(Slot const &slot, values::Value const &value) {
 	setToValue( (x >> 8) & 0xff);
       }
     }
-    else if (types::isArray(slot.type)) {
+    else if (types::isArray(slot.type) || types::isString(slot.type)) {
       for (int i = 0; i != val->type(_ts)->length(); ++i) {
 	self(self, arrayElementConst(slot, i), val->element(i));
       }
@@ -493,14 +492,44 @@ void Compiler::writeOut(values::Var const &var) {
 void Compiler::writeOut(Slot const &slot) {
   error_if(_currentFunction == nullptr, "called 'writeOut(", slot.name, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'writeOut(",  slot.name, ")' outside code-block.");
+
+   pushPtr();
   
-  for (int i = 0; i != slot.type->size(); ++i) {
-    moveTo(slot + i, MacroCell::Value0);
-    emit<primitive::Out>();
-    if (slot.type->usesValue1()) {
-      moveTo(slot + i, MacroCell::Value1);
+  // TODO: for strings, stop at null terminator
+  if (true && types::isString(slot.type)){
+    moveTo(slot);
+    setSeekMarker();
+
+    switchField(MacroCell::Value0);
+    emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
+    switchField(MacroCell::Flag);
+    loopOpen(); {
+      zeroCell();
+      switchField(MacroCell::Value0);
       emit<primitive::Out>();
+      emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
+
+      // Check if end of string was reached by storing NOT(Value0) in Flag. If hit, flag0 becomes 0 and we exit the loop
+      
+      emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
+      switchField(MacroCell::Flag);
+    } loopClose();
+
+    // We hit the end of the string -> return to seek marker (no payload, don't skip current)
+    seek(primitive::Left, 0, false);
+    // Back at slot -> DP is valid again
+  }
+  else {
+    for (int i = 0; i != slot.type->size(); ++i) {
+      moveTo(slot + i, MacroCell::Value0);
+      emit<primitive::Out>();
+      if (slot.type->usesValue1()) {
+	moveTo(slot + i, MacroCell::Value1);
+	emit<primitive::Out>();
+      }
     }
   }
+
+  popPtr();
 }
 

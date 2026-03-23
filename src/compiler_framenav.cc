@@ -66,8 +66,10 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
 	emit<primitive::MovePointerRelative>(-diff);
 	offset += MacroCell::FieldCount;
       }
-      else if (types::isArray(argType)) {
+      else if (types::isArray(argType) || types::isString(argType)) {
 	// recursive call for each element
+	// TODO: This should probably be a runtime loop, at least for large enough n
+	// Code gets big very fast when copying large object across frame boundaries.
 	for (int i = 0; i != argType->length(); ++i) {
 	  self(self, offset, arg->element(i));
 	}
@@ -153,30 +155,43 @@ void Compiler::moveToGlobalFrame(int payload) {
 }
 
 void Compiler::markStartOfOriginFrame() {
+  pushPtr();
   moveToOrigin();
+  setSeekMarker();
+  popPtr();
+}
+
+void Compiler::setSeekMarker() {
   switchField(MacroCell::SeekMarker);
   setToValue(1);
 }
 
-void Compiler::moveToOriginFrame(int payload) {
-  assert(payload >= 0 && payload <= 2);
+void Compiler::seek(primitive::Direction dir, int payload, bool skipFirstCheck) {
+  int const stride = MacroCell::FieldCount * ((dir == primitive::Right) ? 1 : -1);
+
   
-  pushPtr();
-  switchField(MacroCell::Flag);
-  setToValue(1);
+  if (skipFirstCheck) {
+    switchField(MacroCell::Flag);
+    setToValue(1);
+  }
+  else {
+    switchField(MacroCell::SeekMarker);
+    emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
+    switchField(MacroCell::Flag);
+  }
   loopOpen(); {
     zeroCell();
     // Move pointer and payload to the next cell
     if (payload) {
       switchField(MacroCell::Payload0);
-      emit<primitive::MoveData>(MacroCell::FieldCount);
+      emit<primitive::MoveData>(stride);
       if (payload == 2) {
 	switchField(MacroCell::Payload1);
-	emit<primitive::MoveData>(MacroCell::FieldCount);
+	emit<primitive::MoveData>(stride);
       }
     }
-    emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
-
+    emit<primitive::MovePointerRelative>(stride);
+    
     // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
     switchField(MacroCell::SeekMarker);
     emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
@@ -186,6 +201,14 @@ void Compiler::moveToOriginFrame(int payload) {
   switchField(MacroCell::SeekMarker);
   zeroCell();
   switchField(MacroCell::Value0);
+}
+  
+
+void Compiler::moveToOriginFrame(int payload) {
+  assert(payload >= 0 && payload <= 2);
+  
+  pushPtr();
+  seek(primitive::Right, payload);
   resetOrigin();
   popPtr();
 }

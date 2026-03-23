@@ -27,7 +27,7 @@ void Compiler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
     // Bring payload back
     moveToOriginFrame(useValue1 ? 2 : 1);
 
-    // Move the payload into the local slot  TODO: code duplication between this an the other way around
+    // Move the payload into the local slot  TODO: code duplication between this an the other way 
     moveTo(localCell, MacroCell::Value0); 
     zeroCell();
     moveTo(0, MacroCell::Payload0);

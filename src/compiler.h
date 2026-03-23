@@ -135,7 +135,9 @@ private:
   // Frame Navigation (compiler_framenav.cc)
   void pushFrame();
   void popFrame();
+  void seek(primitive::Direction dir, int payload, bool skipFirstCheck = true);
   void copyArgsToNextFrame(std::string const &functionName, std::vector<values::Value> const &args);
+  void setSeekMarker();
   void markStartOfOriginFrame();  
   void moveToPreviousFrame();
   void moveToGlobalFrame(int payload = 0);  

@@ -11,7 +11,7 @@
 namespace types {
 
   enum TypeTag {
-    VOID, RAW, I8, I16, ARRAY, STRUCT, POINTER
+    VOID, RAW, I8, I16, ARRAY, STRING, STRUCT, POINTER
   };
   
   struct Type {
@@ -22,6 +22,7 @@ namespace types {
     virtual bool usesValue1() const { return false; }
     virtual Type const *elementType() const { return nullptr; }
     virtual std::string str() const = 0;
+    virtual bool isConstructibleFrom(Type const *other) const = 0;
   };
 
   using TypeHandle = Type const *;
@@ -33,6 +34,10 @@ namespace types {
     virtual TypeTag tag() const { return RAW; }
     virtual int size() const { return _size; }
     virtual std::string str() const { return std::string("raw<") + std::to_string(_size) + ">"; }
+    virtual bool isConstructibleFrom(Type const *other) const override {
+      return other->size() <= _size;
+    }
+    
   };
   
   struct VoidType: Type {
@@ -40,6 +45,7 @@ namespace types {
     virtual int size() const override { return 0; }
     virtual int length() const { return 0; }
     virtual std::string str() const { return "void"; }
+    virtual bool isConstructibleFrom(Type const *) const override { return false; }
   };
 
   struct IntegerType : Type {
@@ -48,6 +54,9 @@ namespace types {
     virtual TypeTag tag() const override { return bits > 8 ? I16 : I8; }
     virtual bool usesValue1() const override { return bits > 8; }
     virtual std::string str() const { return tag() == I8 ? "i8" : "i16"; }
+    virtual bool isConstructibleFrom(Type const *other) const override {
+      return (this->tag() == I16) ? true : (other->tag() == I8);
+    }
   };  
 
   struct ArrayType: Type {
@@ -61,10 +70,36 @@ namespace types {
     virtual bool usesValue1() const override { return _elementType->usesValue1(); }
     virtual TypeHandle elementType() const override { return _elementType; }
     virtual std::string str() const { return std::string("array<") + _elementType->str() + ", " + std::to_string(_length) + ">"; }
+    virtual bool isConstructibleFrom(Type const *other) const override {
+      if (size() < other->size()) return false;
+      if (other->tag() == ARRAY)  return _elementType->isConstructibleFrom(other->elementType());
+      if (other->tag() == STRING) return _elementType->tag() == I8 || _elementType->tag() == I16;
+      return false;
+    }
+    
   };
 
+  struct StringType: Type {
+    TypeHandle _i8;
+    int _capacity;
+
+    StringType(TypeHandle i8, int maxLen):  _i8(i8), _capacity(maxLen + 1) {}
+    virtual TypeTag tag() const override { return STRING; }
+    virtual int size() const override { return _capacity; }
+    virtual int length() const { return _capacity; }
+    virtual TypeHandle elementType() const override { return _i8; }    
+    virtual std::string str() const { return std::string("string<") + std::to_string(_capacity - 1) + ">"; }
+    virtual bool isConstructibleFrom(Type const *other) const override {
+      if (size() < other->size()) return false;
+      if (other->tag() == ARRAY)  return other->elementType()->tag() == I8;
+      if (other->tag() == STRING) return true;
+      return false;
+    }    
+  };
+  
   inline bool isInteger(TypeHandle t) { return t->tag() == I8 || t->tag() == I16; }
   inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
+  inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
 
   class TypeSystem {
     
@@ -74,7 +109,8 @@ namespace types {
 
     mutable std::vector<std::unique_ptr<RawType>> _rawTypes;    
     mutable std::vector<std::unique_ptr<ArrayType>> _arrayTypes;
-    
+    mutable std::vector<std::unique_ptr<StringType>> _stringTypes;
+
   public:
     
     TypeSystem():
@@ -96,6 +132,17 @@ namespace types {
       }
       _arrayTypes.emplace_back(std::make_unique<ArrayType>(elem, length));
       return _arrayTypes.back().get();
+    }
+
+    inline TypeHandle string(int maxLen) const {
+      for (auto const &ptr: _stringTypes) {
+	if (ptr->size() == maxLen + 1) {
+	  TypeHandle t = ptr.get();
+	  return t;
+	}
+      }
+      _stringTypes.emplace_back(std::make_unique<StringType>(i8(), maxLen));
+      return _stringTypes.back().get();
     }
     
     inline TypeHandle raw(int n) const {
@@ -179,6 +226,7 @@ namespace values {
       virtual types::TypeHandle type(types::TypeSystem const &ts) const override {
 	return ts.array(elementType, arr.size());
       }
+
       virtual std::shared_ptr<Base> element(size_t idx) const override {
 	assert(idx < arr.size());
 	return arr[idx];
@@ -214,6 +262,29 @@ namespace values {
 	}
       }
     }; // array
+
+    struct string: Base {
+      std::string const _str;
+      std::vector<std::shared_ptr<Base>> arr;
+
+      template <typename StringType> requires std::constructible_from<std::string, StringType>    
+      string(StringType const &s): _str(s) {
+	for (char c: _str)  arr.emplace_back(std::make_shared<i8>(c));
+	arr.emplace_back(std::make_shared<i8>(0));
+      }
+      
+      string(string const &) = default;
+      string(...): _str() { assert(false); }      
+
+      virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.string(_str.size()); }
+      virtual std::string str() const override { return std::string("\"") + _str + "\""; }
+      std::shared_ptr<Base> clone() const override { return std::make_shared<string>(*this); }
+      virtual std::shared_ptr<Base> element(size_t idx) const override {
+	assert(idx < _str.size() + 1);
+	return arr[idx];
+      }
+      
+    }; // string
   }
   
 
@@ -230,9 +301,10 @@ namespace values {
   template <typename ... Args> 
   Value value(types::TypeHandle type, Args&& ... args) {
     switch (type->tag()) {
-    case types::I8:    return std::make_shared<impl::i8>(std::forward<Args>(args)...);
-    case types::I16:   return std::make_shared<impl::i16>(std::forward<Args>(args)...);
-    case types::ARRAY: return std::make_shared<impl::array>(type->elementType(), std::forward<Args>(args)...);
+    case types::I8:     return std::make_shared<impl::i8>(std::forward<Args>(args)...);
+    case types::I16:    return std::make_shared<impl::i16>(std::forward<Args>(args)...);
+    case types::ARRAY:  return std::make_shared<impl::array>(type->elementType(), std::forward<Args>(args)...);
+    case types::STRING: return std::make_shared<impl::string>(std::forward<Args>(args)...);      
     default: assert(false);
     };
   }

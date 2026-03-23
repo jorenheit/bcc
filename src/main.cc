@@ -6,32 +6,37 @@ int main() try {
   auto &ts = c.typeSystem();
 
   c.setEntryPoint("main");
+
+  auto string = ts.string(15);
   
   c.begin(); {
     c.beginFunction("main"); {
-      c.declareLocal("x", ts.i8());
-      c.declareLocal("y", ts.i16());
+      c.declareLocal("s", string);
 
       c.beginBlock("entry"); {
-	c.callFunction("foo", "next", values::List{
-	    values::Var("x"),
-	    values::Var("y")
+	//	c.assign("s", values::value(string, "Hello World\n"));
+	c.callFunction("print", "return", values::List{
+	    //  values::Var("s")
+	    values::value(string, "Hello World\n")	    
 	  });
       } c.endBlock();
 
-      c.beginBlock("next"); {
+      c.beginBlock("return"); {
+      	c.returnFromFunction();
+      } c.endBlock();
+      
+    } c.endFunction();
+
+    c.beginFunction("print", ts.voidT(),
+		    "s", ts.string(20)); {
+      c.beginBlock("entry"); {
+	c.writeOut("s");
 	c.returnFromFunction();
       } c.endBlock();
       
     } c.endFunction();
 
-    c.beginFunction("foo", ts.voidT(),
-		    "x", ts.i8(),
-		    "y", ts.i16()); {
-      c.beginBlock("entry"); {
-	c.returnFromFunction();
-      } c.endBlock();
-    } c.endFunction();
+    
   } c.end();
 
   std::cout << c.dumpBrainfuck() << '\n';

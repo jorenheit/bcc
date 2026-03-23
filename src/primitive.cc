@@ -57,7 +57,12 @@ namespace Algorithm {
   std::string moveValue(int current, int target1, int target2) {
     // [->+>+<<]
     std::ostringstream oss;
-    oss << "["
+    oss << movePtr(target1, current)
+	<< zero()
+	<< movePtr(target2, target1)
+	<< zero()
+	<< movePtr(current, target2) 
+	<< "["
 	<<   decrement()
 	<<   movePtr(target1, current)
 	<<   increment()

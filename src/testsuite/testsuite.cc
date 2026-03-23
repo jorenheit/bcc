@@ -568,6 +568,31 @@ static std::vector<bftest::TestCase> buildTests() {
 			       "ABCD", []() {
 #include "tests/writeout_with_temporary_array.cc"
 			       }));
+
+  tests.push_back(expectOutput("Passing String Variable of Same Size",
+			       "Hello World", []() {
+#include "tests/passing_string_as_variable_same_size.cc"
+			       }));
+
+  tests.push_back(expectOutput("Passing String Anonymously of Same Size",
+			       "Hello World", []() {
+#include "tests/passing_string_anonymous_same_size.cc"
+			       }));
+
+  tests.push_back(expectOutput("Passing String Variable of Smaller Size",
+			       "Hello World", []() {
+#include "tests/passing_string_variable_smaller_size.cc"
+			       }));
+
+  tests.push_back(expectOutput("Passing String Anonymous of Smaller Size",
+			       "Hello World", []() {
+#include "tests/passing_string_anonymous_smaller_size.cc"
+			       }));
+
+  tests.push_back(expectOutput("i8 to i16",
+			       std::string("AA") + '\0', []() {
+#include "tests/i8_to_i16_conversion.cc"
+			       }));
   
   
   return tests;
