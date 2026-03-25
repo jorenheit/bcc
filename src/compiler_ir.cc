@@ -279,6 +279,39 @@ Slot Compiler::local(std::string const& varName, bool globalReference) {
   std::unreachable();
 }
 
+
+
+Slot Compiler::getStructField(Slot const &slot, std::string const &fieldName) {
+  error_if(_currentFunction == nullptr, "called 'getStructField(", slot.name, ", ", fieldName, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'getStructField(", slot.name, ", ", fieldName, ")' outside code-block.");
+  error_if(not types::isStruct(slot.type), "tried to call 'getStructField' on '", slot.name, "', which is not a struct.");
+
+  auto s = static_cast<types::StructType const *>(slot.type);
+
+  auto [fieldIndex, offset] = [&]() -> std::pair<size_t, size_t> {
+    for (size_t idx = 0, offset = 0; idx != s->_fields.size(); ++idx) {
+      types::StructType::Field const &f = s->_fields[idx];
+      if (f.name == fieldName) return std::make_pair(idx, offset);
+      offset += f.type->size();
+    }
+    return std::make_pair(-1, 0);
+  }();
+  
+  error_if(fieldIndex == -1UL, "variable '", slot.name, "' of struct type '", slot.type->str(), "' does not contain field '", fieldName, "'.");
+
+  return Slot {
+    .name = std::string("__field_") + slot.name + "_" + fieldName,
+    .type = s->_fields[fieldIndex].type,
+    .kind = Slot::StructField,
+    .offset = slot.offset + (int)offset
+  };  
+}
+
+Slot Compiler::getStructField(values::Var const &var, std::string const &field) {
+  return getStructField(local(var->varName()), field);
+}
+
+
 Slot Compiler::arrayElementConst(values::Var const &var, int index) {
   return arrayElementConst(local(var->varName()), index);
 }
@@ -496,7 +529,7 @@ void Compiler::writeOut(Slot const &slot) {
    pushPtr();
   
   // TODO: for strings, stop at null terminator
-  if (true && types::isString(slot.type)){
+  if (types::isString(slot.type)){
     moveTo(slot);
     setSeekMarker();
 

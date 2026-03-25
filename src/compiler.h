@@ -69,6 +69,9 @@ class Compiler {
   void referGlobals(std::vector<std::string> const &names);
 
 
+  // TODO: shit, I can't pass slots to a function. Necessary when passing fields or array elements
+  // I really need some generalized object that can be initialized by a slot, string, var, value, ...
+  // Or extend the Var class to handle indices and fields.
   void callFunction(std::string const& functionName, std::string const& nextBlockName,
 		    std::vector<values::Value> const &args, values::Var const &returnVar = {});
   void callFunction(std::string const& functionName, std::string const& nextBlockName,
@@ -91,6 +94,18 @@ class Compiler {
   void writeOut(Slot const &slot);
   void writeOut(values::Value const &val);
 
+  Slot getStructField(values::Var const &var, std::string const &field);
+  Slot getStructField(Slot const &slot, std::string const &field);
+
+  template <typename ... Args> requires (std::is_constructible_v<types::StructType, std::string, Args> && ...)
+  types::TypeHandle defineStruct(std::string const &name, Args&& ... args){
+    types::TypeHandle s = _ts.structT(name, std::forward<Args>(args)...);
+    error_if(s == nullptr, "conflicting definitions of struct '", name, "'.");
+    return s;
+  }
+
+  // TODO: wrap _ts to get types directly from the compiler -> allows for error messages here
+  
   // TODO: make generic arrayElement that is overloaded to take int, values::Value, Slot, string
   Slot arrayElementConst(values::Var const &var, int index);
   Slot arrayElementConst(Slot const &slot, int index);

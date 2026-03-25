@@ -10,6 +10,7 @@ struct Slot {
     Global,
     GlobalReference,
     ArrayElement,
+    StructField,
     Dummy,
     Available,
     Temp

@@ -593,6 +593,16 @@ static std::vector<bftest::TestCase> buildTests() {
 			       std::string("AA") + '\0', []() {
 #include "tests/i8_to_i16_conversion.cc"
 			       }));
+
+  tests.push_back(expectOutput("Reading and Writing Struct Fields",
+			       "ABAB", []() {
+#include "tests/struct_field_read_write.cc"
+			       }));
+
+  tests.push_back(expectOutput("Passing a Struct to a Function",
+			       "ABAB", []() {
+#include "tests/passing_struct_to_function.cc"
+			       }));
   
   
   return tests;

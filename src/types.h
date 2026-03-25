@@ -21,6 +21,7 @@ namespace types {
     virtual int length() const { return 1; }
     virtual bool usesValue1() const { return false; }
     virtual Type const *elementType() const { return nullptr; }
+    virtual Type const *fieldType(std::string const &) const { return nullptr; }
     virtual std::string str() const = 0;
     virtual bool isConstructibleFrom(Type const *other) const = 0;
   };
@@ -96,10 +97,55 @@ namespace types {
       return false;
     }    
   };
+
+  struct StructType: Type {
+    struct Field {
+      std::string name;
+      Type const *type;
+    };
+
+    std::string _name;
+    std::vector<Field> _fields;
+    int _size;
+
+    template <typename ... Args> requires (std::is_constructible_v<Field, Args> && ...)
+    StructType(std::string const &name, Args&& ... args):
+      _name(name),
+      _size(0)
+    {
+      _fields.reserve(sizeof...(args));
+      (_fields.emplace_back(std::forward<Args>(args)), ...);
+
+      for (Field const &f: _fields) _size += f.type->size();
+    }
+
+    virtual TypeTag tag() const override { return STRUCT; }
+    virtual int size() const override { return _size; }
+
+    virtual bool usesValue1() const {
+      for (Field const &f: _fields) if (f.type->usesValue1()) return true;
+      return false;
+    }
+    
+    
+    virtual TypeHandle fieldType(std::string const &fieldName) const override {
+      for (Field const &f: _fields) {
+	if (f.name == fieldName) return f.type;
+      }
+      assert(false && "invalid field name");
+      std::unreachable();
+    }
+    
+    virtual std::string str() const { return _name; }
+    virtual bool isConstructibleFrom(Type const *other) const override {
+      return other == this;
+    }    
+  };
   
   inline bool isInteger(TypeHandle t) { return t->tag() == I8 || t->tag() == I16; }
   inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
+  inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
 
   class TypeSystem {
     
@@ -110,6 +156,7 @@ namespace types {
     mutable std::vector<std::unique_ptr<RawType>> _rawTypes;    
     mutable std::vector<std::unique_ptr<ArrayType>> _arrayTypes;
     mutable std::vector<std::unique_ptr<StringType>> _stringTypes;
+    mutable std::vector<std::unique_ptr<StructType>> _structTypes;
 
   public:
     
@@ -151,6 +198,30 @@ namespace types {
       }
       _rawTypes.emplace_back(std::make_unique<RawType>(n));
       return _rawTypes.back().get();
+    }
+
+
+    template <typename ... Args> requires (std::is_constructible_v<StructType, std::string, Args> && ...)
+    TypeHandle structT(std::string const &name, Args&& ... args){
+
+      auto s1 = std::make_unique<StructType>(name, std::forward<Args>(args)...);
+
+      for (auto const &s2: _structTypes) {
+	if (s1->str() == s2->str()) {
+	  // names match -> fields must match
+	  if (s1->_fields.size() != s2->_fields.size()) return nullptr;
+	  for (size_t i = 0; i != s1->_fields.size(); ++i) {
+	    if ((s1->_fields[i].name != s2->_fields[i].name) ||
+		(s1->_fields[i].type != s2->_fields[i].type)) return nullptr;
+	  }
+	  // found full match
+	  return s2.get();
+	}
+      }
+
+      // new definition -> add to known types
+      _structTypes.emplace_back(std::move(s1));
+      return _structTypes.back().get();
     }
   };  
   

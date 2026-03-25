@@ -68,8 +68,6 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
       }
       else if (types::isArray(argType) || types::isString(argType)) {
 	// recursive call for each element
-	// TODO: This should probably be a runtime loop, at least for large enough n
-	// Code gets big very fast when copying large object across frame boundaries.
 	for (int i = 0; i != argType->length(); ++i) {
 	  self(self, offset, arg->element(i));
 	}
@@ -78,7 +76,7 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
 	assert(false && "passing this type as arg is not supported yet");
       }
     }
-    else {
+    else { // values::Var
       // This is a variable -> find its slot and copy the data into the next frame
       Slot const &varSlot = local(arg->varName());
       

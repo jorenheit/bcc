@@ -4,12 +4,18 @@
 [ ] structs
 [x] strings
 [ ] pointers
+[ ] procedures -> inlined code that acts as a funcion/macro. Shares frame with it caller, takes arguments only
+    by reference (names are aliases). Need a way to add const/mutable to the typesystem to indicate which args
+    are being modified by the procedure. Will come in handy with global sync as well.
 [ ] large value constuctor algorithms to reduce code size. Enable with compiler option for size optimization
 [ ] design alg to reduce amount of >>> and <<< sequences. Insert the relative amount in one of the payload cells
     and use that as a counter. Slower runtime but less code. Have a compiler option to optimize for size.
 [ ] zeroCell -> decrement if value is known to be 1
 [ ] dynamic array indices
-[ ] assignMove (reduce code size when returning non-globals by moving them into return-slot instead of copy)
+[ ] assignMove -> reduce code size when returning non-globals by moving them into return-slot instead of copy/
 [ ] seperate Error from Warning -> issue warning for certain type conversions (I8 <-> I16, arrays of, etc).
     make sure that these warnings can be disabled by the frontend
-[ ] put DP in dynamic mode where appropriate. Especially with seek it makes sense to be explicit about this
+[ ] put DP in dynamic mode where appropriate. Especially with seek it makes sense to be explicit about this.
+[ ] when copying large objects (either locally or into a call-frame (as argument, global, whatever)), have a runtime
+    iteration to loop over its elements rather than a compile-time loop to reduce code (compiler option Os).
+[ ] make type members const
