@@ -14,9 +14,9 @@ c.begin(); {
     c.declareLocal("y", ts.i16());
     
     c.beginBlock("entry"); {
-      c.assign(values::Var("x"), values::value(ts.i8(), 'A'));
+      c.assign("x", values::i8(ts, 'A'));
       c.writeOut("x");
-      c.assign(values::Var("y"), values::Var("x"));
+      c.assign("y", "x");
       c.writeOut("y");
       c.returnFromFunction();
     } c.endBlock();

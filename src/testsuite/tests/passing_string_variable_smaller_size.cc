@@ -8,15 +8,11 @@ c.setEntryPoint("main");
 
 std::string str = "Hello World";
 
-auto smallString = ts.string(str.size());
-auto bigString = ts.string(str.size() * 2);
   
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("print", "return", values::List{
-	  values::value(smallString, str)
-	});
+      c.callFunction("print", "return", values::string(ts, str));
     } c.endBlock();
 
     c.beginBlock("return"); {
@@ -26,7 +22,7 @@ c.begin(); {
   } c.endFunction();
 
   c.beginFunction("print", ts.voidT(),
-		  "s", bigString); {
+		  "s", ts.string(str.size() * 2)); {
     c.beginBlock("entry"); {
       c.writeOut("s");
       c.returnFromFunction();

@@ -256,7 +256,7 @@ void Compiler::referGlobals(std::vector<std::string> const &names) {
 }
 
 // TODO: does not belong in public interface
-Slot Compiler::local(std::string const& varName, bool globalReference) {
+Slot Compiler::local(std::string const& varName, bool globalReference) const {
   assert(_currentFunction != nullptr);
 
   Function::Scope *targetScope = _currentScope;
@@ -281,7 +281,8 @@ Slot Compiler::local(std::string const& varName, bool globalReference) {
 
 
 
-Slot Compiler::getStructField(Slot const &slot, std::string const &fieldName) {
+Slot Compiler::getStructFieldImpl(values::LValue const &obj, std::string const &fieldName) {
+  Slot const slot = obj.slot();
   error_if(_currentFunction == nullptr, "called 'getStructField(", slot.name, ", ", fieldName, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'getStructField(", slot.name, ", ", fieldName, ")' outside code-block.");
   error_if(not types::isStruct(slot.type), "tried to call 'getStructField' on '", slot.name, "', which is not a struct.");
@@ -307,16 +308,8 @@ Slot Compiler::getStructField(Slot const &slot, std::string const &fieldName) {
   };  
 }
 
-Slot Compiler::getStructField(values::Var const &var, std::string const &field) {
-  return getStructField(local(var->varName()), field);
-}
-
-
-Slot Compiler::arrayElementConst(values::Var const &var, int index) {
-  return arrayElementConst(local(var->varName()), index);
-}
-
-Slot Compiler::arrayElementConst(Slot const &slot, int index) {
+Slot Compiler::arrayElementConstImpl(values::LValue const &arr, int index) {
+  Slot const slot = arr.slot();
   error_if(_currentFunction == nullptr, "called 'arrayElementConst(", slot.name, ", ", index, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'arrayElementConst(", slot.name, ", ", index, ")' outside code-block.");
   error_if(not types::isArray(slot.type) && not types::isString(slot.type),
@@ -333,33 +326,23 @@ Slot Compiler::arrayElementConst(Slot const &slot, int index) {
 }
 
 
-void Compiler::callFunction(std::string const &functionName,
-			    std::string const &nextBlockName,
-			    values::Var const &returnVar) {
-  callFunction(functionName, nextBlockName, {}, returnVar);
-}
+void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
+				std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args) {
 
-void Compiler::callFunction(std::string const &functionName,
-			    std::string const &nextBlockName,
-			    std::vector<values::Value> const &args,
-			    values::Var const &returnVar) {
   error_if(_currentFunction == nullptr, "called 'callFunction(", functionName, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'callFunction(", functionName, ")' outside code-block.");
   assert(_currentSeq != nullptr);
 
   syncLocalToGlobal();
 
-  auto const metaBlockName = std::string("__ret_meta_") 
-    + _currentFunction->name + "_"
-    + std::to_string(_metaBlocks.size());
-
+  std::string const metaBlockName = std::string("__ret_meta_") + _currentFunction->name + "_" + std::to_string(_metaBlocks.size());
 
   setNextBlock(_currentFunction->name, metaBlockName);
-  _metaBlocks.push_back({
+  _metaBlocks.push_back(MetaBlock{
       .name = metaBlockName,
       .caller = _currentFunction->name,
       .callee = functionName,
-      .returnVar = (returnVar != nullptr) ? returnVar->varName() : "",
+      .returnSlot = returnSlot ? std::optional<Slot>(returnSlot->slot()) : std::nullopt,
       .nextBlockName = nextBlockName,
     });
 
@@ -367,6 +350,7 @@ void Compiler::callFunction(std::string const &functionName,
   copyArgsToNextFrame(functionName, args);
   pushFrame();
   setNextBlock(functionName, "");
+  
 }
 
 
@@ -383,152 +367,101 @@ void Compiler::abortProgram() {
 }
 
 
-void Compiler::returnFromFunction() {
-  error_if(_currentFunction == nullptr, "called 'returnFromFunction' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'returnFromFunction' outside code-block.");
+void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret) {
+  if (ret) {
+    error_if(_currentFunction == nullptr, "called 'returnFromFunction(", ret->str(),")' outside function-block.");
+    error_if(_currentBlock == nullptr, "called 'returnFromFunction(", ret->str(),")' outside code-block.");
+    error_if(ret->type() != _currentFunction->sig.returnType,
+	     "type of return-value does not match function signature of '':"
+	     "expected '", _currentFunction->sig.returnType->str(), "', got '", ret->type()->str(), "'.");
+
+    // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
+    Slot returnSlot = {
+      .name = "__return_slot",
+      .type = ret->type(),
+      .kind = Slot::Dummy,
+      .offset = FrameLayout::ReturnValueStart,
+      .scope = nullptr
+    };
+    
+    assign(returnSlot, *ret);
+  }
+  else {
+    error_if(_currentFunction == nullptr, "called 'returnFromFunction' outside function-block.");
+    error_if(_currentBlock == nullptr, "called 'returnFromFunction' outside code-block.");
+  }
   
   syncLocalToGlobal();
   popFrame();
-  _nextBlockIsSet = true;
+  _nextBlockIsSet = true;  
 }
 
-void Compiler::returnFromFunction(Slot const &slot) {
-  error_if(_currentFunction == nullptr, "called 'returnFromFunction(", slot.name,")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'returnFromFunction(", slot.name,")' outside code-block.");
-  error_if(slot.type != _currentFunction->sig.returnType,
-	   "type of return-value does not match function signature of '':"
-	   "expected '", _currentFunction->sig.returnType->str(), "', got '", slot.type->str(), "'.");
+void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) {
+  error_if(_currentFunction == nullptr, "called 'assign(", lhs.str(), ", ", rhs.str(), ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'assign(",  lhs.str(), ", ", rhs.str(), ")' outside code-block.");
+  error_if(not lhs.type()->isConstructibleFrom(rhs.type()),
+	   "type mismatch in 'assign(", lhs.str(), ", ", rhs.str(), ")': '",
+	   lhs.str(), "' is of type '", lhs.type()->str(), "' while '", rhs.str(), "' is of type '", rhs.type()->str(), "'.");
 
-  // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
-  Slot returnSlot = {
-    .name = "__return_slot",
-    .type = slot.type,
-    .kind = Slot::Dummy,
-    .offset = FrameLayout::ReturnValueStart,
-    .scope = nullptr
-  };
-
-  assign(returnSlot, slot);
-  returnFromFunction();
-}
-
-void Compiler::returnFromFunction(values::Value const &value) {
-  error_if(_currentFunction == nullptr, "called 'returnFromFunction(", value->str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'returnFromFunction(", value->str(), ")' outside code-block.");
-  error_if(value->type(_ts) != _currentFunction->sig.returnType,
-	   "type of return-value does not match function signature of '", _currentFunction->name, "': "
-	   "expected '", _currentFunction->sig.returnType->str(), "', got '", value->type(_ts)->str(), "'.");
-
-  Slot returnSlot = {
-    .name = "__return_slot",
-    .type = value->type(_ts),
-    .kind = Slot::Dummy,
-    .offset = FrameLayout::ReturnValueStart,
-    .scope = nullptr
-  };
-
-  assign(returnSlot, value);
-  returnFromFunction();
-}
-
-void Compiler::returnFromFunction(values::Var const &var) {
-  return returnFromFunction(local(var->varName()));
-}
-
-
-void Compiler::assign(Slot const &dest, Slot const &src) {
-  error_if(_currentFunction == nullptr, "called 'assign(", dest.name, ", ", src.name, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'assign(",  dest.name, ", ", src.name, ")' outside code-block.");
-  error_if(not dest.type->isConstructibleFrom(src.type), //dest.type != src.type,
-	   "type mismatch in 'assign(", dest.name, ", ", src.name, ")': '",
-	   dest.name, "' is of type '", dest.type->str(), "' while '", src.name, "' is of type '", src.type->str(), "'.");
-
-
-  types::TypeHandle const type = dest.type;
-  
-  // Copy src into dest
-  for (int i = 0; i != type->size(); ++i) {
-    moveTo(dest + i, MacroCell::Value0);
-    zeroCell();
-    moveTo(src + i, MacroCell::Value0);
-    copyField(dest + i, MacroCell::Value0);
-    if (type->usesValue1()) {
-      moveTo(dest + i, MacroCell::Value1);
+  // TODO: factor out each branch into a helper function
+  if (rhs.hasSlot()) {
+    Slot const dest = lhs.slot();
+    Slot const src  = rhs.slot();
+    types::TypeHandle const type = dest.type;
+    
+    // Copy src into dest
+    for (int i = 0; i != type->size(); ++i) {
+      moveTo(dest + i, MacroCell::Value0);
       zeroCell();
-      moveTo(src + i, MacroCell::Value1);
-      copyField(dest + i, MacroCell::Value1);
+      moveTo(src + i, MacroCell::Value0);
+      copyField(dest + i, MacroCell::Value0);
+      if (type->usesValue1()) {
+	moveTo(dest + i, MacroCell::Value1);
+	zeroCell();
+	moveTo(src + i, MacroCell::Value1);
+	copyField(dest + i, MacroCell::Value1);
+      }
     }
+  }
+  else {
+    // Constant -> construct in slot
+    auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Value const &val) -> void {
+      if (types::isInteger(slot.type)) {
+	int const x = val->value();
+	moveTo(slot, MacroCell::Value0);
+	setToValue(x & 0xff);
+	if (slot.type->usesValue1()) {
+	  moveTo(slot, MacroCell::Value1);
+	  setToValue( (x >> 8) & 0xff);
+	}
+      }
+      else if (types::isArray(slot.type) || types::isString(slot.type)) {
+	for (int i = 0; i != val->type()->length(); ++i) {
+	  self(self, arrayElementConst(slot, i), val->element(i));
+	}
+      }
+      else {
+	assert(false && "not implemented");
+      }
+    };
+    constructInSlot(constructInSlot, lhs.slot(), rhs.value());
   }
 }
 
-void Compiler::assign(Slot const &slot, values::Value const &value) {
-  error_if(_currentFunction == nullptr, "called 'assign(", slot.name, ", ", value->str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'assign(",  slot.name, ", ", value->str(), ")' outside code-block.");
-  error_if(not slot.type->isConstructibleFrom(value->type(_ts)), //slot.type != value->type(_ts),
-	   "type mismatch in 'assign(", slot.name, ", ", value->str(), ")': '",
-	   slot.name, "' is of type '", slot.type->str(), "' while '", value->str(), "' is of type '", value->type(_ts)->str(), "'.");
+void Compiler::writeOutImpl(values::RValue const &rhs) {
+  error_if(_currentFunction == nullptr, "called 'writeOut(", rhs.str(), ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'writeOut(",  rhs.str(), ")' outside code-block.");
 
+  pushPtr();
 
-  // If variable, dispatch 
-  if (value->type(_ts) == nullptr) return assign(slot, value->varName());
+  if (not rhs.hasSlot()) {
+    Slot const tmp = getTemp(rhs.value());
+    writeOut(rValue(tmp));
+    popPtr();
+    return;
+  }
 
-  // Constant -> construct in slot
-  auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Value const &val) -> void {
-    if (types::isInteger(slot.type)) {
-      int const x = val->value();
-      moveTo(slot, MacroCell::Value0);
-      setToValue(x & 0xff);
-      if (slot.type->usesValue1()) {
-	moveTo(slot, MacroCell::Value1);
-	setToValue( (x >> 8) & 0xff);
-      }
-    }
-    else if (types::isArray(slot.type) || types::isString(slot.type)) {
-      for (int i = 0; i != val->type(_ts)->length(); ++i) {
-	self(self, arrayElementConst(slot, i), val->element(i));
-      }
-    }
-    else {
-      assert(false && "not implemented");
-    }
-  };
-
-  constructInSlot(constructInSlot, slot, value);
-}
-
-void Compiler::assign(Slot const &slot, values::Var const &var) {
-  assign(slot, local(var->varName()));
-}
-
-void Compiler::assign(values::Var const &var, values::Value const &value) {
-  assign(local(var->varName()), value);
-}
-
-
-void Compiler::assign(values::Var const &destVar, values::Var const &srcVar) {
-  assign(local(destVar->varName()), local(srcVar->varName()));
-}
-
-void Compiler::writeOut(values::Value const &value) {
-  error_if(_currentFunction == nullptr, "called 'writeOut(", value->str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'writeOut(",  value->str(), ")' outside code-block.");
-  
-  if (value->type(_ts) == types::null) return writeOut(value->varName());
-  Slot const tmp = getTemp(value);
-  writeOut(tmp);
-}
-
-void Compiler::writeOut(values::Var const &var) {
-  writeOut(local(var->varName()));
-}
-
-void Compiler::writeOut(Slot const &slot) {
-  error_if(_currentFunction == nullptr, "called 'writeOut(", slot.name, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'writeOut(",  slot.name, ")' outside code-block.");
-
-   pushPtr();
-  
-  // TODO: for strings, stop at null terminator
+  Slot const slot = rhs.slot();
   if (types::isString(slot.type)){
     moveTo(slot);
     setSeekMarker();
@@ -543,7 +476,6 @@ void Compiler::writeOut(Slot const &slot) {
       emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
 
       // Check if end of string was reached by storing NOT(Value0) in Flag. If hit, flag0 becomes 0 and we exit the loop
-      
       emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
       switchField(MacroCell::Flag);
     } loopClose();

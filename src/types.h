@@ -108,14 +108,10 @@ namespace types {
     std::vector<Field> _fields;
     int _size;
 
-    template <typename ... Args> requires (std::is_constructible_v<Field, Args> && ...)
-    StructType(std::string const &name, Args&& ... args):
-      _name(name),
-      _size(0)
-    {
+    template <typename ... Args>
+    StructType(std::string const &name, Args&& ... args): _name(name), _size(0) {
       _fields.reserve(sizeof...(args));
-      (_fields.emplace_back(std::forward<Args>(args)), ...);
-
+      addFields(std::forward<Args>(args)...);
       for (Field const &f: _fields) _size += f.type->size();
     }
 
@@ -126,7 +122,6 @@ namespace types {
       for (Field const &f: _fields) if (f.type->usesValue1()) return true;
       return false;
     }
-    
     
     virtual TypeHandle fieldType(std::string const &fieldName) const override {
       for (Field const &f: _fields) {
@@ -139,6 +134,19 @@ namespace types {
     virtual std::string str() const { return _name; }
     virtual bool isConstructibleFrom(Type const *other) const override {
       return other == this;
+    }
+
+
+  private:
+    void addFields() {}
+
+    template <typename Name, typename... Rest>
+    void addFields(Name&& name, Type const* type, Rest&&... rest) {
+      _fields.push_back(Field{
+	  std::string(std::forward<Name>(name)),
+	  type
+	});
+      addFields(std::forward<Rest>(rest)...);
     }    
   };
   
@@ -159,7 +167,7 @@ namespace types {
     mutable std::vector<std::unique_ptr<StructType>> _structTypes;
 
   public:
-    
+    // TODO: make return types more explicit: IntegerType const * instead of TypeHandle
     TypeSystem():
       _void(std::make_unique<VoidType>()),
       _i8(std::make_unique<IntegerType>(8)),
@@ -201,26 +209,17 @@ namespace types {
     }
 
 
-    template <typename ... Args> requires (std::is_constructible_v<StructType, std::string, Args> && ...)
-    TypeHandle structT(std::string const &name, Args&& ... args){
-
-      auto s1 = std::make_unique<StructType>(name, std::forward<Args>(args)...);
-
-      for (auto const &s2: _structTypes) {
-	if (s1->str() == s2->str()) {
-	  // names match -> fields must match
-	  if (s1->_fields.size() != s2->_fields.size()) return nullptr;
-	  for (size_t i = 0; i != s1->_fields.size(); ++i) {
-	    if ((s1->_fields[i].name != s2->_fields[i].name) ||
-		(s1->_fields[i].type != s2->_fields[i].type)) return nullptr;
-	  }
-	  // found full match
-	  return s2.get();
-	}
+    TypeHandle structT(std::string const &name) const {
+      for (auto const &s: _structTypes) {
+	if (s->str() == name) return s.get();
       }
-
-      // new definition -> add to known types
-      _structTypes.emplace_back(std::move(s1));
+      return nullptr; // no struct by this name exists
+    }
+    
+    template <typename ... Args> 
+    TypeHandle defineStruct(std::string const &name, Args&& ... args){
+      if (structT(name) != nullptr) return nullptr; // already defined a struct with this name
+      _structTypes.emplace_back(std::make_unique<StructType>(name, std::forward<Args>(args)...));
       return _structTypes.back().get();
     }
   };  
@@ -231,72 +230,166 @@ namespace values {
   
   namespace impl {
     struct Base {
+      types::TypeHandle _type;
+      Base(types::TypeHandle t): _type(t) {}
       virtual ~Base() = default;
-      virtual types::TypeHandle type(types::TypeSystem const &) const = 0;
+
       virtual std::shared_ptr<Base> clone() const = 0;
-      virtual std::string str() const = 0;      
+      virtual std::string str() const = 0;            
+      virtual types::TypeHandle type() const { return _type; }
       virtual int value() const { assert(false); return 0; }
       virtual std::string varName() const { assert(false); return ""; }
-      virtual std::shared_ptr<Base> element(size_t idx) const { assert(false); return nullptr; }
+      virtual std::shared_ptr<Base> element(size_t) const { assert(false); return nullptr; }
+      virtual std::shared_ptr<Base> field(std::string const &) const { assert(false); return nullptr; }
+      virtual bool isRef() const { return false; }
     };
 
-    struct Var: Base {
+    struct Ref: Base {
       std::string _varName;
-      Var(Base const &base): _varName(base.varName()) {}
-
-      Var(std::string const &name): _varName(name) {}
-      Var(...) { assert(false); }
-      virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return nullptr; }
+      Ref(Ref const &other): Base(nullptr), _varName(other._varName) {}
+      Ref(std::string const &name): Base(nullptr), _varName(name) {}
       virtual std::string varName() const override { return _varName; }
       virtual std::string str() const override { return _varName; }
-      
-      std::shared_ptr<Base> clone() const override { return std::make_shared<Var>(*this); }      
+      virtual bool isRef() const override { return true; }
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<Ref>(*this); }      
     };
 
     struct i8: Base {
-      int const _value;
-      i8(i8 const &other): _value(other.value()) {}
-      i8(int v) : _value(v & 0xff) {}
-      i8(...): _value(0) { assert(false); }      
-      virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.i8(); }
+      int _value;
+      i8(types::TypeHandle t, i8 const &other): Base(t), _value(other.value()) {}
+      i8(types::TypeHandle t, int v): Base(t), _value(v & 0xff) {}
+      i8(...): Base(nullptr) {}
       virtual int value() const override { return _value; }
       virtual std::string str() const override { return std::to_string(_value); }
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }      
     };
 
     struct i16: Base {
-      int const _value;
-      i16(i16 const& other): _value(other.value()) {}
-      i16(int v) : _value(v & 0xffff) {}
-      i16(...): _value(0) { assert(false); }      
-      virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.i16(); }
+      int _value;
+      i16(types::TypeHandle t, i16 const& other): Base(t), _value(other.value()) {}
+      i16(types::TypeHandle t, int v): Base(t), _value(v & 0xffff) {}
+      i16(...): Base(nullptr) {}
+      
       virtual int value() const override { return _value; }
       virtual std::string str() const override { return std::to_string(_value); }
-      std::shared_ptr<Base> clone() const override { return std::make_shared<i16>(*this); }      
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i16>(*this); }      
     };      
 
+    struct string: Base {
+      std::string const _str;
+      std::vector<std::shared_ptr<Base>> arr;
+
+      template <typename StringType> requires std::constructible_from<std::string, StringType>    
+      string(types::TypeHandle t, types::TypeHandle ct, StringType const &s): Base(t), _str(s) {
+	for (char c: _str)  arr.emplace_back(std::make_shared<i8>(ct, c));
+	arr.emplace_back(std::make_shared<i8>(ct, 0));
+      }
+      
+      string(string const &other):
+	Base(other.type()),
+	_str(other._str)
+      {
+	for (auto const &element: other.arr) {
+	  arr.push_back(element->clone());
+	}
+      }
+
+      string(...): Base(nullptr) {}
+      
+      virtual std::string str() const override { return std::string("\"") + _str + "\""; }
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<string>(*this); }
+      virtual std::shared_ptr<Base> element(size_t idx) const override {
+	assert(idx < _str.size() + 1);
+	return arr[idx];
+      }
+    }; // string
+
+    struct structT: Base {
+      struct Field {
+	std::string name;
+	std::shared_ptr<Base> value;
+      };
+
+      std::vector<Field> _fields;
+      
+      template <typename ... Values> requires (std::convertible_to<std::remove_cvref_t<Values>, std::shared_ptr<Base>> && ...)
+      structT(types::TypeHandle t, Values&& ... values):
+	Base(t)
+      {
+	// Initialize the fields with only their names, taken from the typesystem.
+	assert(this->type()->tag() == types::STRUCT);
+	auto structType = static_cast<types::StructType const *>(this->type());
+	for (auto const &f: structType->_fields) {
+	  _fields.push_back({
+	      .name = f.name,
+	      .value = nullptr
+	    });
+	}
+	
+	// Now add the values from the parameter pack
+	assert(_fields.size() == sizeof ... (Values));
+	std::size_t i = 0;
+	((_fields[i++].value = std::shared_ptr<Base>(std::forward<Values>(values))), ...);
+
+	// Assert that all types match
+	for (size_t i = 0; i != _fields.size(); ++i) {
+	  assert(structType->_fields[i].type == _fields[i].value->type());
+	}
+      }
+
+      structT(structT const &other):
+	Base(other.type())
+      {
+	for (auto const &f: other._fields) {
+	  _fields.push_back({
+	      .name = f.name,
+	      .value = f.value->clone()
+	    });
+	}
+      }
+      structT(...): Base(nullptr) {}
+      
+      virtual std::shared_ptr<Base> field(std::string const &name) const override {
+	for (Field const &f: _fields) if (f.name == name) return f.value;
+	assert(false && "invalid field name");
+	std::unreachable();
+      }
+
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<structT>(*this); }
+
+      virtual std::string str() const override {
+	std::ostringstream oss;
+	oss << "{\n";
+	for (auto const &f: _fields) {
+	  oss << "  " << f.name << ": " << f.value->str() << '\n';
+	}
+	oss << "}";
+	return oss.str();
+      }
+    }; // structT
+
+    
     struct array: Base {
       types::TypeHandle elementType;
       std::vector<std::shared_ptr<Base>> arr;
 
       template <typename... Values>
-      array(types::TypeHandle elementType, Values&&... values): elementType(elementType) {
+      array(types::TypeHandle t, Values&&... values): Base(t), elementType(t->elementType()) {
 	arr.reserve(sizeof...(Values));
 	(arr.emplace_back(make_array_item(std::forward<Values>(values))), ...);
+
+	// assert that all elements of of the correct type
+	for (auto const &elem: arr) assert(elem->isRef() || elem->type() == elementType);
       }
       
-      array(array const &other): elementType(other.elementType) {
+      array(array const &other): Base(other.type()), elementType(other.elementType) {
 	arr.reserve(other.arr.size());
 	for (auto const& elem: other.arr) {
 	  arr.emplace_back(make_array_item(elem));
 	}
       }
 
-      array(...) { assert(false); }      
-      
-      virtual types::TypeHandle type(types::TypeSystem const &ts) const override {
-	return ts.array(elementType, arr.size());
-      }
+      array(...): Base(nullptr) {}
 
       virtual std::shared_ptr<Base> element(size_t idx) const override {
 	assert(idx < arr.size());
@@ -304,6 +397,7 @@ namespace values {
       }
     
       std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
+
       virtual std::string str() const override {
 	std::ostringstream oss;
 	oss << "{";
@@ -322,66 +416,55 @@ namespace values {
 	if constexpr (std::same_as<std::remove_cvref_t<Arg>, std::shared_ptr<Base>>) {
 	  return arg->clone();
 	} else if constexpr (std::constructible_from<std::string, Arg>) {
-	  return std::make_shared<Var>(std::string(std::forward<Arg>(arg)));
+	  return std::make_shared<Ref>(std::string(std::forward<Arg>(arg)));
 	} else {
 	  switch (elementType->tag()) {
-	  case types::I8: return std::make_shared<i8>(std::forward<Arg>(arg));
-	  case types::I16: return std::make_shared<i16>(std::forward<Arg>(arg));
-	  case types::ARRAY: return std::make_shared<array>(std::forward<Arg>(arg));
+	  case types::I8: return std::make_shared<i8>(elementType, std::forward<Arg>(arg));
+	  case types::I16: return std::make_shared<i16>(elementType, std::forward<Arg>(arg));
+	  case types::ARRAY: return std::make_shared<array>(elementType, std::forward<Arg>(arg));
+	  case types::STRING: {
+	    types::TypeHandle i8 = static_cast<types::StringType const *>(elementType)->elementType();
+	    return std::make_shared<string>(elementType, i8, std::forward<Arg>(arg));
+	  }
 	  default: assert(false);
 	  }
 	}
       }
     }; // array
 
-    struct string: Base {
-      std::string const _str;
-      std::vector<std::shared_ptr<Base>> arr;
-
-      template <typename StringType> requires std::constructible_from<std::string, StringType>    
-      string(StringType const &s): _str(s) {
-	for (char c: _str)  arr.emplace_back(std::make_shared<i8>(c));
-	arr.emplace_back(std::make_shared<i8>(0));
-      }
-      
-      string(string const &) = default;
-      string(...): _str() { assert(false); }      
-
-      virtual types::TypeHandle type(types::TypeSystem const &ts) const override { return ts.string(_str.size()); }
-      virtual std::string str() const override { return std::string("\"") + _str + "\""; }
-      std::shared_ptr<Base> clone() const override { return std::make_shared<string>(*this); }
-      virtual std::shared_ptr<Base> element(size_t idx) const override {
-	assert(idx < _str.size() + 1);
-	return arr[idx];
-      }
-      
-    }; // string
   }
   
 
   using Value = std::shared_ptr<impl::Base>;
-  struct Var: std::shared_ptr<impl::Var> {
-    Var() = default;
-    
-    template <typename NameType>  requires std::constructible_from<std::string, NameType>    
-    Var(NameType const &name): std::shared_ptr<impl::Var>(std::make_shared<impl::Var>(std::string(name))) {}
-  };
-  using List = std::vector<Value>;
-  
 
-  template <typename ... Args> 
-  Value value(types::TypeHandle type, Args&& ... args) {
-    switch (type->tag()) {
-    case types::I8:     return std::make_shared<impl::i8>(std::forward<Args>(args)...);
-    case types::I16:    return std::make_shared<impl::i16>(std::forward<Args>(args)...);
-    case types::ARRAY:  return std::make_shared<impl::array>(type->elementType(), std::forward<Args>(args)...);
-    case types::STRING: return std::make_shared<impl::string>(std::forward<Args>(args)...);      
-    default: assert(false);
-    };
+  // Factories for each of the values
+  inline Value i8(types::TypeSystem const &ts, int val) {
+    return std::make_shared<impl::i8>(ts.i8(), val);
+  }
+
+  inline Value i16(types::TypeSystem const &ts, int val) {
+    return std::make_shared<impl::i16>(ts.i16(), val);
+  }
+
+  inline Value string(types::TypeSystem const &ts, std::string const &str) {
+    return std::make_shared<impl::string>(ts.string(str.length()), ts.i8(), str);
+  }
+
+  template <typename ... Values>
+  inline Value structT(types::TypeSystem const &ts, std::string const &name, Values&& ... values) {
+    return std::make_shared<impl::structT>(ts.structT(name), std::forward<Values>(values)...);
   }
   
-  inline Var var(std::string const &varName) {
-    return Var{varName};
+  template <typename ... Elements>
+  inline Value array(types::TypeSystem const &ts, types::TypeHandle elementType, Elements&& ... elems) {
+    return std::make_shared<impl::array>(ts.array(elementType, sizeof ... (elems)),
+					 std::forward<Elements>(elems)...);
+  }
+
+  using Ref = std::shared_ptr<impl::Ref>;
+
+  inline Ref ref(std::string const &varName) {
+    return std::make_shared<impl::Ref>(varName);
   }
 
   

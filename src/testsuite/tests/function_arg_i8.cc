@@ -11,11 +11,10 @@ c.begin(); {
     c.declareLocal("y", ts.i8());
        
     c.beginBlock("entry"); {
-      c.assign("x", values::value(ts.i8(), 'A'));
-      c.callFunction("foo", "after_foo", {
-	  values::value(ts.i8(), 'B'),
-	  values::var("x")
-	}, "y");
+      c.assign("x", values::i8(ts, 'A'));
+      c.callFunctionReturn("foo", "after_foo", "y",
+			   values::i8(ts, 'B'),
+			   values::ref("x"));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

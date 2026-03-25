@@ -9,9 +9,7 @@ auto array4 = ts.array(ts.i8(), 4);
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", {
-	  values::value(array4, 'A', 'B', 'C', 'D')
-	});
+      c.callFunction("foo", "after_foo", values::array(ts, ts.i8(), 'A', 'B', 'C', 'D'));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

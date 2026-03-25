@@ -13,7 +13,7 @@ c.begin(); {
     c.declareLocal("x", array4);
       
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", "x");
+      c.callFunctionReturn("foo", "after_foo", "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -31,10 +31,10 @@ c.begin(); {
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assign(x0, values::value(ts.i16(), CAT('A','B')));
-      c.assign(x1, values::value(ts.i16(), CAT('C','D')));
-      c.assign(x2, values::value(ts.i16(), CAT('E','F')));
-      c.assign(x3, values::value(ts.i16(), CAT('G','H')));
+      c.assign(x0, values::i16(ts, CAT('A','B')));
+      c.assign(x1, values::i16(ts, CAT('C','D')));
+      c.assign(x2, values::i16(ts, CAT('E','F')));
+      c.assign(x3, values::i16(ts, CAT('G','H')));
 
       c.returnFromFunction("x");
     } c.endBlock();

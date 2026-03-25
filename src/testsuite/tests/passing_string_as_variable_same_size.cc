@@ -15,10 +15,8 @@ c.begin(); {
     c.declareLocal("s", string);
 
     c.beginBlock("entry"); {
-      c.assign("s", values::value(string, str));
-      c.callFunction("print", "return", values::List{
-	  values::Var("s")
-	});
+      c.assign("s", values::string(ts, str));
+      c.callFunction("print", "return", "s");
     } c.endBlock();
 
     c.beginBlock("return"); {

@@ -15,10 +15,9 @@ int main() try {
 
   c.setEntryPoint("main");
   
-  // TODO: simplify syntax
   auto point = c.defineStruct("Point",
-			      types::StructType::Field{"x", ts.i8()},
-			      types::StructType::Field{"y", ts.i8()});
+			      "x", ts.i8(),
+			      "y", ts.i8());
 
   
   c.begin(); {
@@ -27,15 +26,17 @@ int main() try {
 
       
       c.beginBlock("entry"); {
-	auto x = c.getStructField(values::var("s"), "x");
-	auto y = c.getStructField(values::var("s"), "y");
+	auto x = c.getStructField(values::ref("s"), "x");
+	auto y = c.getStructField(values::ref("s"), "y");
       
-	c.assign(x, values::value(ts.i8(), 'A'));
-	c.assign(y, values::value(ts.i8(), 'B'));
+	c.assign(x, values::i8(ts, 'A'));
+	c.assign(y, values::i8(ts, 'B'));
 
-	std::vector<Slot> args = c.constructArgList(x, y);
-	
-	c.callFunction("bar", "return", args);
+	c.callFunction("bar", "next", x, y);
+      } c.endBlock();
+
+      c.beginBlock("next"); {
+	c.callFunction("foo", "return", "s");
       } c.endBlock();
       
       c.beginBlock("return"); {
@@ -45,14 +46,18 @@ int main() try {
     } c.endFunction();
 
     c.beginFunction("foo", ts.voidT(), "s", point); {
-      c.writeOut("s");
-      c.returnFromFunction();
+      c.beginBlock("entry"); {
+	c.writeOut("s");
+	c.returnFromFunction();
+      } c.endBlock();
     } c.endFunction();
 
     c.beginFunction("bar", ts.voidT(), "x", ts.i8(), "y", ts.i8()); {
-      c.writeOut("x");
-      c.writeOut("y");
-      c.returnFromFunction();
+      c.beginBlock("entry"); {
+	c.writeOut("x");
+	c.writeOut("y");
+	c.returnFromFunction();
+      } c.endBlock();
     } c.endFunction();
     
     

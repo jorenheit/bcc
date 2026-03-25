@@ -9,7 +9,7 @@ c.setEntryPoint("main");
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.writeOut(values::value(ts.array(ts.i8(), 4), 'A', 'B', 'C', 'D'));
+      c.writeOut(values::array(ts, ts.i8(), 'A', 'B', 'C', 'D'));
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();

@@ -1,9 +1,11 @@
 #pragma once
 #include <stack>
 #include <sstream>
+#include <optional>
 #include "program.h"
 #include "function.h"
 #include "data.h"
+#include "rlvalue.h"
 
 // ============================================================
 // Compiler
@@ -30,7 +32,7 @@ class Compiler {
     std::string name;
     std::string caller;
     std::string callee;
-    std::string returnVar;
+    std::optional<Slot> returnSlot;
     std::string nextBlockName;
   };
   std::vector<MetaBlock> _metaBlocks;
@@ -48,7 +50,7 @@ class Compiler {
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
 
 
-  public:
+public:
   inline types::TypeSystem &typeSystem() { return _ts; }
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
@@ -68,52 +70,66 @@ class Compiler {
   void abortProgram();
   void referGlobals(std::vector<std::string> const &names);
 
-
-  // TODO: shit, I can't pass slots to a function. Necessary when passing fields or array elements
-  // I really need some generalized object that can be initialized by a slot, string, var, value, ...
-  // Or extend the Var class to handle indices and fields.
-  void callFunction(std::string const& functionName, std::string const& nextBlockName,
-		    std::vector<values::Value> const &args, values::Var const &returnVar = {});
-  void callFunction(std::string const& functionName, std::string const& nextBlockName,
-		    values::Var const &returnVar = {});
-
-  void returnFromFunction();
-  void returnFromFunction(values::Var const &var);
-  void returnFromFunction(Slot const &slot);
-  void returnFromFunction(values::Value const &value);
-  
-		      
-  void assign(Slot const &dest, Slot const &src);
-  void assign(Slot const &slot, values::Var const &var);
-  void assign(Slot const &slot, values::Value const &value);
-  void assign(values::Var const &var, Slot const &src);
-  void assign(values::Var const &var, values::Value const &value);
-  void assign(values::Var const &destVar, values::Var const &srcVar);
-    
-  void writeOut(values::Var const &var); 
-  void writeOut(Slot const &slot);
-  void writeOut(values::Value const &val);
-
-  Slot getStructField(values::Var const &var, std::string const &field);
-  Slot getStructField(Slot const &slot, std::string const &field);
-
-  template <typename ... Args> requires (std::is_constructible_v<types::StructType, std::string, Args> && ...)
+  template <typename ... Args> 
   types::TypeHandle defineStruct(std::string const &name, Args&& ... args){
-    types::TypeHandle s = _ts.structT(name, std::forward<Args>(args)...);
+    types::TypeHandle s = _ts.defineStruct(name, std::forward<Args>(args)...);
     error_if(s == nullptr, "conflicting definitions of struct '", name, "'.");
     return s;
   }
 
-  // TODO: wrap _ts to get types directly from the compiler -> allows for error messages here
-  
-  // TODO: make generic arrayElement that is overloaded to take int, values::Value, Slot, string
-  Slot arrayElementConst(values::Var const &var, int index);
-  Slot arrayElementConst(Slot const &slot, int index);
+  template <typename... Args>
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, Args&&... args) {
+    callFunctionImpl(functionName, nextBlockName, std::optional<values::LValue>{},
+		     constructArgumentList(std::forward<Args>(args)...));
+  }
 
+  template <typename L, typename... Args>
+  void callFunctionReturn(std::string const& functionName, std::string const& nextBlockName, L&& returnSlot, Args&&... args) {
+    callFunctionImpl(functionName, nextBlockName,
+		     std::make_optional<values::LValue>(lValue(std::forward<L>(returnSlot))),
+		     constructArgumentList(std::forward<Args>(args)...));
+  }
+
+  void callFunction(std::string const& functionName, std::string const& nextBlockName) {
+    callFunctionImpl(functionName, nextBlockName, {}, {});
+  }
+  
+
+  template <typename R>
+  void returnFromFunction(R const &rhs) {
+    returnFromFunctionImpl(std::make_optional<values::RValue>(rValue(rhs)));
+  }
+
+  void returnFromFunction() {
+    returnFromFunctionImpl({});
+  }
+
+  template <typename L, typename R>
+  void assign(L const &lhs, R const &rhs) {
+    assignImpl(lValue(lhs), rValue(rhs));
+  }
+
+  template <typename R>
+  void writeOut(R const &rhs) {
+    writeOutImpl(rValue(rhs));
+  }
+
+  template <typename L>
+  Slot getStructField(L const &obj, std::string const &field) {
+    return getStructFieldImpl(lValue(obj), field);
+  }
+
+  template <typename R>
+  Slot arrayElementConst(R const &obj, int index) {
+    return arrayElementConstImpl(lValue(obj), index);
+  }
+  
   Slot declareLocal(std::string const &name, types::TypeHandle type);
   Slot declareGlobal(std::string const &name, types::TypeHandle type);
   Slot declareGlobalReference(Slot const &globalSlot);
-  Slot local(std::string const& name, bool globalReference = false);
+
+  // TODO: rename to resolveVar(...)
+  Slot local(std::string const& name, bool globalReference = false) const;
 
   template <typename ... Args>
   void beginFunction(std::string const &name, types::TypeHandle returnType, Args&& ... args) {
@@ -124,11 +140,33 @@ class Compiler {
   }
 
   inline void beginFunction(std::string const &name) {
-    // convenience overload for void f(void)
     beginFunction(name, _ts.voidT());
   }
   
-private:  
+private:
+  // Normalize to RValue or LValue
+  values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
+  values::RValue rValue(std::string const &var)    const { return values::RValue{local(var)};  }
+  values::RValue rValue(Slot const &slot)          const { return values::RValue{slot};  }
+  values::RValue rValue(values::Value const &val)  const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
+  values::RValue rValue(values::Ref const &var)    const { return rValue(var->varName());  }
+
+  values::LValue lValue(values::LValue const &val) const { return values::LValue{val}; }
+  values::LValue lValue(std::string const &var)    const { return values::LValue{local(var)};  }
+  values::LValue lValue(Slot const &slot)          const { return values::LValue{slot};  }
+  values::LValue lValue(values::Ref const &var)    const { return values::LValue{local(var->varName())};  }
+
+  // Implementation functions for public interface
+  void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
+			std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args);
+  void returnFromFunctionImpl(std::optional<values::RValue> const &ret = {});
+  Slot getStructFieldImpl(values::LValue const &obj, std::string const &field);
+  Slot arrayElementConstImpl(values::LValue const &arr, int index);
+
+  void assignImpl(values::LValue const &lhs, values::RValue const &rhs);
+  void writeOutImpl(values::RValue const &rhs); 
+  
+  
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(int frameOffset);  
   void moveTo(int frameOffset, MacroCell::Field field);
@@ -151,7 +189,7 @@ private:
   void pushFrame();
   void popFrame();
   void seek(primitive::Direction dir, int payload, bool skipFirstCheck = true);
-  void copyArgsToNextFrame(std::string const &functionName, std::vector<values::Value> const &args);
+  void copyArgsToNextFrame(std::string const &functionName, std::vector<values::RValue> const &args);
   void setSeekMarker();
   void markStartOfOriginFrame();  
   void moveToPreviousFrame();
@@ -221,7 +259,7 @@ private:
 
   // Post processing/optimization (compiler_misc.cc)
   void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
-				  std::vector<values::Value> const &args);
+				  std::vector<values::RValue> const &args);
 
   void functionCallTypeChecks();
   
@@ -266,6 +304,15 @@ private:
     return scratch0Used ? MacroCell::Scratch1 : MacroCell::Scratch0;
   }
 
+  // Helper for creating argument vector
+  template <typename ... Args> 
+  std::vector<values::RValue> constructArgumentList(Args&& ... args) {
+    std::vector<values::RValue> result; result.reserve(sizeof...(args));
+    (result.emplace_back(rValue(std::forward<Args>(args))), ...);
+    return result;
+  }
+  
+  
   // Error Handling
   struct Error: std::exception {
 

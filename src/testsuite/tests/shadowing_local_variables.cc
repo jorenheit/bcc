@@ -12,7 +12,7 @@ c.begin(); {
     c.declareLocal("x", ts.i8());
 
     c.beginBlock("entry"); {
-      c.assign("x", values::value(ts.i8(), 'A'));
+      c.assign("x", values::i8(ts, 'A'));
       c.writeOut("x");
       c.setNextBlock("main", "next");
     } c.endBlock();
@@ -20,7 +20,7 @@ c.begin(); {
     c.beginScope(); {
       c.declareLocal("x", ts.array(ts.i8(), 2));
       c.beginBlock("next"); {
-	c.assign("x", values::value(ts.array(ts.i8(), 2), 'B', 'X'));
+	c.assign("x", values::array(ts, ts.i8(), 'B', 'X'));
 	c.writeOut("x");
 	c.setNextBlock("main", "next2");
       } c.endBlock();
@@ -29,8 +29,8 @@ c.begin(); {
 	c.declareLocal("x", ts.i8());
 	c.declareLocal("y", ts.i8());	
 	c.beginBlock("next2"); {
-	  c.assign("x", values::value(ts.i8(), 'C'));
-	  c.assign("y", values::value(ts.i8(), 'D'));
+	  c.assign("x", values::i8(ts, 'C'));
+	  c.assign("y", values::i8(ts, 'D'));
 	  c.writeOut("x");
 	  c.writeOut("y");	  
 	  c.setNextBlock("main", "last");

@@ -11,11 +11,9 @@ using namespace types;
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      auto ab = values::value(array2, 'A', 'B');
-      auto cd = values::value(array2, 'C', 'D');
-      c.callFunction("foo", "after_foo", {
-	  values::value(array22, ab, cd)
-	});
+      auto ab = values::array(ts, ts.i8(), 'A', 'B');
+      auto cd = values::array(ts, ts.i8(), 'C', 'D');
+      c.callFunction("foo", "after_foo", values::array(ts, array2, ab, cd));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

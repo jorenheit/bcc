@@ -7,9 +7,7 @@ c.setEntryPoint("main");
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", {
-	  values::value(ts.i8(), 'A')
-	});
+      c.callFunction("foo", "after_foo", values::i8(ts, 'A'));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -19,9 +17,7 @@ c.begin(); {
 
   c.beginFunction("foo", ts.voidT(), "x", ts.i8()); {
     c.beginBlock("entry"); {
-      c.callFunction("bar", "after_bar", values::List{
-	  values::var("x")
-	});
+      c.callFunction("bar", "after_bar", values::ref("x"));
     } c.endBlock();
 
     c.beginBlock("after_bar"); {

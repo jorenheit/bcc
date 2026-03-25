@@ -30,7 +30,7 @@ void Compiler::pushFrame() {
   setToValue(1);  
 }
 
-void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<values::Value> const &args) {
+void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<values::RValue> const &args) {
 
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
@@ -47,13 +47,35 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
     return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
   };
   
-  auto const constructInNextFrame = [&](auto&& self, int &offset, auto&& arg) -> void {
-    types::TypeHandle argType = arg->type(_ts);
+  auto const constructInNextFrame = [&](auto&& self, int &offset, values::RValue const &arg) -> void {
 
-    if (argType != nullptr) {
-	
-      if (types::isInteger(argType)) {
-	int const value = arg->value();
+    if (arg.hasSlot()) { // Already stored in frame -> copy to next frame
+      Slot const &slot = arg.slot();
+      for (int i = 0; i != slot.type->size(); ++i) {
+	int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
+	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
+	primitive::DInt const scratchIndex = paramIndex0 + (MacroCell::Scratch0 - MacroCell::Value0);
+
+	moveTo(slot + i, MacroCell::Value0);
+	emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
+	if (slot.type->usesValue1()) {
+	  int const varIndex1 = getFieldIndex(slot + i, MacroCell::Value1);
+	  primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
+
+	  moveTo(slot + i, MacroCell::Value1);
+	  emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
+	}
+
+	offset += MacroCell::FieldCount;
+      }
+    }
+    else { // anonymous value -> construct in-place
+      types::TypeHandle argType = arg.type();
+      switch(argType->tag()) {
+      case types::I8:
+      case types::I16: {
+	// Construct integer
+	int const value = arg.value()->value();
 	moveTo(0, MacroCell::Value0);
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
@@ -65,45 +87,24 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
 	}
 	emit<primitive::MovePointerRelative>(-diff);
 	offset += MacroCell::FieldCount;
+	break;
       }
-      else if (types::isArray(argType) || types::isString(argType)) {
+      case types::ARRAY:
+      case types::STRING: {
 	// recursive call for each element
-	for (int i = 0; i != argType->length(); ++i) {
-	  self(self, offset, arg->element(i));
-	}
+	for (int i = 0; i != argType->length(); ++i)
+	  self(self, offset, rValue(arg.value()->element(i)));
+	break;
       }
-      else {
-	assert(false && "passing this type as arg is not supported yet");
-      }
-    }
-    else { // values::Var
-      // This is a variable -> find its slot and copy the data into the next frame
-      Slot const &varSlot = local(arg->varName());
-      
-      for (int i = 0; i != varSlot.type->size(); ++i) {
-	int const varIndex0 = getFieldIndex(varSlot + i, MacroCell::Value0);
-	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
-	primitive::DInt const scratchIndex = paramIndex0 + (MacroCell::Scratch0 - MacroCell::Value0);
-
-	moveTo(varSlot + i, MacroCell::Value0);
-	emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
-	if (varSlot.type->usesValue1()) {
-	  int const varIndex1 = getFieldIndex(varSlot + i, MacroCell::Value1);
-	  primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
-
-	  moveTo(varSlot + i, MacroCell::Value1);
-	  emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
-	}
-
-	offset += MacroCell::FieldCount;
+      default: assert(false && "passing this type as arg is not supported yet"); break;
       }
     }
   };
 
   pushPtr();
   int offset = 0;
-  for (auto const &arg: args) {
-    constructInNextFrame(constructInNextFrame, offset, arg.get());
+  for (values::RValue const &arg: args) {
+    constructInNextFrame(constructInNextFrame, offset, arg);
   }      
   popPtr();
 }

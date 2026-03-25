@@ -90,7 +90,7 @@ Slot Compiler::getTemp(types::TypeHandle type) {
 }
 
 Slot Compiler::getTemp(values::Value const &value) {
-  Slot tmp = getTemp(value->type(_ts));
-  assign(tmp, value);
+  Slot tmp = getTemp(value->type());
+  assign(lValue(tmp), rValue(value));
   return tmp;
 }

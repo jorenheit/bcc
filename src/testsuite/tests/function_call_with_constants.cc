@@ -10,15 +10,14 @@ c.begin(); {
     c.declareLocal("b", ts.i8());
 
     c.beginBlock("entry"); {
-      c.assign("a", values::value(ts.i8(), 'Z'));
-      c.assign("b", values::value(ts.i8(), 'Y'));
+      c.assign("a", values::i8(ts, 'Z'));
+      c.assign("b", values::i8(ts, 'Y'));
 
-      c.callFunction("foo", "after_foo", {
-	  values::value(ts.i8(), 'A'),
-	  values::var("a"),
-	  values::value(ts.i8(), 'B'),
-	  values::var("b")
-	});
+      c.callFunction("foo", "after_foo",
+		     values::i8(ts, 'A'),
+		     values::ref("a"),
+		     values::i8(ts, 'B'),
+		     values::ref("b"));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

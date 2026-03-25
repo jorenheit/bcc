@@ -13,9 +13,7 @@ auto string = ts.string(str.size());
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("print", "return", values::List{
-	  values::value(string, str)	  
-	});
+      c.callFunction("print", "return", values::string(ts, str));
     } c.endBlock();
 
     c.beginBlock("return"); {

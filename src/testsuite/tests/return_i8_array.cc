@@ -15,7 +15,7 @@ c.begin(); {
     c.declareLocal("x", array4);
       
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", "x");
+      c.callFunctionReturn("foo", "after_foo", "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -36,10 +36,10 @@ c.begin(); {
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assign(x0, values::value(ts.i8(), 'A'));
-      c.assign(x1, values::value(ts.i8(), 'B'));
-      c.assign(x2, values::value(ts.i8(), 'C'));
-      c.assign(x3, values::value(ts.i8(), 'D'));
+      c.assign(x0, values::i8(ts, 'A'));
+      c.assign(x1, values::i8(ts, 'B'));
+      c.assign(x2, values::i8(ts, 'C'));
+      c.assign(x3, values::i8(ts, 'D'));
 
       c.writeOut("x");	
       c.returnFromFunction("x");

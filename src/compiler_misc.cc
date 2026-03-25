@@ -52,15 +52,11 @@ std::string Compiler::simplifyProgram(std::string const &bf) {
 
 void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
 					  std::string const &callee,
-					  std::vector<values::Value> const &args) {
+					  std::vector<values::RValue> const &args) {
   auto const getHandles = [&](){
     std::vector<types::TypeHandle> result;
     for (auto const &arg: args) {
-      types::TypeHandle type = arg->type(_ts);
-      if (type == nullptr) {
-	type = local(arg->varName()).type;
-      }
-      result.push_back(type);
+      result.push_back(arg.type());
     }
     return result;
   };

@@ -12,7 +12,7 @@ c.begin(); {
     c.declareLocal("x", ts.i8());
       
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", "x");
+      c.callFunctionReturn("foo", "after_foo", "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -29,7 +29,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
     c.referGlobals({"g"});
     c.beginBlock("entry"); {
-      c.assign("g", values::value(ts.i8(), 'G'));
+      c.assign("g", values::i8(ts, 'G'));
       c.returnFromFunction("g");
     } c.endBlock();
   } c.endFunction();

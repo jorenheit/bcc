@@ -10,11 +10,10 @@ c.begin(); {
     c.declareLocal("y", ts.i16());
 
     c.beginBlock("entry"); {
-      c.assign("x", values::value(ts.i16(), CAT('C', 'D')));
-      c.callFunction("foo", "after_foo", {
-	  values::value(ts.i16(), CAT('A', 'B')),
-	  values::var("x")
-	}, "y");
+      c.assign("x", values::i16(ts, CAT('C', 'D')));
+      c.callFunctionReturn("foo", "after_foo", "y",
+			   values::i16(ts, CAT('A', 'B')),
+			   values::ref("x"));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

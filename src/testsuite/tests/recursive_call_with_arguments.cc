@@ -7,11 +7,10 @@ c.setEntryPoint("main");
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", {
-	  values::value(ts.i8(), 'A'),
-	  values::value(ts.i8(), 'B'),
-	  values::value(ts.i8(), 'C')
-	});
+      c.callFunction("foo", "after_foo",
+		     values::i8(ts, 'A'),
+		     values::i8(ts, 'B'),
+		     values::i8(ts, 'C'));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -28,11 +27,10 @@ c.begin(); {
       c.writeOut("y");
       c.writeOut("z");
 
-      c.callFunction("foo", "after_recurse", {
-	  values::var("x"),
-	  values::var("y"),
-	  values::var("z")
-	});
+      c.callFunction("foo", "after_recurse",
+		     values::ref("x"),
+		     values::ref("y"),
+		     values::ref("z"));
     } c.endBlock();
 
     c.beginBlock("after_recurse"); {

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <variant>
 #include <vector>
 #include <unordered_map>
 #include <memory>
 
+#include "slot.h"
 #include "data.h"
 #include "primitive.h"
 #include "frame.h"
@@ -15,6 +17,25 @@
 
 struct Function {
 
+  class Argument {
+    std::variant<Slot, values::Value> arg;
+  public:
+    Argument(Slot const &s): arg(s) {}
+    Argument(values::Value const &v): arg(v) {}
+
+    bool hasSlot() const { return std::holds_alternative<Slot>(arg); }
+    Slot getSlot() const {
+      assert(hasSlot());
+      return std::get<Slot>(arg);
+    }
+
+    bool hasValue() const { return std::holds_alternative<values::Value>(arg); }    
+    values::Value getValue() const {
+      assert(hasValue());
+      return std::get<values::Value>(arg);
+    }
+  };
+  
   struct Block {
     size_t globalBlockIndex = 0;
     size_t parentFunctionIndex = 0;

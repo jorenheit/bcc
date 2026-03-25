@@ -446,7 +446,7 @@ inline bftest::TestCase expectLoopingOutput(std::string name,
 
 static std::vector<bftest::TestCase> buildTests() {
   std::vector<bftest::TestCase> tests;
-  tests.reserve(128);
+  tests.reserve(128);  
 
   tests.push_back(expectOutput("Global Variables 1",
 			       "AF", []() {

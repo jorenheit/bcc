@@ -86,9 +86,7 @@ void Compiler::constructMetaBlocks() {
     Function const *callee = &_program.function(m.callee);
 
     // If a return-variable was provided, check that its type matches the returntype of the callee
-    if (not m.returnVar.empty()) {
-      assert(callee->sig.returnType == local(m.returnVar).type);
-    }
+    if (m.returnSlot) assert(callee->sig.returnType == m.returnSlot->type);
     
     beginBlock(m.name); {
 
@@ -96,12 +94,12 @@ void Compiler::constructMetaBlocks() {
       else {
 	// Get or create the return slot to copy the return-variable into
 	Slot const &returnSlot = [&](){
-	  if (not m.returnVar.empty()) return local(m.returnVar);
+	  if (m.returnSlot) return *m.returnSlot;
 	  static int retVarID = 0;
 	  std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
 	  return declareLocal(retVarName, callee->sig.returnType);
 	}();
-	
+
 	fetchReturnData(returnSlot);
 	// If we just wrote to a global, immediately sync this
 	if (returnSlot.kind == Slot::GlobalReference) {

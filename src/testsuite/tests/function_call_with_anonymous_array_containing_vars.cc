@@ -6,15 +6,12 @@ c.setEntryPoint("main");
 
 auto array2 = ts.array(ts.i8(), 2);
 
-using namespace types;
 c.begin(); {
   c.beginFunction("main"); {
     c.declareLocal("x", ts.i8());
     c.beginBlock("entry"); {
-      c.assign("x", values::value(ts.i8(), 'B'));
-      c.callFunction("foo", "after_foo", {
-	  values::value(array2, 'A', "x")
-	});
+      c.assign("x", values::i8(ts, 'B'));
+      c.callFunction("foo", "after_foo", values::array(ts, ts.i8(), 'A', "x"));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

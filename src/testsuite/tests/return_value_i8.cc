@@ -12,11 +12,11 @@ c.begin(); {
     c.declareLocal("x", ts.i8());
 
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", "x");
+      c.callFunctionReturn("foo", "after_foo", "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
-      c.writeOut(values::var("x"));
+      c.writeOut("x");
       c.returnFromFunction();
     } c.endBlock();
 
@@ -26,7 +26,7 @@ c.begin(); {
   c.beginFunction("foo", ts.i8()); {
 
     c.beginBlock("entry"); {
-      c.returnFromFunction(values::value(ts.i8(), 'X'));
+      c.returnFromFunction(values::i8(ts, 'X'));
     } c.endBlock();
 
   } c.endFunction();

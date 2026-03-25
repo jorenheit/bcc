@@ -8,8 +8,8 @@ c.setEntryPoint("main");
 
 // TODO: simplify syntax
 auto point = c.defineStruct("Point",
-			    types::StructType::Field{"x", ts.i8()},
-			    types::StructType::Field{"y", ts.i8()});
+			    "x", ts.i8(),
+			    "y", ts.i8());
   
 c.begin(); {
   c.beginFunction("main"); {
@@ -17,11 +17,11 @@ c.begin(); {
 
       
     c.beginBlock("entry"); {
-      auto x = c.getStructField(values::Var("s"), "x");
-      auto y = c.getStructField(values::Var("s"), "y");
+      auto x = c.getStructField("s", "x");
+      auto y = c.getStructField("s", "y");
       
-      c.assign(x, values::value(ts.i8(), 'A'));
-      c.assign(y, values::value(ts.i8(), 'B'));
+      c.assign(x, values::i8(ts, 'A'));
+      c.assign(y, values::i8(ts, 'B'));
 
       c.writeOut(x);
       c.writeOut(y);

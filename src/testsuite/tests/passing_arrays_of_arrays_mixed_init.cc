@@ -14,15 +14,15 @@ c.begin(); {
     c.declareLocal("E", ts.i8());
 
     c.beginBlock("entry"); {
-      auto B = values::value(ts.i8(), 'B');
-      auto C = values::value(ts.i8(), 'C');
+      auto B = values::i8(ts, 'B');
+      auto C = values::i8(ts, 'C');
       c.assign("B1", B);
       c.assign("B2", "B1");
-      auto arr0 = values::value(array2, 'A', "B2");
-      auto arr1 = values::value(array2, C, 'D');
-      auto arrarr = values::value(array22, arr0, arr1);
+      auto arr0 = values::array(ts, ts.i8(), 'A', "B2");
+      auto arr1 = values::array(ts, ts.i8(), C, 'D');
+      auto arrarr = values::array(ts, array2, arr0, arr1);
 	
-      c.callFunction("foo", "after_foo", { arrarr }, "E");
+      c.callFunctionReturn("foo", "after_foo", "E", arrarr);
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -35,7 +35,7 @@ c.begin(); {
     c.declareLocal("E", ts.i8());
     c.beginBlock("entry"); {
       c.writeOut("arr");
-      auto E = values::value(ts.i8(), 'E');
+      auto E = values::i8(ts, 'E');
       c.assign("E", E);
 	
       c.returnFromFunction("E");

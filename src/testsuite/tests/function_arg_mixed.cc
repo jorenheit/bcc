@@ -17,17 +17,16 @@ c.begin(); {
       Slot arr1 = c.arrayElementConst("arr", 1);
       Slot arr2 = c.arrayElementConst("arr", 2);
 
-      c.assign("a", values::value(ts.i8(), 'A'));
-      c.assign("b", values::value(ts.i16(), CAT('B', 'C')));
-      c.assign(arr0, values::value(ts.i8(), 'D'));
-      c.assign(arr1, values::value(ts.i8(), 'E'));
-      c.assign(arr2, values::value(ts.i8(), 'F'));
+      c.assign("a",  values::i8(ts, 'A'));
+      c.assign("b",  values::i16(ts, CAT('B', 'C')));
+      c.assign(arr0, values::i8(ts, 'D'));
+      c.assign(arr1, values::i8(ts, 'E'));
+      c.assign(arr2, values::i8(ts, 'F'));
 
-      c.callFunction("foo", "after_foo", values::List{
-	  values::var("a"),
-	  values::var("b"),
-	  values::var("arr")
-	});
+      c.callFunction("foo", "after_foo", 
+		     values::ref("a"),
+		     values::ref("b"),
+		     values::ref("arr"));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
