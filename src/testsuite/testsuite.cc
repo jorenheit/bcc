@@ -599,9 +599,34 @@ static std::vector<bftest::TestCase> buildTests() {
 #include "tests/struct_field_read_write.cc"
 			       }));
 
-  tests.push_back(expectOutput("Passing a Struct to a Function",
-			       "ABAB", []() {
+  tests.push_back(expectOutput("Mutating Global Struct",
+			       "ABAC", []() {
+#include "tests/reading_and_writing_from_global_struct.cc"
+			       }));
+
+  tests.push_back(expectOutput("Return Value to Field",
+			       "AZ", []() {
+#include "tests/return_function_value_into_struct_field.cc"
+			       }));
+
+  tests.push_back(expectOutput("Passing Struct to Function",
+			       "ABABXYAB", []() {
 #include "tests/passing_struct_to_function.cc"
+			       }));
+
+  tests.push_back(expectOutput("Return Struct from Function",
+			       "QR", []() {
+#include "tests/return_struct_from_function.cc"
+			       }));
+
+  tests.push_back(expectOutput("Assign Anonymous Struct",
+			       "AB", []() {
+#include "tests/assign_anonymous_struct.cc"
+			       }));
+
+  tests.push_back(expectOutput("Print Anonymous Struct",
+			       "AB", []() {
+#include "tests/assign_anonymous_struct.cc"
 			       }));
   
   

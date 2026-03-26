@@ -49,9 +49,8 @@ class Compiler {
   };
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
 
-
 public:
-  Compiler() { TypeSystem::init(); }
+  inline Compiler() { TypeSystem::init(); }
   
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
@@ -120,6 +119,11 @@ public:
     return getStructFieldImpl(lValue(obj), field);
   }
 
+  template <typename L>
+  Slot getStructField(L const &obj, int fieldIndex) {
+    return getStructFieldImpl(lValue(obj), fieldIndex);
+  }
+
   template <typename R>
   Slot arrayElementConst(R const &obj, int index) {
     return arrayElementConstImpl(lValue(obj), index);
@@ -162,6 +166,7 @@ private:
 			std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args);
   void returnFromFunctionImpl(std::optional<values::RValue> const &ret = {});
   Slot getStructFieldImpl(values::LValue const &obj, std::string const &field);
+  Slot getStructFieldImpl(values::LValue const &obj, int fieldIndex);
   Slot arrayElementConstImpl(values::LValue const &arr, int index);
 
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs);

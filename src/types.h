@@ -21,7 +21,10 @@ namespace types {
     virtual int length() const { return 1; }
     virtual bool usesValue1() const { return false; }
     virtual Type const *elementType() const { return nullptr; }
+    virtual std::string fieldName(std::string const &) const { return ""; }
+    virtual std::string fieldName(size_t) const { return ""; }    
     virtual Type const *fieldType(std::string const &) const { return nullptr; }
+    virtual Type const *fieldType(size_t) const { return nullptr; }
     virtual std::string str() const = 0;
     virtual bool isConstructibleFrom(Type const *other) const = 0;
   };
@@ -117,7 +120,8 @@ namespace types {
 
     virtual TypeTag tag() const override { return STRUCT; }
     virtual int size() const override { return _size; }
-
+    virtual int length() const override { return _fields.size(); }
+    
     virtual bool usesValue1() const {
       for (Field const &f: _fields) if (f.type->usesValue1()) return true;
       return false;
@@ -130,6 +134,24 @@ namespace types {
       assert(false && "invalid field name");
       std::unreachable();
     }
+
+    virtual Type const *fieldType(size_t index) const override {
+      assert(index < _fields.size() && "index out of bounds");
+      return _fields[index].type;
+    }
+
+    virtual std::string fieldName(std::string const &fieldName) const override {
+      for (Field const &f: _fields) {
+	if (f.name == fieldName) return f.name;
+      }
+      assert(false && "invalid field name");
+      std::unreachable();
+    }
+    
+    virtual std::string fieldName(size_t index) const override {
+      assert(index < _fields.size() && "index out of bounds");
+      return _fields[index].name;
+    }    
     
     virtual std::string str() const { return _name; }
     virtual bool isConstructibleFrom(Type const *other) const override {

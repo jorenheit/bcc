@@ -279,7 +279,10 @@ Slot Compiler::local(std::string const& varName, bool globalReference) const {
   std::unreachable();
 }
 
-
+Slot Compiler::getStructFieldImpl(values::LValue const &obj, int fieldIndex) {
+  error_if(fieldIndex >= obj.type()->length(), "field index (", fieldIndex, ") out of bounds in call to getStructField.");
+  return getStructFieldImpl(obj, obj.type()->fieldName(fieldIndex));
+}
 
 Slot Compiler::getStructFieldImpl(values::LValue const &obj, std::string const &fieldName) {
   Slot const slot = obj.slot();
@@ -350,7 +353,6 @@ void Compiler::callFunctionImpl(std::string const& functionName, std::string con
   copyArgsToNextFrame(functionName, args);
   pushFrame();
   setNextBlock(functionName, "");
-  
 }
 
 
@@ -440,6 +442,12 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
       else if (types::isArray(slot.type) || types::isString(slot.type)) {
 	for (int i = 0; i != val->type()->length(); ++i) {
 	  self(self, arrayElementConst(slot, i), val->element(i));
+	}
+      }
+      else if (types::isStruct(slot.type)) {
+	// recursively call for each field
+	for (int i = 0; i != val->type()->length(); ++i) {
+	  self(self, getStructField(slot, i), val->field(i));
 	}
       }
       else {

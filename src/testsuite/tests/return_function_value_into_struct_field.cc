@@ -1,6 +1,3 @@
-// Passing entire struct object to function
-// Expected: ABABXYAB
-
 Compiler c;
 c.setEntryPoint("main");
 
@@ -17,28 +14,18 @@ c.begin(); {
       auto y = c.getStructField("s", "y");
 
       c.assign(x, values::i8('A'));
-      c.assign(y, values::i8('B'));
-      c.writeOut("s");
-
-      c.callFunction("foo", "after_foo", "s");
+      c.callFunctionReturn("makeZ", "after_makeZ", y);
     } c.endBlock();
 
-    c.beginBlock("after_foo"); {
+    c.beginBlock("after_makeZ"); {
       c.writeOut("s");
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", TypeSystem::voidT(), "p", point); {
+  c.beginFunction("makeZ", TypeSystem::i8()); {
     c.beginBlock("entry"); {
-      auto px = c.getStructField("p", "x");
-      auto py = c.getStructField("p", "y");
-
-      c.writeOut("p");
-      c.assign(px, values::i8('X'));
-      c.assign(py, values::i8('Y'));
-      c.writeOut("p");
-      c.returnFromFunction();
+      c.returnFromFunction(values::i8('Z'));
     } c.endBlock();
   } c.endFunction();
 } c.end();

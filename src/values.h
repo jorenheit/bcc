@@ -16,13 +16,15 @@ namespace values {
       Base(types::TypeHandle t): _type(t) {}
       virtual ~Base() = default;
 
+      // Value specific members
+      virtual types::TypeHandle type() const { return _type; }      
       virtual std::shared_ptr<Base> clone() const = 0;
       virtual std::string str() const = 0;            
-      virtual types::TypeHandle type() const { return _type; }
       virtual int value() const { assert(false); return 0; }
       virtual std::string varName() const { assert(false); return ""; }
       virtual std::shared_ptr<Base> element(size_t) const { assert(false); return nullptr; }
       virtual std::shared_ptr<Base> field(std::string const &) const { assert(false); return nullptr; }
+      virtual std::shared_ptr<Base> field(size_t idx) const { assert(false); return nullptr; }      
       virtual bool isRef() const { return false; }
     };
 
@@ -137,6 +139,11 @@ namespace values {
 	std::unreachable();
       }
 
+      virtual std::shared_ptr<Base> field(size_t idx) const override {
+	assert(idx < _fields.size() && "field index out of bounds");
+	return _fields[idx].value;
+      }      
+      
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<structT>(*this); }
 
       virtual std::string str() const override {
