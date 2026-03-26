@@ -29,7 +29,7 @@ Slot Compiler::allocSlot(std::string const &name, types::TypeHandle type, Slot::
 	if (diff > 0) {
 	  Slot second {
 	    .name = dummyName(),
-	    .type = _ts.raw(diff),
+	    .type = TypeSystem::raw(diff),
 	    .kind = Slot::Available,
 	    .offset = slot.offset + type->size(),
 	    .scope = nullptr
@@ -65,7 +65,7 @@ Slot Compiler::allocSlot(std::string const &name, types::TypeHandle type, Slot::
 
 void Compiler::freeSlot(Slot &slot) {
   slot.name = "";
-  slot.type = _ts.raw(slot.type->size());
+  slot.type = TypeSystem::raw(slot.type->size());
   slot.kind = Slot::Available;
   slot.scope = nullptr;
 }

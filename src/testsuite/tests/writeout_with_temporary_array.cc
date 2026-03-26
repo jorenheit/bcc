@@ -2,14 +2,13 @@
 // Expect: "ABCD"
 
 Compiler c;
-auto &ts = c.typeSystem();
 
 c.setEntryPoint("main");
 
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.writeOut(values::array(ts, ts.i8(), 'A', 'B', 'C', 'D'));
+      c.writeOut(values::array(TypeSystem::i8(), 'A', 'B', 'C', 'D'));
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();

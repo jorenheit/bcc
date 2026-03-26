@@ -2,35 +2,34 @@
 // Expected: "ABXCDA"
 
 Compiler c;
-auto &ts = c.typeSystem();
   
 c.setEntryPoint("main");
 
 using namespace types;
 c.begin(); {
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.i8());
+    c.declareLocal("x", TypeSystem::i8());
 
     c.beginBlock("entry"); {
-      c.assign("x", values::i8(ts, 'A'));
+      c.assign("x", values::i8('A'));
       c.writeOut("x");
       c.setNextBlock("main", "next");
     } c.endBlock();
 
     c.beginScope(); {
-      c.declareLocal("x", ts.array(ts.i8(), 2));
+      c.declareLocal("x", TypeSystem::array(TypeSystem::i8(), 2));
       c.beginBlock("next"); {
-	c.assign("x", values::array(ts, ts.i8(), 'B', 'X'));
+	c.assign("x", values::array(TypeSystem::i8(), 'B', 'X'));
 	c.writeOut("x");
 	c.setNextBlock("main", "next2");
       } c.endBlock();
 
       c.beginScope(); {
-	c.declareLocal("x", ts.i8());
-	c.declareLocal("y", ts.i8());	
+	c.declareLocal("x", TypeSystem::i8());
+	c.declareLocal("y", TypeSystem::i8());	
 	c.beginBlock("next2"); {
-	  c.assign("x", values::i8(ts, 'C'));
-	  c.assign("y", values::i8(ts, 'D'));
+	  c.assign("x", values::i8('C'));
+	  c.assign("y", values::i8('D'));
 	  c.writeOut("x");
 	  c.writeOut("y");	  
 	  c.setNextBlock("main", "last");

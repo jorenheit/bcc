@@ -4,10 +4,9 @@
 using namespace types;
 
 Compiler c;
-auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
 
-auto array4 = ts.array(ts.i8(), 4);
+auto array4 = TypeSystem::array(TypeSystem::i8(), 4);
 
 c.begin(); {
     
@@ -36,10 +35,10 @@ c.begin(); {
       Slot x2 = c.arrayElementConst("x", 2);
       Slot x3 = c.arrayElementConst("x", 3);
 
-      c.assign(x0, values::i8(ts, 'A'));
-      c.assign(x1, values::i8(ts, 'B'));
-      c.assign(x2, values::i8(ts, 'C'));
-      c.assign(x3, values::i8(ts, 'D'));
+      c.assign(x0, values::i8('A'));
+      c.assign(x1, values::i8('B'));
+      c.assign(x2, values::i8('C'));
+      c.assign(x3, values::i8('D'));
 
       c.writeOut("x");	
       c.returnFromFunction("x");

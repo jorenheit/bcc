@@ -6,7 +6,7 @@ auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
-  c.declareGlobal("x", ts.array(ts.i8(), 10));
+  c.declareGlobal("x", TypeSystem::array(TypeSystem::i8(), 10));
     
   c.beginFunction("main"); {
     c.referGlobals({"x"});

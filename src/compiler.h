@@ -6,6 +6,7 @@
 #include "function.h"
 #include "data.h"
 #include "rlvalue.h"
+#include "types.h"
 
 // ============================================================
 // Compiler
@@ -25,7 +26,6 @@ class Compiler {
     bool allowGlobalDefinitions = true;
   } _state;
   
-  types::TypeSystem _ts;
   DataPointer _dp;
 
   struct MetaBlock {
@@ -51,7 +51,8 @@ class Compiler {
 
 
 public:
-  inline types::TypeSystem &typeSystem() { return _ts; }
+  Compiler() { TypeSystem::init(); }
+  
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
 
@@ -72,7 +73,7 @@ public:
 
   template <typename ... Args> 
   types::TypeHandle defineStruct(std::string const &name, Args&& ... args){
-    types::TypeHandle s = _ts.defineStruct(name, std::forward<Args>(args)...);
+    types::TypeHandle s = TypeSystem::defineStruct(name, std::forward<Args>(args)...);
     error_if(s == nullptr, "conflicting definitions of struct '", name, "'.");
     return s;
   }
@@ -140,7 +141,7 @@ public:
   }
 
   inline void beginFunction(std::string const &name) {
-    beginFunction(name, _ts.voidT());
+    beginFunction(name, TypeSystem::voidT());
   }
   
 private:

@@ -2,14 +2,12 @@
 // Expected: "ABAB"
 
 Compiler c;
-auto &ts = c.typeSystem();
-
 c.setEntryPoint("main");
 
 // TODO: simplify syntax
 auto point = c.defineStruct("Point",
-			    "x", ts.i8(),
-			    "y", ts.i8());
+			    "x", TypeSystem::i8(),
+			    "y", TypeSystem::i8());
   
 c.begin(); {
   c.beginFunction("main"); {
@@ -20,8 +18,8 @@ c.begin(); {
       auto x = c.getStructField("s", "x");
       auto y = c.getStructField("s", "y");
       
-      c.assign(x, values::i8(ts, 'A'));
-      c.assign(y, values::i8(ts, 'B'));
+      c.assign(x, values::i8('A'));
+      c.assign(y, values::i8('B'));
 
       c.writeOut(x);
       c.writeOut(y);

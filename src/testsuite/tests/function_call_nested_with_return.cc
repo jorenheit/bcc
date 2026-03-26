@@ -1,15 +1,14 @@
 // Tests nested calls with return values, propagating an i8 argument through foo -> bar and back to main.
 // Expect: Z
 Compiler c;
-auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
   c.beginFunction("main"); {
-    c.declareLocal("r", ts.i8());
+    c.declareLocal("r", TypeSystem::i8());
 
     c.beginBlock("entry"); {
-      c.callFunctionReturn("foo", "after_foo", "r",  values::i8(ts, 'Z'));
+      c.callFunctionReturn("foo", "after_foo", "r",  values::i8('Z'));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -18,8 +17,8 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.i8(), "x", ts.i8()); {
-    c.declareLocal("tmp", ts.i8());
+  c.beginFunction("foo", TypeSystem::i8(), "x", TypeSystem::i8()); {
+    c.declareLocal("tmp", TypeSystem::i8());
 
     c.beginBlock("entry"); {
       c.callFunctionReturn("bar", "after_bar", "tmp", "x");
@@ -30,7 +29,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("bar", ts.i8(), "y", ts.i8()); {
+  c.beginFunction("bar", TypeSystem::i8(), "y", TypeSystem::i8()); {
     c.beginBlock("entry"); {
       c.returnFromFunction("y");
     } c.endBlock();

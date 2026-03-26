@@ -2,14 +2,13 @@
 // Expected: X
 using namespace types;
 Compiler c;
-auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
 
   // main: void
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.i8());
+    c.declareLocal("x", TypeSystem::i8());
 
     c.beginBlock("entry"); {
       c.callFunctionReturn("foo", "after_foo", "x");
@@ -23,10 +22,10 @@ c.begin(); {
   } c.endFunction();
 
   // foo: returns i8
-  c.beginFunction("foo", ts.i8()); {
+  c.beginFunction("foo", TypeSystem::i8()); {
 
     c.beginBlock("entry"); {
-      c.returnFromFunction(values::i8(ts, 'X'));
+      c.returnFromFunction(values::i8('X'));
     } c.endBlock();
 
   } c.endFunction();

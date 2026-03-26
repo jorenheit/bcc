@@ -2,21 +2,19 @@
 // Expected: "Hello World"
 
 Compiler c;
-auto &ts = c.typeSystem();
-
 c.setEntryPoint("main");
 
 std::string str = "Hello World";
 
-auto smallString = ts.string(str.size());
-auto bigString = ts.string(str.size() * 2);
+auto smallString = TypeSystem::string(str.size());
+auto bigString = TypeSystem::string(str.size() * 2);
   
 c.begin(); {
   c.beginFunction("main"); {
     c.declareLocal("s", smallString);
 
     c.beginBlock("entry"); {
-      c.assign("s", values::string(ts, str));
+      c.assign("s", values::string(str));
       c.callFunction("print", "return", "s");
     } c.endBlock();
 
@@ -26,7 +24,7 @@ c.begin(); {
       
   } c.endFunction();
 
-  c.beginFunction("print", ts.voidT(),
+  c.beginFunction("print", TypeSystem::voidT(),
 		  "s", bigString); {
     c.beginBlock("entry"); {
       c.writeOut("s");

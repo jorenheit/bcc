@@ -11,28 +11,26 @@
 
 int main() try {
   Compiler c;
-  auto &ts = c.typeSystem();
 
   c.setEntryPoint("main");
   
   auto point = c.defineStruct("Point",
-			      "x", ts.i8(),
-			      "y", ts.i8());
+			      "x", TypeSystem::i8(),
+			      "y", TypeSystem::i8());
 
-  
   c.begin(); {
     c.beginFunction("main"); {
       c.declareLocal("s", point);
 
-      
       c.beginBlock("entry"); {
 	auto x = c.getStructField(values::ref("s"), "x");
 	auto y = c.getStructField(values::ref("s"), "y");
       
-	c.assign(x, values::i8(ts, 'A'));
-	c.assign(y, values::i8(ts, 'B'));
+	c.assign(x, values::i8('A'));
+	c.assign(y, values::i8('B'));
 
 	c.callFunction("bar", "next", x, y);
+	
       } c.endBlock();
 
       c.beginBlock("next"); {
@@ -43,16 +41,18 @@ int main() try {
       	c.returnFromFunction();
       } c.endBlock();
       
+      
     } c.endFunction();
 
-    c.beginFunction("foo", ts.voidT(), "s", point); {
+
+    c.beginFunction("foo", TypeSystem::voidT(), "s", point); {
       c.beginBlock("entry"); {
 	c.writeOut("s");
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction("bar", ts.voidT(), "x", ts.i8(), "y", ts.i8()); {
+    c.beginFunction("bar", TypeSystem::voidT(), "x", TypeSystem::i8(), "y", TypeSystem::i8()); {
       c.beginBlock("entry"); {
 	c.writeOut("x");
 	c.writeOut("y");

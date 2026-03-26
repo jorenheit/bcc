@@ -3,11 +3,10 @@
 
 using namespace types;
 Compiler c;
-auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
-  c.declareGlobal("g", ts.i8());
+  c.declareGlobal("g", TypeSystem::i8());
 
   c.beginFunction("main"); {
     c.referGlobals({"g"});
@@ -27,10 +26,10 @@ c.begin(); {
       
   } c.endFunction();
 
-  c.beginFunction("foo", ts.i8()); {
-    c.declareLocal("y", ts.i8());
+  c.beginFunction("foo", TypeSystem::i8()); {
+    c.declareLocal("y", TypeSystem::i8());
     c.beginBlock("entry"); {
-      c.assign("y", values::i8(ts, 'Y'));
+      c.assign("y", values::i8('Y'));
       c.returnFromFunction("y");
     } c.endBlock();
   } c.endFunction();

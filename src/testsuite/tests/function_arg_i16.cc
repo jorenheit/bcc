@@ -1,18 +1,17 @@
 // Tests passing i16 arguments (constant and local) and returning an i16 value from the callee.
 // Expect: AB
 Compiler c;
-auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.i16());
-    c.declareLocal("y", ts.i16());
+    c.declareLocal("x", TypeSystem::i16());
+    c.declareLocal("y", TypeSystem::i16());
 
     c.beginBlock("entry"); {
-      c.assign("x", values::i16(ts, CAT('C', 'D')));
+      c.assign("x", values::i16(CAT('C', 'D')));
       c.callFunctionReturn("foo", "after_foo", "y",
-			   values::i16(ts, CAT('A', 'B')),
+			   values::i16(CAT('A', 'B')),
 			   values::ref("x"));
     } c.endBlock();
 
@@ -22,7 +21,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.i16(), "arg1", ts.i16(), "arg2", ts.i16()); {
+  c.beginFunction("foo", TypeSystem::i16(), "arg1", TypeSystem::i16(), "arg2", TypeSystem::i16()); {
     c.beginBlock("entry"); {
       c.returnFromFunction("arg1");
     } c.endBlock();

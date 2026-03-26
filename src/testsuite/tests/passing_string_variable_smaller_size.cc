@@ -2,7 +2,6 @@
 // Expected: "Hello World"
 
 Compiler c;
-auto &ts = c.typeSystem();
 
 c.setEntryPoint("main");
 
@@ -12,7 +11,7 @@ std::string str = "Hello World";
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("print", "return", values::string(ts, str));
+      c.callFunction("print", "return", values::string(str));
     } c.endBlock();
 
     c.beginBlock("return"); {
@@ -21,8 +20,8 @@ c.begin(); {
       
   } c.endFunction();
 
-  c.beginFunction("print", ts.voidT(),
-		  "s", ts.string(str.size() * 2)); {
+  c.beginFunction("print", TypeSystem::voidT(),
+		  "s", TypeSystem::string(str.size() * 2)); {
     c.beginBlock("entry"); {
       c.writeOut("s");
       c.returnFromFunction();

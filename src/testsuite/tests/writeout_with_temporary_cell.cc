@@ -2,14 +2,13 @@
 // Expect: "A"
 
 Compiler c;
-auto &ts = c.typeSystem();
 
 c.setEntryPoint("main");
 
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.writeOut(values::i8(ts, 'A'));
+      c.writeOut(values::i8('A'));
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();

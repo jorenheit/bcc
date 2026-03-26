@@ -1,13 +1,12 @@
 // Tests forwarding an i8 parameter through a nested call chain (main -> foo -> bar).
 // Expect: A
 Compiler c;
-auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
-      c.callFunction("foo", "after_foo", values::i8(ts, 'A'));
+      c.callFunction("foo", "after_foo", values::i8('A'));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -15,7 +14,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.voidT(), "x", ts.i8()); {
+  c.beginFunction("foo", TypeSystem::voidT(), "x", TypeSystem::i8()); {
     c.beginBlock("entry"); {
       c.callFunction("bar", "after_bar", values::ref("x"));
     } c.endBlock();
@@ -25,7 +24,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("bar", ts.voidT(), "y", ts.i8()); {
+  c.beginFunction("bar", TypeSystem::voidT(), "y", TypeSystem::i8()); {
     c.beginBlock("entry"); {
       c.writeOut("y");
       c.returnFromFunction();

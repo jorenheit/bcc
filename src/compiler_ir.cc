@@ -397,6 +397,7 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret) 
 }
 
 void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) {
+  
   error_if(_currentFunction == nullptr, "called 'assign(", lhs.str(), ", ", rhs.str(), ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'assign(",  lhs.str(), ", ", rhs.str(), ")' outside code-block.");
   error_if(not lhs.type()->isConstructibleFrom(rhs.type()),
@@ -426,6 +427,7 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
   else {
     // Constant -> construct in slot
     auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Value const &val) -> void {
+      
       if (types::isInteger(slot.type)) {
 	int const x = val->value();
 	moveTo(slot, MacroCell::Value0);

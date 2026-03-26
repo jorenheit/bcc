@@ -1,16 +1,15 @@
 // Tests recursive self-calls with multiple i8 parameters, stressing repeated frame creation and parameter re-passing.
 // Expect: ABCABCABCABC...
 Compiler c;
-auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
 c.begin(); {
   c.beginFunction("main"); {
     c.beginBlock("entry"); {
       c.callFunction("foo", "after_foo",
-		     values::i8(ts, 'A'),
-		     values::i8(ts, 'B'),
-		     values::i8(ts, 'C'));
+		     values::i8('A'),
+		     values::i8('B'),
+		     values::i8('C'));
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
@@ -18,10 +17,10 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.voidT(),
-		  "x", ts.i8(),
-		  "y", ts.i8(),
-		  "z", ts.i8()); {
+  c.beginFunction("foo", TypeSystem::voidT(),
+		  "x", TypeSystem::i8(),
+		  "y", TypeSystem::i8(),
+		  "z", TypeSystem::i8()); {
     c.beginBlock("entry"); {
       c.writeOut("x");
       c.writeOut("y");

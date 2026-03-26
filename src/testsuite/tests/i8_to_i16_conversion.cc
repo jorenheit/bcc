@@ -2,19 +2,17 @@
 // Expected: "AA"
 
 Compiler c;
-auto &ts = c.typeSystem();
-
 c.setEntryPoint("main");
 
 std::string str = "Hello World";
 
 c.begin(); {
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.i8());
-    c.declareLocal("y", ts.i16());
+    c.declareLocal("x", TypeSystem::i8());
+    c.declareLocal("y", TypeSystem::i16());
     
     c.beginBlock("entry"); {
-      c.assign("x", values::i8(ts, 'A'));
+      c.assign("x", values::i8('A'));
       c.writeOut("x");
       c.assign("y", "x");
       c.writeOut("y");

@@ -90,7 +90,7 @@ void Compiler::constructMetaBlocks() {
     
     beginBlock(m.name); {
 
-      if (callee->sig.returnType == _ts.voidT()) fetchReturnData();
+      if (callee->sig.returnType == TypeSystem::voidT()) fetchReturnData();
       else {
 	// Get or create the return slot to copy the return-variable into
 	Slot const &returnSlot = [&](){

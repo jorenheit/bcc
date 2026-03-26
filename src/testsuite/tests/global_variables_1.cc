@@ -2,18 +2,17 @@
 // Expected: AF
 using namespace types;
 Compiler c;
-auto const &ts = c.typeSystem();
 c.setEntryPoint("main");
     
 c.begin(); {
-  c.declareGlobal("g", ts.i8());
+  c.declareGlobal("g", TypeSystem::i8());
   
   c.beginFunction("main"); {
-    c.declareLocal("x", ts.i8());
+    c.declareLocal("x", TypeSystem::i8());
     c.referGlobals({"g"});
 
     c.beginBlock("entry"); {
-      c.assign("g", values::i8(ts, 'A'));
+      c.assign("g", values::i8('A'));
       c.callFunction("foo", "after");
     } c.endBlock();
 
@@ -28,7 +27,7 @@ c.begin(); {
 
     c.beginBlock("entry"); {
       c.writeOut("g");          // should print 'A'
-      c.assign("g", values::i8(ts, 'F'));  // modify global shadow
+      c.assign("g", values::i8('F'));  // modify global shadow
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();

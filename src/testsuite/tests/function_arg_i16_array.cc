@@ -1,10 +1,9 @@
 // Tests pass-by-value of an array of i16 values, verifying multi-cell argument copying across a function call.
 // Expect: ABCDABCD
 Compiler c;
-auto &ts = c.typeSystem();
 c.setEntryPoint("main");
 
-auto array2 = ts.array(ts.i16(), 2);
+auto array2 = TypeSystem::array(TypeSystem::i16(), 2);
 
 c.begin(); {
   c.beginFunction("main"); {
@@ -14,8 +13,8 @@ c.begin(); {
       Slot x0 = c.arrayElementConst("x", 0);
       Slot x1 = c.arrayElementConst("x", 1);
 
-      c.assign(x0, values::i16(ts, CAT('A', 'B')));
-      c.assign(x1, values::i16(ts, CAT('C', 'D')));
+      c.assign(x0, values::i16(CAT('A', 'B')));
+      c.assign(x1, values::i16(CAT('C', 'D')));
 
       c.writeOut("x");
       c.callFunction("foo", "after_foo", values::ref("x"));
@@ -26,7 +25,7 @@ c.begin(); {
     } c.endBlock();
   } c.endFunction();
 
-  c.beginFunction("foo", ts.voidT(), "x", array2); {
+  c.beginFunction("foo", TypeSystem::voidT(), "x", array2); {
     c.beginBlock("entry"); {
       c.writeOut("x");
       c.returnFromFunction();
