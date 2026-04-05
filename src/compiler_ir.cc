@@ -35,7 +35,7 @@ void Compiler::end() {
   setTargetSequence(&_program.bootstrap);
 
   resetOrigin();
-  _dp.setField(static_cast<MacroCell::Field>(0));
+  _dp.set(static_cast<MacroCell::Field>(0));
   switchField(MacroCell::SeekMarker);
   addConst(1);
   switchField(MacroCell::Value0);
@@ -114,7 +114,7 @@ void Compiler::beginBlock(std::string name) {
   }
 
   _currentBlock = &block;
-  _dp.resetTo(0);
+  resetOrigin();
   _nextBlockIsSet = false;
 
   setTargetSequence(&block.code);
@@ -123,7 +123,6 @@ void Compiler::beginBlock(std::string name) {
 
 void Compiler::endBlock() {
   error_if(_currentBlock == nullptr, "called 'endBlock' before calling 'beginBlock'.");
-  assert(_dp.isStatic());
   assert(_nextBlockIsSet);
 
   blockClose();
@@ -135,15 +134,8 @@ void Compiler::setNextBlock(int index) {
   assert(_currentSeq != nullptr);
 
   pushPtr();
-
-  int const low = index & 0xff;
-  int const high = (index >> 8) & 0xff;
-  
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  setToValue(low);
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
-  setToValue(high);
-  
+  setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
   popPtr();
   _nextBlockIsSet = true;
 }
@@ -406,6 +398,8 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
 	   "type mismatch in 'assign(", lhs.str(), ", ", rhs.str(), ")': '",
 	   lhs.str(), "' is of type '", lhs.type()->str(), "' while '", rhs.str(), "' is of type '", rhs.type()->str(), "'.");
 
+  pushPtr();
+  
   // TODO: factor out each branch into a helper function
   if (rhs.hasSlot()) {
     Slot const dest = lhs.slot();
@@ -417,12 +411,14 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
       moveTo(dest + i, MacroCell::Value0);
       zeroCell();
       moveTo(src + i, MacroCell::Value0);
-      copyField(dest + i, MacroCell::Value0);
+      copyField(Cell{dest + i, MacroCell::Value0},
+		Temps<1>::pack(dest + i, MacroCell::Scratch0));
       if (type->usesValue1()) {
 	moveTo(dest + i, MacroCell::Value1);
 	zeroCell();
 	moveTo(src + i, MacroCell::Value1);
-	copyField(dest + i, MacroCell::Value1);
+	copyField(Cell{dest + i, MacroCell::Value1},
+		  Temps<1>::pack(dest + i, MacroCell::Scratch0));
       }
     }
   }
@@ -450,12 +446,38 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
 	  self(self, getStructField(slot, i), val->field(i));
 	}
       }
+      else if (types::isPointer(slot.type)) {
+	// first macrocell contains the frameDepth, second the offset
+	// The framedepth is initialized to 0 for new pointers.
+
+	int offset;
+	if (types::isPointer(val->type())) {
+	  // If the pointer is initialized with pointer-value,
+	  // set its offset to the slot-offset of the variable pointed to.
+	  Slot const pointeeSlot = local(val->pointee()->varName());
+	  offset = pointeeSlot;
+	}
+	else {
+	  // If the pointer is initialized with an integer,
+	  // we can call value() on it to obtain the int value;
+	  assert(types::isInteger(val->type()));
+	  offset = val->value();
+	}
+
+	// Set frame-depth to 0 
+	moveTo(slot + RuntimePointer::FrameDepth, MacroCell::Value0); zeroCell();
+	// Construct offset in second cell
+	moveTo(slot + RuntimePointer::Offset, MacroCell::Value0); setToValue(offset & 0xff);
+	moveTo(slot + RuntimePointer::Offset, MacroCell::Value1); setToValue((offset >> 8) & 0xff);
+      }
       else {
 	assert(false && "not implemented");
       }
     };
     constructInSlot(constructInSlot, lhs.slot(), rhs.value());
   }
+
+  popPtr();
 }
 
 void Compiler::writeOutImpl(values::RValue const &rhs) {
@@ -473,7 +495,7 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
 
   Slot const slot = rhs.slot();
   if (types::isString(slot.type)){
-    moveTo(slot);
+    moveTo(slot, MacroCell::Value0);
     setSeekMarker();
 
     switchField(MacroCell::Value0);
@@ -492,6 +514,9 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
 
     // We hit the end of the string -> return to seek marker (no payload, don't skip current)
     seek(primitive::Left, 0, false);
+    resetSeekMarker();
+    switchField(MacroCell::Value0);
+    
     // Back at slot -> DP is valid again
   }
   else {
@@ -506,5 +531,120 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
   }
 
   popPtr();
+}
+
+Slot Compiler::deref(values::RValue const &ptr) {
+  assert(false && "deref not implemented");
+  
+  // assert(ptr.type()->tag() == types::POINTER);
+  
+  // // Go to the frame/offset stored in the pointer. We need the data to
+  // // be runtime, so if the RHS is a value, store it in a temp slot first.
+  // Slot const ptrSlot = ptr.hasSlot() ? ptr.slot() : getTemp(ptr.value());
+
+  // // Copy both values (frameDepth and offset) to the payload-cells of cell 0 and 1
+  // moveTo(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0);
+  // copyField(RuntimePointer::FrameDepth, MacroCell::Payload0);
+
+  // moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value0);
+  // copyField(0 + RuntimePointer::Offset, MacroCell::Payload0);
+  // moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value1);
+  // copyField(0 + RuntimePointer::Offset, MacroCell::Payload1);
+
+  // // Payload is now stored in cells 0 and 1 of the frame
+  // // If the framedepth is nonzero, set the seek marker
+  // moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Payload0);
+  // copyField(0 + RuntimePointer::FrameDepth, MacroCell::Flag);
+  // moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Flag);
+  // loopOpen(); {
+  //   zeroCell();
+  //   moveToOrigin();
+  //   setSeekMarker();
+  //   moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Flag);
+  // } loopClose();
+
+  // // If seekmarker is nonzero, go into a loop that jumps
+  // // to the previous frame start until the depth-counter becomes 0.
+  // moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Payload0);
+  // loopOpen(); {
+  //   zeroCell();
+
+  //   // TODO: this is moveToPreviousFrame with payload
+  //   switchField(MacroCell::Flag);
+  //   setToValue(1);
+  //   loopOpen(); {
+  //     zeroCell();
+
+  //     // Copy depth and offset one cell to the left
+  //     moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Payload0);
+  //     emit<primitive::MoveData>(-MacroCell::FieldCount);
+  //     moveTo(0 + RuntimePointer::Offset, MacroCell::Payload0);
+  //     emit<primitive::MoveData>(-MacroCell::FieldCount);
+  //     moveTo(0 + RuntimePointer::Offset, MacroCell::Payload1);
+  //     emit<primitive::MoveData>(-MacroCell::FieldCount);
+  //     moveToOrigin();
+      
+  //     // Follow with the pointer and check if we landed on a frame-start
+  //     emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
+  //     switchField(MacroCell::FrameID);
+  //     notValue(MacroCell::Flag);
+  //     switchField(MacroCell::Flag);
+  //   } loopClose();
+
+  //   // We're now at the start of the previous frame -> exit if depth == 0 after subtracting 1
+  //   moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Payload0);
+  //   subConst(1);    
+  // } loopClose();
+
+  // // We're at the target frame -> now move dynamically to the indicated offset
+
+  // // Flag = payload0 || payload1
+  // moveTo( RunTimePointer::Offset, MacroCell::Payload0);
+  // orValues(RunTimePointer::Offset, MacroCell::Payload1,
+  // 	   RuntimePointer::Offset, MacroCell::Flag);
+  // switchField(MacroCell::Flag);
+  // loopOpen(); {
+  //   zeroCell();
+
+  //   // Subtract 1 (in 16-bit mode) from the offset
+  //   switchField(MacroCell::Payload0);
+  //   subConst16(1, MacroCell::Payload1);
+
+  //   // Copy new offset to next cell
+  //   switchField(MacroCell::Payload0);
+  //   emit<primitive::MoveData>(-MacroCell::FieldCount);
+  //   switchField(MacroCell::Payload1);
+  //   emit<primitive::MoveData>(-MacroCell::FieldCount);
+
+  //   // Follow the payload and construct the flag
+  //   emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
+  //   moveTo(RunTimePointer::Offset, MacroCell::Payload0);
+  //   orValues(RunTimePointer::Offset, MacroCell::Payload1,
+  // 	     RuntimePointer::Offset, MacroCell::Flag);
+  //   switchField(MacroCell::Flag);
+  // } loopClose();
+
+  // // We're at the pointee (payload cells are both 0 now)
+  // // Grab the value and move back to the seek marker
+  // switchField(MacroCell::Value0);
+  // copyField(0, MacroCell::Payload0);
+  // if (ptr.type()->usesValue1()) {
+  //   switchField(MacroCell::Value1);
+  //   copyField(0, MacroCell::Payload1);
+  // }
+
+  // seek(primitives::Right, ptr.type()->usesValue1() ? 2 : 1);
+
+  // // Back at origin of current frame -> move payload into slot
+  // Slot const result = getTemp(ptr.type()->pointeeType());
+
+  // switchField(MacroCell::Payload0);
+  // moveField(result, MacroCell::Value0);
+  // if (ptr.type()->usesValue1()) {
+  //   switchField(MacroCell::Payload1);
+  //   moveField(result, MacroCell::Value1);
+  // }
+
+  // return result;
 }
 

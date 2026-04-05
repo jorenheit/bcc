@@ -12,20 +12,14 @@
 int main() try {
   Compiler c;
   c.setEntryPoint("main");
-
-  auto point = c.defineStruct("Point",
-                              "x", TypeSystem::i8(),
-                              "y", TypeSystem::i8());
-
+  
   c.begin(); {
     c.beginFunction("main"); {
-      c.declareLocal("s", point);
 
+      c.declareLocal("x", TypeSystem::i8());      
       c.beginBlock("entry"); {
-	c.assign("s", values::structT("Point",
-				      values::i8('A'),
-				      values::i8('B')));
-	c.writeOut("s");
+	c.assign("x", values::i8('A'));
+	c.writeOut("x");
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

@@ -12,6 +12,8 @@ void Compiler::pushFrame() {
   // frame, starting just beyond the current one. We also initialize the FrameID of this frame
   // with the current ID + 1 and set its run-state to 1.
 
+  // TODO: instead of FrameID, make it a boolean FrameStart. We don't need an ID.
+
   primitive::DInt currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
   };
@@ -118,7 +120,8 @@ void Compiler::moveToPreviousFrame() {
     zeroCell();
     emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
     switchField(MacroCell::FrameID);
-    notValue(MacroCell::Flag);
+    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
+		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   } loopClose();
   popPtr();
@@ -146,7 +149,8 @@ void Compiler::moveToGlobalFrame(int payload) {
 
     // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
     switchField(MacroCell::SeekMarker);
-    emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
+    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
+		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   } loopClose();
 
@@ -161,21 +165,32 @@ void Compiler::markStartOfOriginFrame() {
 }
 
 void Compiler::setSeekMarker() {
+  pushPtr();
   switchField(MacroCell::SeekMarker);
   setToValue(1);
+  popPtr();
+  
+  _state.seekMarkerSet = true;
+}
+
+void Compiler::resetSeekMarker() {
+  pushPtr();
+  switchField(MacroCell::SeekMarker);
+  zeroCell();
+  popPtr();
 }
 
 void Compiler::seek(primitive::Direction dir, int payload, bool skipFirstCheck) {
   int const stride = MacroCell::FieldCount * ((dir == primitive::Right) ? 1 : -1);
 
-  
   if (skipFirstCheck) {
     switchField(MacroCell::Flag);
     setToValue(1);
   }
   else {
     switchField(MacroCell::SeekMarker);
-    emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
+    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
+		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   }
   loopOpen(); {
@@ -193,21 +208,20 @@ void Compiler::seek(primitive::Direction dir, int payload, bool skipFirstCheck) 
     
     // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
     switchField(MacroCell::SeekMarker);
-    emit<primitive::Not2>(MacroCell::SeekMarker, MacroCell::Flag, MacroCell::Scratch0, MacroCell::Scratch1);
+    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
+		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   } loopClose();
-
-  switchField(MacroCell::SeekMarker);
-  zeroCell();
-  switchField(MacroCell::Value0);
+  
 }
   
 
 void Compiler::moveToOriginFrame(int payload) {
   assert(payload >= 0 && payload <= 2);
-  
   pushPtr();
   seek(primitive::Right, payload);
+  resetSeekMarker();
+  switchField(MacroCell::Value0);
   resetOrigin();
   popPtr();
 }
@@ -255,7 +269,6 @@ void Compiler::fetchReturnData() {
   
   // Get run-state
   moveTo(FrameLayout::RunState);
-  zeroCell();
   emit<primitive::MovePointerRelative>(stackFrameSize);
   emit<primitive::MoveData>(-stackFrameSize);
   emit<primitive::MovePointerRelative>(-stackFrameSize);
@@ -274,14 +287,12 @@ void Compiler::fetchReturnData(Slot const &returnSlot) {
     primitive::DInt const diff = stackFrameSize - (returnSlot - FrameLayout::ReturnValueStart) * MacroCell::FieldCount;
     
     moveTo(returnSlot + i, MacroCell::Value0);
-    zeroCell();
     emit<primitive::MovePointerRelative>(diff);
     emit<primitive::MoveData>(-diff);
     emit<primitive::MovePointerRelative>(-diff);
 
     if (returnSlot.type->usesValue1()) {
       moveTo(returnSlot + i, MacroCell::Value1);
-      zeroCell();
       emit<primitive::MovePointerRelative>(diff);
       emit<primitive::MoveData>(-diff);
       emit<primitive::MovePointerRelative>(-diff);

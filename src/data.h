@@ -26,57 +26,99 @@ struct MacroCell {
 };
 
 // ============================================================
+// RuntimePointer
+// ============================================================
+
+struct RuntimePointer {
+  enum Field {
+    FrameDepth,
+    Offset,
+    Size
+  };
+};
+
+
+// ============================================================
+// Cell
+// ============================================================
+
+struct Cell {
+  int offset = 0;
+  MacroCell::Field field = MacroCell::Value0;
+};
+
+// ============================================================
 // DataPointer
 // ============================================================
 
 
 class DataPointer {
-  bool _static = true;
-  int _staticOffset = 0;
-  int _dynamicOffset = 0;
-  MacroCell::Field _activeField = MacroCell::Value0;
+  Cell _current;
 
 public:
-  inline explicit DataPointer(int offset = 0, MacroCell::Field field = MacroCell::Value0):
-    _staticOffset(offset),
-    _activeField(field)
-  {}
-
-  inline bool isStatic() const { return _static; }
-  inline MacroCell::Field activeField() const { return _activeField; }
-  inline void setField(MacroCell::Field field) { _activeField = field; }
-    
-  inline int staticOffset() const {
-    assert(_static);
-    return _staticOffset;
+  Cell const &current() const { return _current; }
+  MacroCell::Field field() const { return _current.field; }
+  int offset() const { return _current.offset; }
+  
+  void moveRelative(int logicalCells) {
+    _current.offset += logicalCells;
   }
 
-  inline int dynamicOffset() const {
-    assert(!_static);
-    return _dynamicOffset;
+  void set(MacroCell::Field field) {
+    _current.field = field;
+  }
+  
+  void set(int offset, MacroCell::Field field = MacroCell::Value0) {
+    _current.offset = offset;
+    _current.field = field;
   }
 
-  inline void moveRelative(int logicalCells) {
-    if (_static) _staticOffset += logicalCells;
-    else _dynamicOffset += logicalCells;
+  void set(Cell cell) {
+    set(cell.offset, cell.field);
+  }
+};
+
+
+// ============================================================
+// Temps
+// ============================================================
+
+template <size_t N>
+struct Temps {
+  std::array<Cell, N> _cells;
+
+  constexpr Temps() = delete;
+
+  template <typename ... Cells> requires (sizeof...(Cells) == N)
+  constexpr Temps(Cells... cells):
+    _cells{std::move(cells)...} {}
+
+  template <size_t I>
+  constexpr Cell const &get() const {
+    static_assert(I < N, "Temps index out of bounds");
+    return _cells[I];
   }
 
-  inline void resetTo(int offset, MacroCell::Field field = MacroCell::Value0) {
-    _static = true;
-    _staticOffset = offset;
-    _dynamicOffset = 0;
-    _activeField = field;
+  template <size_t ...  Is>
+  constexpr auto select() const {
+    static_assert(sizeof ... (Is) > 0, "must be at least one index");
+    return Temps<sizeof ... (Is)>{ _cells[Is] ... };
   }
 
-  inline void beginDynamic() {
-    assert(_static);
-    _static = false;
-    _dynamicOffset = 0;
-  }
+  template <typename ... Args>
+  static constexpr Temps pack(Args ... args) {
+    static_assert(sizeof...(Args) % 2 == 0,
+		  "makeTemps requires offset/field pairs");
+    static_assert(sizeof...(Args) / 2 == N, "wrong number or args");
+    auto tup = std::make_tuple(args...);
 
-  inline void endDynamic() {
-    assert(!_static);
-    assert(_dynamicOffset == 0);
-    _static = true;
-  }
+    return [&]<std::size_t... I>(std::index_sequence<I...>) {
+      return Temps<N>{
+	Cell{
+	  static_cast<int>(std::get<2 * I>(tup)),
+	  static_cast<MacroCell::Field>(std::get<2 * I + 1>(tup))
+	}...
+      };
+    }(std::make_index_sequence<N>{});  
+  }  
 };

@@ -1,22 +1,22 @@
 #pragma once
 #include <functional>
 
-namespace Defer {
+namespace defer {
 
   template <typename T, typename Context>
   class Type {
-    std::function<int(Context const &)> _get;
+    std::function<T(Context const &)> _get;
   public:
-    Type(int value):
+    Type(T value):
       _get([value](Context const &){ return value; })
     {}
 
-    template <typename Getter> requires std::is_invocable_r_v<int, Getter, Context const&>
+    template <typename Getter> requires std::is_invocable_r_v<T, Getter, Context const&>
     Type(Getter&& func):
       _get(std::forward<Getter>(func))
     {}
 
-    int resolve(Context const &ctx) const { return _get(ctx); }
+    T resolve(Context const &ctx) const { return _get(ctx); }
   };
 
   template <typename Context>
@@ -85,7 +85,6 @@ namespace Defer {
     };
   }
 
-  
   // Unary Minus
   template <typename T, typename C>
   Type<T, C> operator-(Type<T, C> const &op) {
@@ -93,4 +92,11 @@ namespace Defer {
       return -op.resolve(ctx);
     };
   }
-}
+
+
+  // Resolve multiple in a single call
+  template <typename C, typename ... DeferPack>
+  auto resolve(C const &ctx, DeferPack&& ... args) {
+    return std::tuple{ args.resolve(ctx)... };
+  }     
+} // namespace defer

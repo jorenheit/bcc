@@ -2,22 +2,16 @@
 
 // Pointer Management
 void Compiler::resetOrigin() {
-  assert(_dp.isStatic());
-  _dp.resetTo(0);
+  _dp.set(0, static_cast<MacroCell::Field>(0));
 }
 
 
 void Compiler::pushPtr() {
-  _ptrStack.push({
-      .offset = _dp.staticOffset(),
-      .field = _dp.activeField()
-    });
+  _ptrStack.push(_dp.current());
 }
 
 void Compiler::popPtr() {
-  auto [offset, field] = _ptrStack.top();
-  moveTo(offset);
-  switchField(field);
+  moveTo(_ptrStack.top());
   _ptrStack.pop();
 }
 

@@ -23,6 +23,7 @@ namespace values {
       virtual int value() const { assert(false); return 0; }
       virtual std::string varName() const { assert(false); return ""; }
       virtual std::shared_ptr<Base> element(size_t) const { assert(false); return nullptr; }
+      virtual std::shared_ptr<Base> pointee() const { assert(false); return nullptr; }
       virtual std::shared_ptr<Base> field(std::string const &) const { assert(false); return nullptr; }
       virtual std::shared_ptr<Base> field(size_t idx) const { assert(false); return nullptr; }      
       virtual bool isRef() const { return false; }
@@ -30,8 +31,9 @@ namespace values {
 
     struct Ref: Base {
       std::string _varName;
-      Ref(Ref const &other): Base(nullptr), _varName(other._varName) {}
-      Ref(std::string const &name): Base(nullptr), _varName(name) {}
+      Ref(Ref const &other) = default;
+      Ref(std::string const &var): Base(nullptr), _varName(std::string(var)) {}
+      
       virtual std::string varName() const override { return _varName; }
       virtual std::string str() const override { return _varName; }
       virtual bool isRef() const override { return true; }
@@ -40,7 +42,7 @@ namespace values {
 
     struct i8: Base {
       int _value;
-      i8(i8 const &other): Base(TypeSystem::i8()), _value(other.value()) {}
+      i8(i8 const &other) = default;
       i8(int v): Base(TypeSystem::i8()), _value(v & 0xff) {}
       i8(...): Base(nullptr) { assert(false); }
       virtual int value() const override { return _value; }
@@ -50,7 +52,7 @@ namespace values {
 
     struct i16: Base {
       int _value;
-      i16(i16 const& other): Base(TypeSystem::i16()), _value(other.value()) {}
+      i16(i16 const& other) = default;
       i16(int v): Base(TypeSystem::i16()), _value(v & 0xffff) {}
       i16(...): Base(nullptr) { assert(false); }
       
@@ -157,6 +159,28 @@ namespace values {
       }
     }; // structT
 
+    struct pointer: Base {
+      std::shared_ptr<Ref> ref;
+
+      pointer(types::TypeHandle pointee, std::string const &ref):
+	Base(TypeSystem::pointer(pointee)),
+	ref(std::make_shared<Ref>(ref))
+      {}
+
+      pointer(pointer const &) = default;
+      pointer(...): Base(nullptr) { assert(false); }
+      
+      virtual std::shared_ptr<Base> clone() const override {
+	return std::make_shared<pointer>(*this);
+      }      
+	    
+      virtual std::string str() const override {
+	return std::string("ptr<") + ref->str() + ">";
+      }
+
+      virtual std::shared_ptr<Base> pointee() const override { return ref; }
+      
+    };
     
     struct array: Base {
       types::TypeHandle elementType;
@@ -188,7 +212,7 @@ namespace values {
 	return arr[idx];
       }
     
-      std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
 
       virtual std::string str() const override {
 	std::ostringstream oss;
@@ -215,13 +239,16 @@ namespace values {
 	  case types::I16: return std::make_shared<i16>(std::forward<Arg>(arg));
 	  case types::ARRAY: return std::make_shared<array>(std::forward<Arg>(arg));
 	  case types::STRING: return std::make_shared<string>(std::forward<Arg>(arg));
+	  case types::POINTER: return std::make_shared<pointer>(std::forward<Arg>(arg));
 	  default: assert(false);
 	  }
 	}
       }
     }; // array
 
-  }
+
+
+  } // namespace impl
   
   using Value = std::shared_ptr<impl::Base>;
 
@@ -241,6 +268,10 @@ namespace values {
   template <typename ... Values>
   inline Value structT(std::string const &name, Values&& ... values) {
     return std::make_shared<impl::structT>(name, std::forward<Values>(values)...);
+  }
+
+  inline Value pointer(types::TypeHandle pointee, std::string const &var) {
+    return std::make_shared<impl::pointer>(pointee, var);
   }
   
   template <typename ... Elements>

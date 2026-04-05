@@ -24,6 +24,7 @@ class Compiler {
   struct {
     bool begun = false;
     bool allowGlobalDefinitions = true;
+    bool seekMarkerSet = false;
   } _state;
   
   DataPointer _dp;
@@ -37,11 +38,7 @@ class Compiler {
   };
   std::vector<MetaBlock> _metaBlocks;
 
-  struct PointerState {
-    int offset;
-    MacroCell::Field field;
-  };
-  std::stack<PointerState> _ptrStack;
+  std::stack<Cell> _ptrStack;
 
   struct FunctionCall {
     std::string caller, callee;
@@ -147,6 +144,7 @@ public:
   inline void beginFunction(std::string const &name) {
     beginFunction(name, TypeSystem::voidT());
   }
+
   
 private:
   // Normalize to RValue or LValue
@@ -168,35 +166,85 @@ private:
   Slot getStructFieldImpl(values::LValue const &obj, std::string const &field);
   Slot getStructFieldImpl(values::LValue const &obj, int fieldIndex);
   Slot arrayElementConstImpl(values::LValue const &arr, int index);
+  Slot deref(values::RValue const &ptr);
 
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs);
   void writeOutImpl(values::RValue const &rhs); 
   
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
-  void moveTo(int frameOffset);  
-  void moveTo(int frameOffset, MacroCell::Field field);
+  void moveTo(Cell cell);
+  void moveTo(int offset, MacroCell::Field field = MacroCell::Value0);
   void moveToOrigin();
   void switchField(MacroCell::Field field);  
   void zeroCell();
-  void addConst(int delta);
-  void subConst(int delta);
-  void setToValue(uint8_t value);
-  void notValue();
-  void notValue(MacroCell::Field resultField);
-  void cmpConst(int value, MacroCell::Field resultField);
-  void moveField(int destOffset, MacroCell::Field destField);
-  void moveField(int destOffset1, MacroCell::Field destField1, int destOffset2, MacroCell::Field destField2);
-  void copyField(int destOffset, MacroCell::Field destField);
   void loopOpen(std::string const &tag = defaultOpenTag());
   void loopClose(std::string const &tag = defaultCloseTag());
 
+  void moveField(Cell dest);
+  void copyField(Cell dest, Temps<1> tmp);
+  
+  void setToValue(int value);
+  void setToValue16(int value, Cell high);
+  
+  void addConst(int delta);
+  void add16Const(int delta, Cell high, Temps<5> tmp);
+
+  void subConst(int delta);
+  void sub16Const(int delta, Cell high, Temps<5> tmp);
+
+  void addDestructive(Cell other);
+  void addConstructive(Cell result, Cell other, Temps<2> tmp);
+  void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
+  void add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
+  void addAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp);
+  void addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp);
+
+  void subDestructive(Cell other);
+  void subConstructive(Cell result, Cell other, Temps<2> tmp);
+  void sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
+  void sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
+  void subAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp);
+  void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp);
+
+  void notDestructive(Temps<1> tmp);
+  void notConstructive(Cell result, Temps<1> tmp);
+
+  void orDestructive(Cell other, Temps<1> tmp);
+  void orConstructive(Cell result, Cell other, Temps<2> tmp);
+
+  void andDestructive(Cell other, Temps<1> tmp);
+  void andConstructive(Cell result, Cell other, Temps<2> tmp);
+
+  void compareToConstDestructive(int value, Temps<1> tmp);
+  void compareToConstConstructive(int value, Cell result, Temps<1> tmp);    
+
+  void compare16ToConstDestructive(int value, Cell high, Temps<1> tmp);
+  void compare16ToConstConstructive(int value, Cell high, Cell result, Temps<2> tmp);    
+  
+  void lessDestructive(Cell other, Temps<2> tmp);
+  void lessConstructive(Cell result, Cell other, Temps<3> tmp);
+
+  void lessOrEqualDestructive(Cell other, Temps<2> tmp);
+  void lessOrEqualConstructive(Cell result, Cell other, Temps<3> tmp);
+
+  void greaterDestructive(Cell other, Temps<2> tmp);
+  void greaterConstructive(Cell result, Cell other, Temps<3> tmp);
+
+  void greaterOrEqualDestructive(Cell other, Temps<2> tmp);
+  void greaterOrEqualConstructive(Cell result, Cell other, Temps<3> tmp);
+
+  void equalDestructive(Cell other, Temps<2> tmp);
+  void equalConstructive(Cell result, Cell other, Temps<3> tmp);
+
+  
   // Frame Navigation (compiler_framenav.cc)
   void pushFrame();
   void popFrame();
   void seek(primitive::Direction dir, int payload, bool skipFirstCheck = true);
   void copyArgsToNextFrame(std::string const &functionName, std::vector<values::RValue> const &args);
   void setSeekMarker();
+  void resetSeekMarker();
   void markStartOfOriginFrame();  
   void moveToPreviousFrame();
   void moveToGlobalFrame(int payload = 0);  
@@ -291,23 +339,13 @@ private:
     return offset * MacroCell::FieldCount + field;
   }
 
-  template <typename... Args>  requires ((std::convertible_to<Args, int>) && ...)
-  auto getFieldIndices(Args... args)  {
-    static_assert(sizeof...(Args) % 2 == 0, "getFieldIndices requires an even number of arguments");
-    constexpr std::size_t pairCount = sizeof...(Args) / 2;    
-    auto allArgs = std::make_tuple(static_cast<int>(args)...);
-    return [&]<std::size_t... I>(std::index_sequence<I...>) {
-      return std::make_tuple(getFieldIndex(std::get<2 * I>(allArgs), std::get<2 * I + 1>(allArgs))...);
-    }(std::make_index_sequence<pairCount>{});
+  inline int getFieldIndex(Cell cell) {
+    return getFieldIndex(cell.offset, cell.field);
   }
 
-  template <typename... Fields>
-  int pickScratchField(Fields... fields) {
-    static_assert((std::convertible_to<Fields, int> && ...));
-    const bool scratch0Used = ((fields == MacroCell::Scratch0) || ...);
-    const bool scratch1Used = ((fields == MacroCell::Scratch1) || ...);
-    assert(!(scratch0Used && scratch1Used));
-    return scratch0Used ? MacroCell::Scratch1 : MacroCell::Scratch0;
+  template <typename... Args> requires ((std::convertible_to<Args, Cell>) && ...)
+  auto getFieldIndices(Args... args) {
+    return std::make_tuple(getFieldIndex(static_cast<Cell>(args))...);
   }
 
   // Helper for creating argument vector

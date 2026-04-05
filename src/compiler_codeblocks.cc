@@ -1,8 +1,7 @@
 #include "compiler.ih"
 
 void Compiler::blockOpen() {
-  assert(_dp.isStatic());
-  assert(_dp.staticOffset() == 0);
+  assert(_dp.current().offset == 0);
   assert(_currentBlock != nullptr);
 
   // To start a block, we need to check 2 conditions:
@@ -12,67 +11,39 @@ void Compiler::blockOpen() {
   // If both are true, the Flag field of the TargetBlock cell is set to 1 and
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
-  
-  // // Low byte
+
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  copyField(FrameLayout::TargetBlock, MacroCell::Payload0);
-  switchField(MacroCell::Payload0);
-  subConst(_currentBlock->globalBlockIndex & 0xff);
-  notValue();
+  compare16ToConstConstructive(_currentBlock->globalBlockIndex,
+			       Cell{FrameLayout::TargetBlock, MacroCell::Value1},
+			       Cell{FrameLayout::TargetBlock, MacroCell::Flag},
+			       Temps<2>::pack(FrameLayout::TargetBlock, MacroCell::Scratch0,
+					      FrameLayout::TargetBlock, MacroCell::Scratch1)
+			       );
 
-  // High Byte
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
-  copyField(FrameLayout::TargetBlock, MacroCell::Payload1);
-  switchField(MacroCell::Payload1);
-  subConst((_currentBlock->globalBlockIndex >> 8) & 0xff);
-  notValue();
-
-  // Run State
   moveTo(FrameLayout::RunState, MacroCell::Value0);
-  copyField(FrameLayout::RunState, MacroCell::Payload0);
+  andConstructive(Cell{FrameLayout::RunState, MacroCell::Flag},
+		  Cell{FrameLayout::TargetBlock, MacroCell::Flag},
+		  Temps<2>::pack(FrameLayout::RunState, MacroCell::Scratch0,
+				 FrameLayout::RunState, MacroCell::Scratch1)
+		  );
 
-  // AND results into Flag
+  // Clear the targetblock flag
   moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
-  setToValue(0);
-  moveTo(FrameLayout::TargetBlock, MacroCell::Payload0);
-  loopOpen(); {
-    zeroCell();
-    moveTo(FrameLayout::TargetBlock, MacroCell::Payload1);
-    loopOpen(); {
-      zeroCell();
-      moveTo(FrameLayout::RunState, MacroCell::Payload0);
-      loopOpen(); {
-	zeroCell();
-	moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
-	setToValue(1);
-	moveTo(FrameLayout::RunState, MacroCell::Payload0);
-      } loopClose();
-      moveTo(FrameLayout::TargetBlock, MacroCell::Payload1);
-    } loopClose();
-    moveTo(FrameLayout::TargetBlock, MacroCell::Payload0);
-  } loopClose();
-
-  // Clear helper cells
-  moveTo(FrameLayout::TargetBlock, MacroCell::Payload0); zeroCell();
-  moveTo(FrameLayout::TargetBlock, MacroCell::Payload1); zeroCell();
-  moveTo(FrameLayout::RunState, MacroCell::Payload0);    zeroCell();
-
-  // Start Block, conditional on the computed flag (index match && run == 1)
-  moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
+  zeroCell();
+  
+  moveTo(FrameLayout::RunState, MacroCell::Flag);
   loopOpen("block open");
   zeroCell();
-  switchField(MacroCell::Value0);
+  moveToOrigin();
 }
 
 void Compiler::blockClose() {
-  assert(_dp.isStatic());
   assert(_currentBlock != nullptr);
 
-  // We move back to the Flag stored in the TargetBlock cell
-  moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
+  // We move back to the Flag stored in the RunState cell
+  moveTo(FrameLayout::RunState, MacroCell::Flag);
   loopClose("block close");
   moveToOrigin();
-  switchField(MacroCell::Value0);
 }
 
 void Compiler::constructMetaBlocks() {
@@ -109,7 +80,8 @@ void Compiler::constructMetaBlocks() {
 
       // Check if the run-state has become 0. If so, unwind the stack
       moveTo(FrameLayout::RunState, MacroCell::Value0);
-      copyField(FrameLayout::RunState, MacroCell::Scratch0); 
+      copyField(Cell{FrameLayout::RunState, MacroCell::Scratch0},
+		Temps<1>::pack(_dp.current().offset, MacroCell::Scratch1)); 
       moveTo(FrameLayout::RunState, MacroCell::Scratch1);
       setToValue(1);
       

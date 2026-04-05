@@ -7,6 +7,7 @@
 #include <utility>
 #include <type_traits>
 #include <concepts>
+#include "data.h"
 
 namespace types {
 
@@ -17,6 +18,10 @@ namespace types {
   struct Type {
     ~Type() = default;
     virtual TypeTag tag() const = 0;
+    virtual std::string str() const = 0;
+    virtual bool isConstructibleFrom(Type const *other) const = 0;
+
+    // TODO: some of these defaults should be errors
     virtual int size() const { return 1; }
     virtual int length() const { return 1; }
     virtual bool usesValue1() const { return false; }
@@ -25,8 +30,7 @@ namespace types {
     virtual std::string fieldName(size_t) const { return ""; }    
     virtual Type const *fieldType(std::string const &) const { return nullptr; }
     virtual Type const *fieldType(size_t) const { return nullptr; }
-    virtual std::string str() const = 0;
-    virtual bool isConstructibleFrom(Type const *other) const = 0;
+    virtual Type const *pointeeType() const { return nullptr; }    
   };
 
   using TypeHandle = Type const *;
@@ -170,12 +174,29 @@ namespace types {
 	});
       addFields(std::forward<Rest>(rest)...);
     }    
+  }; // struct StructType
+
+
+  struct PointerType: Type {
+    Type const *_pointeeType;
+    PointerType(Type const *pointee): _pointeeType(pointee) {}
+    
+    virtual TypeTag tag() const override { return POINTER; }
+    virtual int size() const override { return RuntimePointer::Size; }
+    virtual bool usesValue1() const override { return true; }
+    virtual std::string str() const override { return std::string("ptr<") + _pointeeType->str() + ">"; }
+    virtual Type const *pointeeType() const override { return _pointeeType; }    
+    virtual bool isConstructibleFrom(Type const *other) const override {
+      if (other->tag() == POINTER) return static_cast<PointerType const *>(other)->_pointeeType == this->_pointeeType;
+      return (other->tag() == I8 || other->tag() == I16);
+    }
   };
   
   inline bool isInteger(TypeHandle t) { return t->tag() == I8 || t->tag() == I16; }
   inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
   inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
+  inline bool isPointer(TypeHandle t)   { return t->tag() == POINTER; }
 
 } // namespace types
  
@@ -189,6 +210,7 @@ class TypeSystem {
   static std::vector<std::unique_ptr<types::ArrayType>> _arrayTypes;
   static std::vector<std::unique_ptr<types::StringType>> _stringTypes;
   static std::vector<std::unique_ptr<types::StructType>> _structTypes;
+  static std::vector<std::unique_ptr<types::PointerType>> _pointerTypes;
 
 public:
   static void init();
@@ -237,5 +259,15 @@ public:
     if (structT(name) != nullptr) return nullptr; // already defined a struct with this name
     _structTypes.emplace_back(std::make_unique<types::StructType>(name, std::forward<Args>(args)...));
     return _structTypes.back().get();
+  }
+
+  static types::TypeHandle pointer(types::TypeHandle pointee) {
+    for (auto const &ptr: _pointerTypes) {
+      if (ptr->pointeeType() == pointee) {
+	return ptr.get();
+      }
+    }
+    _pointerTypes.emplace_back(std::make_unique<types::PointerType>(pointee));
+    return _pointerTypes.back().get();
   }
 };  

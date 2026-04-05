@@ -25,19 +25,17 @@ Slot Compiler::allocSlot(std::string const &name, types::TypeHandle type, Slot::
 	auto const dummyName = []() {
 	  static int counter = 0; return std::string("__dummy_") + std::to_string(counter++);
 	};
-      
+	
 	if (diff > 0) {
-	  Slot second {
-	    .name = dummyName(),
-	    .type = TypeSystem::raw(diff),
-	    .kind = Slot::Available,
-	    .offset = slot.offset + type->size(),
-	    .scope = nullptr
-	  };
-
-	  frame.locals.emplace_back(std::move(second));
-	  return frame.locals.back();
+	  frame.locals.emplace_back(Slot{
+	      .name = dummyName(),
+	      .type = TypeSystem::raw(diff),
+	      .kind = Slot::Available,
+	      .offset = slot.offset + type->size(),
+	      .scope = nullptr
+	    });
 	}
+	return slot;
       }
     }
     return {};
@@ -60,7 +58,9 @@ Slot Compiler::allocSlot(std::string const &name, types::TypeHandle type, Slot::
     return frame.locals.back();
   };
   
-  return tryFindAvailableSlot(name, type, kind).value_or(newSlot(name, type, kind));
+  auto opt = tryFindAvailableSlot(name, type, kind);
+  if (opt) return *opt;
+  return newSlot(name, type, kind);
 }
 
 void Compiler::freeSlot(Slot &slot) {

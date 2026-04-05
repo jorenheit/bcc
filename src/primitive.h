@@ -33,7 +33,7 @@ namespace primitive {
     }
   };
 
-  using DInt = Defer::Int<Context>;
+  using DInt = defer::Int<Context>;
   
   struct Node {
     virtual ~Node() = default;
@@ -121,7 +121,8 @@ namespace primitive {
     COMMON_INTERFACE;
   };
 
-  
+
+  // TODO: change name to AddConst
   struct ChangeBy: Node {
     DInt delta;
     /*
@@ -135,7 +136,7 @@ namespace primitive {
     inline explicit ChangeBy(DInt d): delta(std::move(d)) {}
     COMMON_INTERFACE;
   };
-  
+
   struct MoveData: Node {
     DInt current, dest;
 
@@ -156,33 +157,6 @@ namespace primitive {
     inline explicit MoveData(DInt current, DInt dest):
       current(std::move(current)),
       dest(std::move(dest))
-    {}
-
-    COMMON_INTERFACE;
-  };
-
-  struct MoveData2: Node {
-    DInt current, dest1, dest2;
-
-    /*
-      Moves the value stored in 'current' into both 'dest1' and 'dest2'.
-      This leaves 'current' empty!
-      
-      Assumed initial pointer position: current
-      Assumed empty: -      
-      Invariants: ptr
-     */
-    
-    inline explicit MoveData2(DInt diff1, DInt diff2):
-      current(0),
-      dest1(std::move(diff1)),
-      dest2(std::move(diff2))
-    {}
-    
-    inline explicit MoveData2(DInt current, DInt dest1, DInt dest2):
-      current(std::move(current)),
-      dest1(std::move(dest1)),
-      dest2(std::move(dest2))
     {}
 
     COMMON_INTERFACE;
@@ -213,7 +187,7 @@ namespace primitive {
   };
 
 
-  struct Not1: Node {
+  struct Not: Node {
     DInt current, scratch;
 
     /*
@@ -225,7 +199,7 @@ namespace primitive {
       Invariants: ptr, scratch
      */
     
-    inline explicit Not1(DInt current, DInt scratch):
+    inline explicit Not(DInt current, DInt scratch):
       current(std::move(current)),
       scratch(std::move(scratch))
     {}
@@ -233,21 +207,119 @@ namespace primitive {
     COMMON_INTERFACE;
   };
   
-  struct Not2: Node {
-    DInt current, result, scratch1, scratch2;
+
+  struct Or: Node {
+    DInt current, other, scratch;
 
     /*
-      Not operator applied to the value stored at 'current'. Stores 1 in 'result'
-      if the value is zero and 0 if the value is nonzero.
+      OR operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current || other'.
+      Consumes other as well (other == 0 afterwards).
       
       Assumed initial pointer position: current
-      Assumed empty: result, scratch1, scratch2      
-      Invariants: ptr, scratch1, scratch2
+      Assumed empty: scratch
+      Invariants: ptr, scratch
+      Clears: other
      */
     
-    inline explicit Not2(DInt current, DInt result, DInt scratch1, DInt scratch2):
+    inline explicit Or(DInt current, DInt other, DInt scratch):
       current(std::move(current)),
-      result(std::move(result)),
+      other(std::move(other)),
+      scratch(std::move(scratch))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+  struct Nor: Node {
+    DInt current, other, scratch;
+
+    /*
+      NOR operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of '!(current || other)'.
+      Consumes other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch
+      Invariants: ptr, scratch
+      Clears: other
+     */
+    
+    inline explicit Nor(DInt current, DInt other, DInt scratch):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch(std::move(scratch))
+    {}
+
+    COMMON_INTERFACE;
+  };
+  
+  struct And: Node {
+    DInt current, other, scratch;
+
+    /*
+      AND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current && other'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch
+      Invariants: ptr, scratch
+      Clears: other
+      
+     */
+    
+    inline explicit And(DInt current, DInt other, DInt scratch):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch(std::move(scratch))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+  struct Nand: Node {
+    DInt current, other, scratch;
+
+    /*
+      NAND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of '!(current && other)'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch
+      Invariants: ptr, scratch
+      Clears: other
+      
+     */
+    
+    inline explicit Nand(DInt current, DInt other, DInt scratch):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch(std::move(scratch))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+  struct Less: Node {
+    DInt current, other, scratch1, scratch2;
+
+    /*
+      NAND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current < other)'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch1, scratch2
+      Invariants: ptr, scratch1, scratch2
+      Clears: other
+      
+     */
+    
+    inline explicit Less(DInt current, DInt other, DInt scratch1, DInt scratch2):
+      current(std::move(current)),
+      other(std::move(other)),
       scratch1(std::move(scratch1)),
       scratch2(std::move(scratch2))
     {}
@@ -255,27 +327,169 @@ namespace primitive {
     COMMON_INTERFACE;
   };
 
+  struct LessOrEqual: Node {
+    DInt current, other, scratch1, scratch2;
+
+    /*
+      NAND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current <= other)'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch1, scratch2
+      Invariants: ptr, scratch1, scratch2
+      Clears: other
+      
+     */
+    
+    inline explicit LessOrEqual(DInt current, DInt other, DInt scratch1, DInt scratch2):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch1(std::move(scratch1)),
+      scratch2(std::move(scratch2))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+  struct Greater: Node {
+    DInt current, other, scratch1, scratch2;
+
+    /*
+      NAND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current > other)'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch1, scratch2
+      Invariants: ptr, scratch1, scratch2
+      Clears: other
+      
+     */
+    
+    inline explicit Greater(DInt current, DInt other, DInt scratch1, DInt scratch2):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch1(std::move(scratch1)),
+      scratch2(std::move(scratch2))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+  struct GreaterOrEqual: Node {
+    DInt current, other, scratch1, scratch2;
+
+    /*
+      NAND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current >= other)'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch1, scratch2
+      Invariants: ptr, scratch1, scratch2
+      Clears: other
+      
+     */
+    
+    inline explicit GreaterOrEqual(DInt current, DInt other, DInt scratch1, DInt scratch2):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch1(std::move(scratch1)),
+      scratch2(std::move(scratch2))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+
+  struct Equal: Node {
+    DInt current, other, scratch1, scratch2;
+
+    /*
+      NAND operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current == other)'. Consumes
+      other as well (other == 0 afterwards).
+      
+      Assumed initial pointer position: current
+      Assumed empty: scratch1, scratch2
+      Invariants: ptr, scratch1, scratch2
+      Clears: other
+      
+     */
+    
+    inline explicit Equal(DInt current, DInt other, DInt scratch1, DInt scratch2):
+      current(std::move(current)),
+      other(std::move(other)),
+      scratch1(std::move(scratch1)),
+      scratch2(std::move(scratch2))
+    {}
+
+    COMMON_INTERFACE;
+  };
+    
+  
   struct Cmp: Node {
-    DInt value, current, result, scratch1, scratch2;
+    DInt value, current, scratch; 
     
     /*
       Compares the value stored at 'current' to 'value'. Stores 1 in 'result'
       if equal, 0 otherwise.
       
       Assumed initial pointer position: current
-      Assumed empty: result, scratch1, scratch2
-      Invariants: ptr, scratch1, scratch2
+      Assumed empty: scratch
+      Invariants: ptr, scratch
      */
     
-    inline explicit Cmp(DInt value, DInt current, DInt result, DInt scratch1, DInt scratch2):
+    inline explicit Cmp(DInt value, DInt current, DInt scratch):
       value(std::move(value)),
       current(std::move(current)),
-      result(std::move(result)),
-      scratch1(std::move(scratch1)),
-      scratch2(std::move(scratch2))
+      scratch(std::move(scratch))
     {}
 
     COMMON_INTERFACE;
   };
+
+
+  struct Add: Node {
+    DInt current, other;
+
+    /*
+      ADD operator: add the value stored at other to current. Overwrites
+      the value at 'current' with the result of 'current + other' while
+      consuming other (left 0).
+      
+      Assumed initial pointer position: current
+      Clears: other
+     */
+    
+    inline explicit Add(DInt current, DInt other):
+      current(std::move(current)),
+      other(std::move(other))
+    {}
+
+    COMMON_INTERFACE;
+  };
+
+  struct Subtract: Node {
+    DInt current, other;
+
+    /*
+      SUB operator: subtract the value stored at other from current. Overwrites
+      the value at 'current' with the result of 'current - other' while consuming
+      other (left 0).
+      
+      Assumed initial pointer position: current
+      Clears: other
+     */
+    
+    inline explicit Subtract(DInt current, DInt other):
+      current(std::move(current)),
+      other(std::move(other))
+    {}
+
+    COMMON_INTERFACE;
+  };
+  
   
 } // namespace ir

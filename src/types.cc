@@ -8,6 +8,7 @@ std::vector<std::unique_ptr<types::RawType>> TypeSystem::_rawTypes;
 std::vector<std::unique_ptr<types::ArrayType>> TypeSystem::_arrayTypes;
 std::vector<std::unique_ptr<types::StringType>> TypeSystem::_stringTypes;
 std::vector<std::unique_ptr<types::StructType>> TypeSystem::_structTypes;
+std::vector<std::unique_ptr<types::PointerType>> TypeSystem::_pointerTypes;
 
 void TypeSystem::init() {
   _void = std::make_unique<types::VoidType>();
