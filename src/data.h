@@ -13,7 +13,7 @@ struct MacroCell {
   enum Field {
     Value0,
     Value1,
-    FrameID,
+    FrameMarker,
     Flag,
     SeekMarker,
     Scratch0,
@@ -33,7 +33,7 @@ struct RuntimePointer {
   enum Field {
     FrameDepth,
     Offset,
-    Size
+    Size // number of logical cells used by pointer
   };
 };
 

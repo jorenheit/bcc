@@ -5,34 +5,104 @@ void Compiler::pushFrame() {
   assert(_currentFunction != nullptr);
   assert(_currentSeq != nullptr);
 
-
-  pushPtr();
-  
   // To push a frame, we need to move the pointer into the cell that marks the start of a fresh
-  // frame, starting just beyond the current one. We also initialize the FrameID of this frame
-  // with the current ID + 1 and set its run-state to 1.
-
-  // TODO: instead of FrameID, make it a boolean FrameStart. We don't need an ID.
+  // frame, starting just beyond the current one. We also initialize the FrameMarker set its run-state to 1.
 
   primitive::DInt currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
   };
   
   moveToOrigin();
-  switchField(MacroCell::FrameID);
-  emit<primitive::CopyData>(MacroCell::FrameID,
-			    currentFrameSize + MacroCell::FrameID,
-			    currentFrameSize + MacroCell::Scratch0);
+  switchField(MacroCell::FrameMarker);
   emit<primitive::MovePointerRelative>(currentFrameSize);
-  addConst(1);
-  
-  popPtr();
-
+  setToValue(1);
   moveTo(FrameLayout::RunState, MacroCell::Value0);
-  setToValue(1);  
+  setToValue(1);
+  moveToOrigin();
 }
 
-void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<values::RValue> const &args) {
+void Compiler::popFrame() {
+  assert(_currentBlock != nullptr);
+  assert(_currentFunction != nullptr);
+  assert(_currentSeq != nullptr);
+
+  // Check if function is the entry-point of the program. If so, we need to set the run-cell to 0
+  // If not, we do a dynamic move left until we hit the next frame marker.
+
+  pushPtr();
+  if (_currentFunction->name == _program.entryFunctionName) {
+    moveTo(FrameLayout::RunState, MacroCell::Value0);
+    zeroCell();
+    moveToOrigin();
+  }
+  else {
+    moveToOrigin();
+    switchField(MacroCell::FrameMarker);
+    zeroCell();
+    moveToPreviousFrame();
+    // Pointer should now be at the start of the previous frame
+  }
+  popPtr();
+}
+
+
+void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payload payload, bool checkCurrent) {  
+  int const stride = MacroCell::FieldCount * ((dir == primitive::Right) ? 1 : -1);
+
+  if (not checkCurrent) {
+    switchField(MacroCell::Flag);
+    setToValue(1);
+  }
+  else {
+    switchField(markerField);
+    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
+		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
+    switchField(MacroCell::Flag);
+  }
+
+  loopOpen(); {
+    zeroCell();
+    // Move pointer and payload to the next cell
+    if (payload != Payload::None) {
+      switchField(MacroCell::Payload0);
+      emit<primitive::MoveData>(stride);
+      if (payload == Payload::Double) {
+	switchField(MacroCell::Payload1);
+	emit<primitive::MoveData>(stride);
+      }
+    }
+    emit<primitive::MovePointerRelative>(stride);
+    
+    // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
+    switchField(markerField);
+    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
+		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
+    switchField(MacroCell::Flag);
+  } loopClose();
+}
+
+
+void Compiler::setSeekMarker() {
+  pushPtr();
+  switchField(MacroCell::SeekMarker);
+  setToValue(1);
+  popPtr();
+}
+
+void Compiler::resetSeekMarker() {
+  pushPtr();
+  switchField(MacroCell::SeekMarker);
+  zeroCell();
+  popPtr();
+}
+
+void Compiler::moveToPreviousFrame(Payload payload) {
+  moveToOrigin();
+  seek(MacroCell::FrameMarker, primitive::Left, payload, false);
+}
+
+
+void Compiler::initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args) {
 
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
@@ -111,146 +181,7 @@ void Compiler::copyArgsToNextFrame(std::string const &functionName, std::vector<
   popPtr();
 }
 
-void Compiler::moveToPreviousFrame() {
-  pushPtr();
-  moveToOrigin();
-  switchField(MacroCell::Flag);
-  setToValue(1);
-  loopOpen(); {
-    zeroCell();
-    emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
-    switchField(MacroCell::FrameID);
-    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
-		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
-    switchField(MacroCell::Flag);
-  } loopClose();
-  popPtr();
-}
 
-void Compiler::moveToGlobalFrame(int payload) {
-  assert(payload >= 0 && payload <= 2);
-  pushPtr();
-  
-  moveToOrigin();
-  markStartOfOriginFrame();
-  switchField(MacroCell::Flag);
-  setToValue(1);
-  loopOpen(); {
-    zeroCell();
-    if (payload) {
-      switchField(MacroCell::Payload0);
-      emit<primitive::MoveData>(-MacroCell::FieldCount);
-      if (payload == 2) {
-	switchField(MacroCell::Payload1);
-	emit<primitive::MoveData>(-MacroCell::FieldCount);
-      }
-    }    
-    emit<primitive::MovePointerRelative>(-MacroCell::FieldCount);
-
-    // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
-    switchField(MacroCell::SeekMarker);
-    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
-		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
-    switchField(MacroCell::Flag);
-  } loopClose();
-
-  popPtr();
-}
-
-void Compiler::markStartOfOriginFrame() {
-  pushPtr();
-  moveToOrigin();
-  setSeekMarker();
-  popPtr();
-}
-
-void Compiler::setSeekMarker() {
-  pushPtr();
-  switchField(MacroCell::SeekMarker);
-  setToValue(1);
-  popPtr();
-  
-  _state.seekMarkerSet = true;
-}
-
-void Compiler::resetSeekMarker() {
-  pushPtr();
-  switchField(MacroCell::SeekMarker);
-  zeroCell();
-  popPtr();
-}
-
-void Compiler::seek(primitive::Direction dir, int payload, bool skipFirstCheck) {
-  int const stride = MacroCell::FieldCount * ((dir == primitive::Right) ? 1 : -1);
-
-  if (skipFirstCheck) {
-    switchField(MacroCell::Flag);
-    setToValue(1);
-  }
-  else {
-    switchField(MacroCell::SeekMarker);
-    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
-		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
-    switchField(MacroCell::Flag);
-  }
-  loopOpen(); {
-    zeroCell();
-    // Move pointer and payload to the next cell
-    if (payload) {
-      switchField(MacroCell::Payload0);
-      emit<primitive::MoveData>(stride);
-      if (payload == 2) {
-	switchField(MacroCell::Payload1);
-	emit<primitive::MoveData>(stride);
-      }
-    }
-    emit<primitive::MovePointerRelative>(stride);
-    
-    // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
-    switchField(MacroCell::SeekMarker);
-    notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
-		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
-    switchField(MacroCell::Flag);
-  } loopClose();
-  
-}
-  
-
-void Compiler::moveToOriginFrame(int payload) {
-  assert(payload >= 0 && payload <= 2);
-  pushPtr();
-  seek(primitive::Right, payload);
-  resetSeekMarker();
-  switchField(MacroCell::Value0);
-  resetOrigin();
-  popPtr();
-}
-
-void Compiler::popFrame() {
-  assert(_currentBlock != nullptr);
-  assert(_currentFunction != nullptr);
-  assert(_currentSeq != nullptr);
-
-  // Check if function is the entry-point of the program. If so, we need to set the run-cell to 0
-  // If not, we do a dynamic move left until we hit the next frame marker.
-
-  pushPtr();
-  
-  if (_currentFunction->name == _program.entryFunctionName) {
-    moveTo(FrameLayout::RunState, MacroCell::Value0);
-    zeroCell();
-    moveToOrigin();
-  }
-  else {
-    moveToOrigin();
-    switchField(MacroCell::FrameID);
-    zeroCell();
-    moveToPreviousFrame();
-    // Pointer should now be at the start of the previous frame
-  }
-  
-  popPtr();
-}
 
 
 void Compiler::fetchReturnData() {
@@ -301,3 +232,4 @@ void Compiler::fetchReturnData(Slot const &returnSlot) {
   fetchReturnData(); // fetch the rest
   popPtr();
 }
+

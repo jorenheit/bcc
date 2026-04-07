@@ -13,16 +13,16 @@ void Compiler::blockOpen() {
   // the block.
 
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  compare16ToConstConstructive(_currentBlock->globalBlockIndex,
-			       Cell{FrameLayout::TargetBlock, MacroCell::Value1},
-			       Cell{FrameLayout::TargetBlock, MacroCell::Flag},
+  compare16ToConstConstructive(/* value =    */ _currentBlock->globalBlockIndex,
+			       /* highByte = */ Cell{FrameLayout::TargetBlock, MacroCell::Value1},
+			       /* result =   */ Cell{FrameLayout::TargetBlock, MacroCell::Flag},
 			       Temps<2>::pack(FrameLayout::TargetBlock, MacroCell::Scratch0,
 					      FrameLayout::TargetBlock, MacroCell::Scratch1)
 			       );
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
-  andConstructive(Cell{FrameLayout::RunState, MacroCell::Flag},
-		  Cell{FrameLayout::TargetBlock, MacroCell::Flag},
+  andConstructive(/* result = */ Cell{FrameLayout::RunState, MacroCell::Flag},
+		  /* other  = */ Cell{FrameLayout::TargetBlock, MacroCell::Flag},
 		  Temps<2>::pack(FrameLayout::RunState, MacroCell::Scratch0,
 				 FrameLayout::RunState, MacroCell::Scratch1)
 		  );
@@ -30,7 +30,8 @@ void Compiler::blockOpen() {
   // Clear the targetblock flag
   moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
   zeroCell();
-  
+
+  // Open the block, conditional on the run-flag
   moveTo(FrameLayout::RunState, MacroCell::Flag);
   loopOpen("block open");
   zeroCell();
@@ -40,7 +41,7 @@ void Compiler::blockOpen() {
 void Compiler::blockClose() {
   assert(_currentBlock != nullptr);
 
-  // We move back to the Flag stored in the RunState cell
+  // We move back to the Flag stored in the RunState cell (guaranteed zero)
   moveTo(FrameLayout::RunState, MacroCell::Flag);
   loopClose("block close");
   moveToOrigin();
@@ -52,16 +53,18 @@ void Compiler::constructMetaBlocks() {
 
   for (size_t idx = 0; idx != _metaBlocks.size(); ++idx) {
     MetaBlock const &m = _metaBlocks[idx];
-    
-    _currentFunction = &_program.function(m.caller);
     Function const *callee = &_program.function(m.callee);
 
     // If a return-variable was provided, check that its type matches the returntype of the callee
     if (m.returnSlot) assert(callee->sig.returnType == m.returnSlot->type);
-    
+
+    // Set current function to caller (owner of metablock) and construct block
+    _currentFunction = &_program.function(m.caller);    
     beginBlock(m.name); {
 
-      if (callee->sig.returnType == TypeSystem::voidT()) fetchReturnData();
+      if (callee->sig.returnType == TypeSystem::voidT()){
+	fetchReturnData();
+      }
       else {
 	// Get or create the return slot to copy the return-variable into
 	Slot const &returnSlot = [&](){
@@ -72,6 +75,7 @@ void Compiler::constructMetaBlocks() {
 	}();
 
 	fetchReturnData(returnSlot);
+
 	// If we just wrote to a global, immediately sync this
 	if (returnSlot.kind == Slot::GlobalReference) {
 	  syncGlobal<&Compiler::putGlobal>(returnSlot);

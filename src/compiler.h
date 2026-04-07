@@ -121,9 +121,19 @@ public:
     return getStructFieldImpl(lValue(obj), fieldIndex);
   }
 
-  template <typename R>
-  Slot arrayElementConst(R const &obj, int index) {
-    return arrayElementConstImpl(lValue(obj), index);
+  template <typename Array> // TODO: should this not be an RValue?
+  Slot arrayElementConst(Array const &arr, int index) {
+    return arrayElementConstImpl(lValue(arr), index);
+  }
+
+  template <typename Array, typename Index, typename Result>
+  Slot arrayElement(Array const &arr, Index const &index, Result const &result) {
+    return arrayElementImpl(lValue(arr), rValue(index), lValue(result));
+  }
+
+  template <typename Array, typename Index>
+  Slot arrayElement(Array const &arr, Index const &index) {
+    return arrayElementImpl(lValue(arr), rValue(index), {});
   }
   
   Slot declareLocal(std::string const &name, types::TypeHandle type);
@@ -147,6 +157,12 @@ public:
 
   
 private:
+  enum class Payload {
+    None,
+    Single,
+    Double
+  };
+  
   // Normalize to RValue or LValue
   values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
   values::RValue rValue(std::string const &var)    const { return values::RValue{local(var)};  }
@@ -166,6 +182,7 @@ private:
   Slot getStructFieldImpl(values::LValue const &obj, std::string const &field);
   Slot getStructFieldImpl(values::LValue const &obj, int fieldIndex);
   Slot arrayElementConstImpl(values::LValue const &arr, int index);
+  Slot arrayElementImpl(values::LValue const &arr, values::RValue const &index, std::optional<values::LValue> const &dest);
   Slot deref(values::RValue const &ptr);
 
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs);
@@ -180,19 +197,28 @@ private:
   void zeroCell();
   void loopOpen(std::string const &tag = defaultOpenTag());
   void loopClose(std::string const &tag = defaultCloseTag());
-
+  void fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir);
+  
   void moveField(Cell dest);
   void copyField(Cell dest, Temps<1> tmp);
   
   void setToValue(int value);
   void setToValue16(int value, Cell high);
+
+  void inc();
+  void dec();
+  void inc16(Cell high, Temps<2> tmp);
+  void dec16(Cell high, Temps<2> tmp);
   
   void addConst(int delta);
-  void add16Const(int delta, Cell high, Temps<5> tmp);
+  void addConstAndCarry(int delta, Cell carry, Temps<3> tmp);
+  void add16Const(int delta, Cell high, Temps<4> tmp);
 
   void subConst(int delta);
-  void sub16Const(int delta, Cell high, Temps<5> tmp);
+  void subConstAndCarry(int delta, Cell carry, Temps<3> tmp);
+  void sub16Const(int delta, Cell high, Temps<4> tmp);
 
+  // TODO: constructive versions should  accept "other" before result and carry
   void addDestructive(Cell other);
   void addConstructive(Cell result, Cell other, Temps<2> tmp);
   void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
@@ -239,16 +265,14 @@ private:
 
   
   // Frame Navigation (compiler_framenav.cc)
+  
   void pushFrame();
   void popFrame();
-  void seek(primitive::Direction dir, int payload, bool skipFirstCheck = true);
-  void copyArgsToNextFrame(std::string const &functionName, std::vector<values::RValue> const &args);
+  void seek(MacroCell::Field markerField, primitive::Direction dir, Payload payload, bool checkCurrent);
   void setSeekMarker();
   void resetSeekMarker();
-  void markStartOfOriginFrame();  
-  void moveToPreviousFrame();
-  void moveToGlobalFrame(int payload = 0);  
-  void moveToOriginFrame(int payload = 0);
+  void moveToPreviousFrame(Payload payload = Payload::None);
+  void initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args);  
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
 

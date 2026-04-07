@@ -27,9 +27,11 @@ void Compiler::moveTo(Cell dest) {
   moveTo(dest.offset, dest.field);
 }
 
+
 void Compiler::moveToOrigin() {
   moveTo(0);
 }
+
 
 void Compiler::zeroCell() { 
   emit<primitive::ZeroCell>();
@@ -52,33 +54,88 @@ void Compiler::addConst(int delta) {
   emit<primitive::ChangeBy>(delta);
 }
 
+void Compiler::addConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
+  pushPtr();
+
+  if (delta == 0) {
+    moveTo(carry);
+    zeroCell();
+    popPtr();
+    return;
+  }
+
+  Cell const probe = tmp.get<0>();    
+  copyField(carry, tmp.select<1>());
+  addConst(delta);
+  copyField(probe, tmp.select<1>());
+
+  moveTo(probe);
+  if (delta > 0) {
+    lessDestructive(carry, tmp.select<1, 2>());
+  } else {
+    greaterDestructive(carry, tmp.select<1, 2>());
+  }
+
+  popPtr();
+}  
+
 void Compiler::subConst(int delta) {
   addConst(-delta);
 }
 
-void Compiler::add16Const(int delta, Cell high, Temps<5> tmp) {
-  Cell const &deltaLow  = tmp.get<0>();
-  Cell const &deltaHigh = tmp.get<1>();
+void Compiler::subConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
+  addConstAndCarry(-delta, carry, tmp);
+}
 
+void Compiler::inc() {
+  addConst(1);
+}
+
+void Compiler::dec() {
+  subConst(1);
+}
+
+void Compiler::inc16(Cell high, Temps<2> tmp) {
   pushPtr();
-  moveTo(deltaLow);
-  setToValue16(delta, deltaHigh);
+  Cell const carry = tmp.get<0>();
+  addConst(1);
+  notConstructive(carry, tmp.select<1>());
+  moveTo(high);
+  addDestructive(carry);
   popPtr();
+}
 
-  add16Destructive(high, deltaLow, deltaHigh, tmp.select<2, 3, 4>());
+void Compiler::dec16(Cell high, Temps<2> tmp) {
+  pushPtr();
+  Cell const borrow = tmp.get<0>();
+  copyField(borrow, tmp.select<1>());
+  subConst(1);
+  moveTo(borrow);
+  notDestructive(tmp.select<1>());
+  moveTo(high);
+  subDestructive(borrow);
+  popPtr();
 }
 
 
-void Compiler::sub16Const(int delta, Cell high, Temps<5> tmp) {
-  Cell const &deltaLow  = tmp.get<0>();
-  Cell const &deltaHigh = tmp.get<1>();
+void Compiler::add16Const(int delta, Cell high, Temps<4> tmp) {
+  if (delta == 0) return;
+  
+  int const lowDelta  = delta & 0xff;
+  int const highDelta = (delta >> 8) & 0xff;
+  Cell const carry = tmp.get<0>();
 
   pushPtr();
-  moveTo(deltaLow);
-  setToValue16(delta, deltaHigh);
+  if (lowDelta != 0)  addConstAndCarry(lowDelta, carry, tmp.select<1, 2, 3>());
+  moveTo(high);
+  if (highDelta != 0) addConst(highDelta);
+  addDestructive(carry);
   popPtr();
+}
 
-  sub16Destructive(high, deltaLow, deltaHigh, tmp.select<2, 3, 4>());
+
+void Compiler::sub16Const(int delta, Cell high, Temps<4> tmp) {
+  add16Const(-delta, high, tmp);
 }
 
 void Compiler::addDestructive(Cell other) {
@@ -196,8 +253,8 @@ void Compiler::add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cel
 
 void Compiler::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp) {
 
-  Cell const & low = _dp.current();
-  Cell const & carry = tmp.get<0>();
+  Cell const &low = _dp.current();
+  Cell const &carry = tmp.get<0>();
 
   pushPtr();
 
@@ -241,6 +298,7 @@ void Compiler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cel
 
 void Compiler::moveField(Cell dest) {
   auto [src, dst] = getFieldIndices(_dp.current(), dest);
+  if (src == dst) return;
   emit<primitive::MoveData>(src, dst);
 }
 
@@ -412,5 +470,69 @@ void Compiler::equalConstructive(Cell result, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
+void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir) {
+  assert(payload != Payload::None);
+  
+  // Within the current frame, move to the cell indicated by the 16-bit value stored
+  // in offsetLow and offsetHigh into the Payload cells of the cell marked with the
+  // SeekMarker, which should be in the direction indicated by seekDir.
 
+  pushPtr();
 
+  // Copy offset (16-bit) into payload cells of the current cell  
+  int const base = _dp.current().offset;
+  moveTo(offsetLow);
+  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::pack(0, MacroCell::Scratch0));
+  moveTo(offsetHigh);
+  copyField(Cell{base, MacroCell::Payload1}, Temps<1>::pack(0, MacroCell::Scratch0));
+
+  // Starting at the current offset, move right while decrementing offset until
+  // both bytes have become zero. Then move the value back to the seek-marker
+  moveTo(base, MacroCell::Payload0);
+  orConstructive(Cell{base, MacroCell::Flag},
+		 Cell{base, MacroCell::Payload1},
+		 Temps<2>::pack(base, MacroCell::Scratch0,
+				base, MacroCell::Scratch1));
+  moveTo(base, MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();
+
+    // Decrement the offset
+    switchField(MacroCell::Payload0);
+    dec16(Cell{base, MacroCell::Payload1},
+	  Temps<2>::pack(base, MacroCell::Scratch0,
+			 base, MacroCell::Scratch1));
+    
+    // move payload forward by 1
+    moveField(Cell{base + 1, MacroCell::Payload0});
+    switchField(MacroCell::Payload1);
+    moveField(Cell{base + 1, MacroCell::Payload1});
+
+    // Follow along with pointer (raw -> compile-time offset remains at base)
+    switchField(MacroCell::Payload0);    
+    emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
+
+    // Flag <- (payload == 0)
+    orConstructive(Cell{base, MacroCell::Flag},
+		   Cell{base, MacroCell::Payload1},
+		   Temps<2>::pack(base, MacroCell::Scratch0,
+				  base, MacroCell::Scratch1));
+    switchField(MacroCell::Flag);
+  } loopClose();
+
+  // Base is now the cell we arrived at (at offset).
+  // Load values into payload
+  moveTo(base + baseOffset, MacroCell::Value0);
+  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::pack(base, MacroCell::Scratch0));
+  if (payload == Payload::Double) {
+    moveTo(base + baseOffset, MacroCell::Value1);
+    copyField(Cell{base, MacroCell::Payload1}, Temps<1>::pack(base, MacroCell::Scratch0));
+  }
+
+  // Bring payload back to cell that contains the SeekMarker
+  moveTo(base);
+  seek(MacroCell::SeekMarker, seekDir, payload, true);
+  popPtr();
+
+  // Transfer complete: payload now in Payload-fields of the base
+}
