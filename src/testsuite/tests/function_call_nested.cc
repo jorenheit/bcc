@@ -16,7 +16,7 @@ c.begin(); {
 
   c.beginFunction("foo", TypeSystem::voidT(), "x", TypeSystem::i8()); {
     c.beginBlock("entry"); {
-      c.callFunction("bar", "after_bar", values::ref("x"));
+      c.callFunction("bar", "after_bar", "x");
     } c.endBlock();
 
     c.beginBlock("after_bar"); {

@@ -180,7 +180,7 @@ namespace values {
 
       virtual std::shared_ptr<Base> pointee() const override { return ref; }
       
-    };
+    }; // pointer
     
     struct array: Base {
       types::TypeHandle elementType;
@@ -194,7 +194,8 @@ namespace values {
 	arr.reserve(sizeof...(Values));
 	(arr.emplace_back(make_array_item(std::forward<Values>(values))), ...);
 
-	// assert that all elements of of the correct type
+	// assert that all elements of of the correct type (variable references are not type-checked here)
+	// TODO: this should not be an assert but actual error
 	for (auto const &elem: arr) assert(elem->isRef() || elem->type() == elementType);
       }
       
@@ -246,43 +247,35 @@ namespace values {
       }
     }; // array
 
-
-
   } // namespace impl
   
-  using Value = std::shared_ptr<impl::Base>;
+  using Anonymous = std::shared_ptr<impl::Base>;
 
   // Factories for each of the values
-  inline Value i8(int val) {
+  inline Anonymous i8(int val) {
     return std::make_shared<impl::i8>(val);
   }
 
-  inline Value i16(int val) {
+  inline Anonymous i16(int val) {
     return std::make_shared<impl::i16>(val);
   }
 
-  inline Value string(std::string const &str) {
+  inline Anonymous string(std::string const &str) {
     return std::make_shared<impl::string>(str);
   }
 
   template <typename ... Values>
-  inline Value structT(std::string const &name, Values&& ... values) {
+  inline Anonymous structT(std::string const &name, Values&& ... values) {
     return std::make_shared<impl::structT>(name, std::forward<Values>(values)...);
   }
 
-  inline Value pointer(types::TypeHandle pointee, std::string const &var) {
+  inline Anonymous pointer(types::TypeHandle pointee, std::string const &var) {
     return std::make_shared<impl::pointer>(pointee, var);
   }
   
   template <typename ... Elements>
-  inline Value array(types::TypeHandle elementType, Elements&& ... elems) {
+  inline Anonymous array(types::TypeHandle elementType, Elements&& ... elems) {
     return std::make_shared<impl::array>(elementType, std::forward<Elements>(elems)...);
-  }
-
-  using Ref = std::shared_ptr<impl::Ref>;
-
-  inline Ref ref(std::string const &varName) {
-    return std::make_shared<impl::Ref>(varName);
   }
 
   

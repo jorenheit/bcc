@@ -26,10 +26,8 @@ c.begin(); {
       c.writeOut("y");
       c.writeOut("z");
 
-      c.callFunction("foo", "after_recurse",
-		     values::ref("x"),
-		     values::ref("y"),
-		     values::ref("z"));
+      c.callFunction("foo", "after_recurse", "x",
+		     "y", "z");
     } c.endBlock();
 
     c.beginBlock("after_recurse"); {

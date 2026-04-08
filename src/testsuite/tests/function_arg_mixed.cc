@@ -22,10 +22,9 @@ c.begin(); {
       c.assign(arr1, values::i8('E'));
       c.assign(arr2, values::i8('F'));
 
-      c.callFunction("foo", "after_foo", 
-		     values::ref("a"),
-		     values::ref("b"),
-		     values::ref("arr"));
+      c.callFunction("foo", "after_foo", "a",
+		     "b",
+		     "arr");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

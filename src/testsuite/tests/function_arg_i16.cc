@@ -12,7 +12,7 @@ c.begin(); {
       c.assign("x", values::i16(CAT('C', 'D')));
       c.callFunctionReturn("foo", "after_foo", "y",
 			   values::i16(CAT('A', 'B')),
-			   values::ref("x"));
+			   "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

@@ -13,7 +13,7 @@ c.begin(); {
       c.assign("x", values::i8('A'));
       c.callFunctionReturn("foo", "after_foo", "y",
 			   values::i8('B'),
-			   values::ref("x"));
+			   "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

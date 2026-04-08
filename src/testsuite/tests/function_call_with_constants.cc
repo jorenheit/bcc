@@ -14,9 +14,9 @@ c.begin(); {
 
       c.callFunction("foo", "after_foo",
 		     values::i8('A'),
-		     values::ref("a"),
+		     "a",
 		     values::i8('B'),
-		     values::ref("b"));
+		     "b");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

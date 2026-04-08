@@ -22,7 +22,7 @@ c.begin(); {
       c.assign(x3, values::i8('D'));
 
       c.writeOut("x");
-      c.callFunction("foo", "after_foo", values::ref("x"));
+      c.callFunction("foo", "after_foo", "x");
     } c.endBlock();
 
     c.beginBlock("after_foo"); {

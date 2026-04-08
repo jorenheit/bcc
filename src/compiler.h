@@ -167,13 +167,13 @@ private:
   values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
   values::RValue rValue(std::string const &var)    const { return values::RValue{local(var)};  }
   values::RValue rValue(Slot const &slot)          const { return values::RValue{slot};  }
-  values::RValue rValue(values::Value const &val)  const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
-  values::RValue rValue(values::Ref const &var)    const { return rValue(var->varName());  }
+  values::RValue rValue(values::Anonymous const &val)  const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
+  // values::RValue rValue(values::Ref const &var)    const { return rValue(var->varName());  }
 
   values::LValue lValue(values::LValue const &val) const { return values::LValue{val}; }
   values::LValue lValue(std::string const &var)    const { return values::LValue{local(var)};  }
   values::LValue lValue(Slot const &slot)          const { return values::LValue{slot};  }
-  values::LValue lValue(values::Ref const &var)    const { return values::LValue{local(var->varName())};  }
+  // values::LValue lValue(values::Ref const &var)    const { return values::LValue{local(var->varName())};  }
 
   // Implementation functions for public interface
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
@@ -282,7 +282,7 @@ private:
   void freeScope(Function::Scope const *scope);
   Slot allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind);
   Slot getTemp(types::TypeHandle type);
-  Slot getTemp(values::Value const &val);
+  Slot getTemp(values::Anonymous const &val);
   
   // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);

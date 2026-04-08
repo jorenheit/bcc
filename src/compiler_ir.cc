@@ -332,7 +332,6 @@ Slot Compiler::arrayElementImpl(values::LValue const &arr, values::RValue const 
     return arrayElementConstImpl(arr, index.value()->value());
   }
 
-
   types::TypeHandle elementType = arr.type()->elementType();
   Slot const indexSlot = index.slot();
   Slot const destSlot = dest.has_value() ? dest->slot() : getTemp(elementType);
@@ -464,7 +463,7 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
   else {
     
     // RHS is a value -> construct in slot
-    auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Value const &val) -> void {
+    auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Anonymous const &val) -> void {
       assert(slot.type->isConstructibleFrom(val->type()));
       
       if (types::isInteger(slot.type)) {
