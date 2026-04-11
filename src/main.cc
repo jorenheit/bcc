@@ -13,42 +13,30 @@ int main() try {
   Compiler c;
   c.setEntryPoint("main");
 
-  auto point = c.defineStruct("Point",
-			      "x", TypeSystem::i8(),
-			      "y", TypeSystem::i8());
-  
-  auto array = TypeSystem::array(point, 4);
-  auto array2 = TypeSystem::array(array, 4);
-  
   c.begin(); {
+    auto array2 = TypeSystem::array(TypeSystem::i8(), 2);
+
     c.beginFunction("main"); {
-
-      c.declareLocal("x", array2);
-      c.declareLocal("i", TypeSystem::i16());
-      c.declareLocal("j", TypeSystem::i16());
-      
+      c.declareLocal("x", TypeSystem::i8());
       c.beginBlock("entry"); {
-	c.assign("i", values::i16(2));
-	c.assign("j", values::i16(2));
+	c.assign("x", values::i8('B'));
+	c.callFunction("foo", "after_foo", values::array(TypeSystem::i8(), 'A', "x"));
+      } c.endBlock();
 
-	auto row = c.arrayElement("x", "i");
-	auto elem = c.arrayElement(row, "j");
-	auto field = c.structField(elem, "y");
-	
-	c.assign(row, values::array(point,
-				    values::structT(point, values::i8(1), values::i8(2)),
-				    values::structT(point, values::i8(3), values::i8(4)),
-				    values::structT(point, values::i8(5), values::i8(6)),
-				    values::structT(point, values::i8(7), values::i8(8)))
-		 );
+      c.beginBlock("after_foo"); {
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
 
-	c.writeOut(field);
-	
+    c.beginFunction("foo", TypeSystem::voidT(),
+		    "arr", array2); {
+      c.beginBlock("entry"); {
+	c.writeOut("arr");
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
   } c.end();
-  
+
   std::cout << c.dumpBrainfuck() << '\n';
  } catch (std::exception const &e) {
   std::cerr << e.what() << '\n';

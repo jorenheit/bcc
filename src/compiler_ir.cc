@@ -321,7 +321,7 @@ SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, values::RValue c
   error_if(not types::isInteger(index.type()), "tried to call 'arrayElement' with index '", index.str(), "' which is not an integer.");
 
   if (index.hasSlot()) return proxy::arrayElement(arr.slot(), index.slot());
-  else return arrayElementImpl(arr, index.value()->value());  
+  else return arrayElementImpl(arr, values::cast<types::IntegerType>(index.value())->value());  
 }
 
 
@@ -537,7 +537,7 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
 
   pushPtr();
   if (types::isInteger(slot.type)) {
-    int const x = val->value();
+    int const x = values::cast<types::IntegerType>(val)->value();
     moveTo(slot, MacroCell::Value0);
     setToValue(x & 0xff);
     if (slot.type->usesValue1()) {
@@ -548,13 +548,13 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
   else if (types::isArray(slot.type) || types::isString(slot.type)) {
     // recursive call for each element
     for (int i = 0; i != types::cast<types::ArrayLike>(val->type())->length(); ++i) {
-      arrayElement(slot, i)->write(*this, val->element(i));
+      arrayElement(slot, i)->write(*this, values::cast<types::ArrayLike>(val)->element(i));
     }
   }
   else if (types::isStruct(slot.type)) {
     // recursive call for each field	
     for (int i = 0; i != types::cast<types::StructType>(val->type())->fieldCount(); ++i) {
-      structField(slot, i)->write(*this, val->field(i));
+      structField(slot, i)->write(*this, values::cast<types::StructType>(val)->field(i));
     }
   }
   else if (types::isPointer(slot.type)) {
@@ -565,14 +565,14 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
     if (types::isPointer(val->type())) {
       // If the pointer is initialized with pointer-value,
       // set its offset to the slot-offset of the variable pointed to.
-      offset = local(val->pointee()->varName()).offset;
+      offset = local(values::cast<types::PointerType>(val)->pointee()->varName()).offset;
     }
     else {
       // If the pointer is initialized with an integer,
       // we can call value() on it to obtain the int value. This will be
       // interpreted as an address.
       assert(types::isInteger(val->type()));
-      offset = val->value();
+      offset = values::cast<types::IntegerType>(val)->value();
     }
 
     // Set frame-depth to 0 

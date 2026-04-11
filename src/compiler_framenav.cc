@@ -150,7 +150,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
       case types::I8:
       case types::I16: {
 	// Construct integer
-	int const value = arg.value()->value();
+	int const value = values::cast<types::IntegerType>(arg.value())->value();
 	moveTo(0, MacroCell::Value0);
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
@@ -166,7 +166,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
       case types::STRING: {
 	// recursive call for each element
 	for (int i = 0; i != types::cast<types::ArrayLike>(argType)->length(); ++i)
-	  self(self, offset, rValue(arg.value()->element(i)));
+	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.value())->element(i)));
 	break;
       }
       default: assert(false && "passing this type as arg is not supported yet"); break;

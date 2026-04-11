@@ -17,17 +17,11 @@ namespace values {
       Base(types::TypeHandle t): _type(t) {}
       virtual ~Base() = default;
 
-      // Value specific members
       virtual types::TypeHandle type() const { return _type; }      
       virtual std::shared_ptr<Base> clone() const = 0;
-      virtual std::string str() const = 0;            
-      virtual int value() const { assert(false); return 0; }
-      virtual std::string varName() const { assert(false); return ""; }
-      virtual std::shared_ptr<Base> element(size_t) const { assert(false); return nullptr; }
-      virtual std::shared_ptr<Base> pointee() const { assert(false); return nullptr; }
-      virtual std::shared_ptr<Base> field(std::string const &) const { assert(false); return nullptr; }
-      virtual std::shared_ptr<Base> field(size_t idx) const { assert(false); return nullptr; }      
+      virtual std::string str() const = 0;
       virtual bool isRef() const { return false; }
+      virtual std::string varName() const { assert(false); std::unreachable(); }
     };
 
     struct Ref: Base {
@@ -41,39 +35,57 @@ namespace values {
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<Ref>(*this); }      
     };
 
-    struct i8: Base {
+    struct Integer: Base {
       int _value;
-      i8(i8 const &other) = default;
-      i8(int v): Base(TypeSystem::i8()), _value(v & 0xff) {}
-      i8(...): Base(nullptr) { assert(false); }
-      virtual int value() const override { return _value; }
+      Integer(types::TypeHandle t, int v): Base(t), _value(v) {}
+
       virtual std::string str() const override { return std::to_string(_value); }
-      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }      
+      int value() const { return _value; }      
+    };
+    
+    struct i8: Integer {
+      i8(i8 const &other) = default;
+      i8(int v): Integer(TypeSystem::i8(), v & 0xff) {}
+      i8(...): Integer(nullptr, 0) { assert(false); }
+
+      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }
     };
 
-    struct i16: Base {
-      int _value;
+    struct i16: Integer {
       i16(i16 const& other) = default;
-      i16(int v): Base(TypeSystem::i16()), _value(v & 0xffff) {}
-      i16(...): Base(nullptr) { assert(false); }
+      i16(int v): Integer(TypeSystem::i16(), v & 0xffff) {}
+      i16(...): Integer(nullptr, 0) { assert(false); }
       
-      virtual int value() const override { return _value; }
-      virtual std::string str() const override { return std::to_string(_value); }
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i16>(*this); }      
     };      
 
-    struct string: Base {
-      std::string const _str;
+    struct ArrayLike: Base {
       std::vector<std::shared_ptr<Base>> arr;
 
+      ArrayLike(types::TypeHandle type):
+	Base(type)
+      {}
+
+      std::shared_ptr<Base> element(size_t idx) const {
+	assert(idx < arr.size());
+	return arr[idx];
+      }	
+    };
+    
+    struct string: ArrayLike {
+      std::string const _str;
+
       template <typename StringType> requires std::constructible_from<std::string, StringType>    
-      string(StringType const &s): Base(TypeSystem::string(s.length())), _str(s) {
-	for (char c: _str)  arr.emplace_back(std::make_shared<i8>(c));
-	arr.emplace_back(std::make_shared<i8>(0));
+      string(StringType const &s):
+	ArrayLike(TypeSystem::string(s.length())),
+	_str(s)
+      {
+	for (char c: _str)  (ArrayLike::arr).emplace_back(std::make_shared<i8>(c));
+	(ArrayLike::arr).emplace_back(std::make_shared<i8>(0));
       }
       
       string(string const &other):
-	Base(other.type()),
+	ArrayLike(other.type()),
 	_str(other._str)
       {
 	for (auto const &element: other.arr) {
@@ -81,11 +93,12 @@ namespace values {
 	}
       }
 
-      string(...): Base(nullptr) { assert(false); }
+      string(...): ArrayLike(nullptr) { assert(false); }
       
       virtual std::string str() const override { return std::string("\"") + _str + "\""; }
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<string>(*this); }
-      virtual std::shared_ptr<Base> element(size_t idx) const override {
+
+      std::shared_ptr<Base> element(size_t idx) const {
 	assert(idx < _str.size() + 1);
 	return arr[idx];
       }
@@ -135,13 +148,13 @@ namespace values {
       }
       structT(...): Base(nullptr) { assert(false); }
       
-      virtual std::shared_ptr<Base> field(std::string const &name) const override {
+      std::shared_ptr<Base> field(std::string const &name) const {
 	for (Field const &f: _fields) if (f.name == name) return f.value;
 	assert(false && "invalid field name");
 	std::unreachable();
       }
 
-      virtual std::shared_ptr<Base> field(size_t idx) const override {
+      std::shared_ptr<Base> field(size_t idx) const {
 	assert(idx < _fields.size() && "field index out of bounds");
 	return _fields[idx].value;
       }      
@@ -178,40 +191,34 @@ namespace values {
 	return std::string("ptr<") + ref->str() + ">";
       }
 
-      virtual std::shared_ptr<Base> pointee() const override { return ref; }
+      std::shared_ptr<Ref> pointee() const { return ref; }
       
     }; // pointer
     
-    struct array: Base {
+    struct array: ArrayLike {
       types::TypeHandle elementType;
-      std::vector<std::shared_ptr<Base>> arr;
 
       template <typename... Values>
       array(types::TypeHandle elementType, Values&&... values):
-	Base(TypeSystem::array(elementType, sizeof...(Values))),
+	ArrayLike(TypeSystem::array(elementType, sizeof...(Values))),
 	elementType(elementType)
       {
-	arr.reserve(sizeof...(Values));
-	(arr.emplace_back(make_array_item(std::forward<Values>(values))), ...);
+	ArrayLike::arr.reserve(sizeof...(Values));
+	(ArrayLike::arr.emplace_back(make_array_item(std::forward<Values>(values))), ...);
 
 	// assert that all elements of of the correct type (variable references are not type-checked here)
 	// TODO: this should not be an assert but actual error
 	for (auto const &elem: arr) assert(elem->isRef() || elem->type() == elementType);
       }
       
-      array(array const &other): Base(other.type()), elementType(other.elementType) {
-	arr.reserve(other.arr.size());
+      array(array const &other): ArrayLike(other.type()), elementType(other.elementType) {
+	ArrayLike::arr.reserve(other.arr.size());
 	for (auto const& elem: other.arr) {
-	  arr.emplace_back(make_array_item(elem));
+	  ArrayLike::arr.emplace_back(make_array_item(elem));
 	}
       }
 
-      array(...): Base(nullptr) { assert(false); }
-
-      virtual std::shared_ptr<Base> element(size_t idx) const override {
-	assert(idx < arr.size());
-	return arr[idx];
-      }
+      array(...): ArrayLike(nullptr) { assert(false); }
     
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
 
@@ -247,10 +254,43 @@ namespace values {
       }
     }; // array
 
+    template <typename V> requires std::derived_from<V, Base>
+    auto cast(std::shared_ptr<impl::Base> const &v) {
+      auto ptr = std::dynamic_pointer_cast<V>(v);
+      assert(ptr != nullptr && "invalid value cast");
+      return ptr;
+    }
+
   } // namespace impl
   
   using Anonymous = std::shared_ptr<impl::Base>;
 
+  
+  template <typename T> requires std::derived_from<T, types::Type>
+  auto cast(Anonymous const &v) {
+    if constexpr (std::is_same_v<T, types::IntegerType>) {
+      return impl::cast<impl::Integer>(v);
+    }
+    else if constexpr (std::is_same_v<T, types::ArrayLike>) {
+      return impl::cast<impl::ArrayLike>(v);
+    }    
+    else if constexpr (std::is_same_v<T, types::ArrayType>) {
+      return impl::cast<impl::array>(v);
+    }
+    else if constexpr (std::is_same_v<T, types::StringType>) {
+      return impl::cast<impl::string>(v);
+    }
+    else if constexpr (std::is_same_v<T, types::StructType>) {
+      return impl::cast<impl::structT>(v);
+    }
+    else if constexpr (std::is_same_v<T, types::PointerType>) {
+      return impl::cast<impl::pointer>(v);
+    }
+    else {
+      static_assert(false, "invalid cast type");
+    }
+  }
+  
   // Factories for each of the values
   inline Anonymous i8(int val) {
     return std::make_shared<impl::i8>(val);
