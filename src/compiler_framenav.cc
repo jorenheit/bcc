@@ -79,6 +79,7 @@ void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payl
 		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   } loopClose();
+  switchField(static_cast<MacroCell::Field>(0));
 }
 
 
@@ -121,8 +122,8 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
   
   auto const constructInNextFrame = [&](auto&& self, int &offset, values::RValue const &arg) -> void {
 
-    if (arg.hasSlot()) { // Already stored in frame -> copy to next frame
-      Slot const &slot = arg.slot();
+    if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
+      Slot const slot = arg.slot()->materialize(*this);
       for (int i = 0; i != slot.type->size(); ++i) {
 	int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
 	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;

@@ -69,6 +69,12 @@ namespace primitive {
   std::string generate(Context const&) const override;	 \
 
 
+  struct Comment: Node {
+    std::string txt;
+    inline explicit Comment(std::string txt): txt(std::move(txt)) {}
+    COMMON_INTERFACE;
+  };
+  
   struct LoopOpen: Node {
     std::string tag;
     inline explicit LoopOpen(std::string tag): tag(std::move(tag)) {}

@@ -392,6 +392,10 @@ namespace Algorithm {
 #define TXT(Name) std::string primitive::Name::text(Context const &ctx) const 
 #define GEN(Name) std::string primitive::Name::generate(Context const &ctx) const
 
+// Comment
+TXT(Comment) { return txt; }
+GEN(Comment) { return ""; }
+
 // LoopOpen
 TXT(LoopOpen) { return std::string("loop open; tag = ") + tag; }
 GEN(LoopOpen) { return "["; }

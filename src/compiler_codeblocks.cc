@@ -55,30 +55,36 @@ void Compiler::constructMetaBlocks() {
     MetaBlock const &m = _metaBlocks[idx];
     Function const *callee = &_program.function(m.callee);
 
-    // If a return-variable was provided, check that its type matches the returntype of the callee
-    if (m.returnSlot) assert(callee->sig.returnType == m.returnSlot->type);
-
     // Set current function to caller (owner of metablock) and construct block
     _currentFunction = &_program.function(m.caller);    
     beginBlock(m.name); {
 
-      if (callee->sig.returnType == TypeSystem::voidT()){
+      if (callee->sig.returnType == TypeSystem::voidT() || not m.returnSlot){
 	fetchReturnData();
       }
       else {
 	// Get or create the return slot to copy the return-variable into
-	Slot const &returnSlot = [&](){
-	  if (m.returnSlot) return *m.returnSlot;
-	  static int retVarID = 0;
-	  std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
-	  return declareLocal(retVarName, callee->sig.returnType);
-	}();
+	// Slot const &returnSlot = [&](){
+	//   if (m.returnSlot) return *m.returnSlot;
+	//   static int retVarID = 0;
+	//   std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
+	//   return declareLocal(retVarName, callee->sig.returnType);
+	// }();
 
-	fetchReturnData(returnSlot);
+	SlotProxy returnSlot = *m.returnSlot;
+	assert(callee->sig.returnType == returnSlot->type());
 
-	// If we just wrote to a global, immediately sync this
-	if (returnSlot.kind == Slot::GlobalReference) {
-	  syncGlobal<&Compiler::putGlobal>(returnSlot);
+	if (returnSlot->direct()) {
+	  Slot const ret = returnSlot->materialize(*this);
+	  fetchReturnData(ret);
+	  if (ret.kind == Slot::GlobalReference) {
+	    syncGlobal<&Compiler::putGlobal>(ret);
+	  }
+	}
+	else {
+	  Slot const ret = getTemp(callee->sig.returnType);
+	  fetchReturnData(ret);
+	  returnSlot->write(*this, ret);
 	}
       }
 

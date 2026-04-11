@@ -12,9 +12,9 @@ c.begin(); {
     c.declareLocal("arr", array3);
 
     c.beginBlock("entry"); {
-      Slot arr0 = c.arrayElementConst("arr", 0);
-      Slot arr1 = c.arrayElementConst("arr", 1);
-      Slot arr2 = c.arrayElementConst("arr", 2);
+      auto arr0 = c.arrayElement("arr", 0);
+      auto arr1 = c.arrayElement("arr", 1);
+      auto arr2 = c.arrayElement("arr", 2);
 
       c.assign("a",  values::i8('A'));
       c.assign("b",  values::i16(CAT('B', 'C')));

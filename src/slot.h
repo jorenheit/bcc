@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 #include "types.h"
 
 struct Slot {
@@ -25,3 +26,5 @@ struct Slot {
   int size() const { return type->size(); }
   operator int() const { return offset; }
 };
+
+

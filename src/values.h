@@ -6,6 +6,7 @@
 #include <utility>
 #include <type_traits>
 #include <concepts>
+#include <sstream>
 #include "types.h"
 
 namespace values {

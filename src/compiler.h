@@ -2,6 +2,7 @@
 #include <stack>
 #include <sstream>
 #include <optional>
+#include "proxy.h"
 #include "program.h"
 #include "function.h"
 #include "data.h"
@@ -13,7 +14,11 @@
 // ============================================================
 
 class Compiler {
+  friend class proxy::Impl::Base;
+  friend class proxy::Impl::Direct;
+  friend class proxy::Impl::ArrayElement;
 
+  
   Program _program;
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
@@ -33,7 +38,7 @@ class Compiler {
     std::string name;
     std::string caller;
     std::string callee;
-    std::optional<Slot> returnSlot;
+    std::optional<SlotProxy> returnSlot;
     std::string nextBlockName;
   };
   std::vector<MetaBlock> _metaBlocks;
@@ -112,28 +117,23 @@ public:
   }
 
   template <typename L>
-  Slot getStructField(L const &obj, std::string const &field) {
+  SlotProxy getStructField(L const &obj, std::string const &field) {
     return getStructFieldImpl(lValue(obj), field);
   }
 
   template <typename L>
-  Slot getStructField(L const &obj, int fieldIndex) {
+  SlotProxy getStructField(L const &obj, int fieldIndex) {
     return getStructFieldImpl(lValue(obj), fieldIndex);
   }
 
-  template <typename Array> // TODO: should this not be an RValue?
-  Slot arrayElementConst(Array const &arr, int index) {
-    return arrayElementConstImpl(lValue(arr), index);
+  template <typename Array>
+  SlotProxy arrayElement(Array const &arr, int index) {
+    return arrayElementImpl(lValue(arr), index);
   }
-
-  template <typename Array, typename Index, typename Result>
-  Slot arrayElement(Array const &arr, Index const &index, Result const &result) {
-    return arrayElementImpl(lValue(arr), rValue(index), lValue(result));
-  }
-
+  
   template <typename Array, typename Index>
-  Slot arrayElement(Array const &arr, Index const &index) {
-    return arrayElementImpl(lValue(arr), rValue(index), {});
+  SlotProxy arrayElement(Array const &arr, Index const &index) {
+    return arrayElementImpl(lValue(arr), rValue(index));
   }
   
   Slot declareLocal(std::string const &name, types::TypeHandle type);
@@ -166,28 +166,31 @@ private:
   // Normalize to RValue or LValue
   values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
   values::RValue rValue(std::string const &var)    const { return values::RValue{local(var)};  }
-  values::RValue rValue(Slot const &slot)          const { return values::RValue{slot};  }
+  values::RValue rValue(SlotProxy const &slot)          const { return values::RValue{slot};  }
   values::RValue rValue(values::Anonymous const &val)  const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
-  // values::RValue rValue(values::Ref const &var)    const { return rValue(var->varName());  }
 
   values::LValue lValue(values::LValue const &val) const { return values::LValue{val}; }
   values::LValue lValue(std::string const &var)    const { return values::LValue{local(var)};  }
-  values::LValue lValue(Slot const &slot)          const { return values::LValue{slot};  }
-  // values::LValue lValue(values::Ref const &var)    const { return values::LValue{local(var->varName())};  }
+  values::LValue lValue(SlotProxy const &slot)          const { return values::LValue{slot};  }
 
   // Implementation functions for public interface
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
 			std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args);
   void returnFromFunctionImpl(std::optional<values::RValue> const &ret = {});
-  Slot getStructFieldImpl(values::LValue const &obj, std::string const &field);
-  Slot getStructFieldImpl(values::LValue const &obj, int fieldIndex);
-  Slot arrayElementConstImpl(values::LValue const &arr, int index);
-  Slot arrayElementImpl(values::LValue const &arr, values::RValue const &index, std::optional<values::LValue> const &dest);
-  Slot deref(values::RValue const &ptr);
+  SlotProxy getStructFieldImpl(values::LValue const &obj, std::string const &field);
+  SlotProxy getStructFieldImpl(values::LValue const &obj, int fieldIndex);
+  SlotProxy arrayElementImpl(values::LValue const &arr, int index);
+  SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index);
+  SlotProxy deref(values::RValue const &ptr);
 
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs);
   void writeOutImpl(values::RValue const &rhs); 
   
+  // Slot operations
+  void assignSlot(Slot const &dest, Slot const &src);
+  void assignSlot(Slot const &slot, values::Anonymous const &val);
+  void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
+  void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(Cell cell);
@@ -197,6 +200,8 @@ private:
   void zeroCell();
   void loopOpen(std::string const &tag = defaultOpenTag());
   void loopClose(std::string const &tag = defaultCloseTag());
+
+  void goToDynamicOffset(Cell offsetLow, Cell offsetHigh);
   void fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir);
   
   void moveField(Cell dest);
@@ -218,7 +223,11 @@ private:
   void subConstAndCarry(int delta, Cell carry, Temps<3> tmp);
   void sub16Const(int delta, Cell high, Temps<4> tmp);
 
-  // TODO: constructive versions should  accept "other" before result and carry
+  void mulConst(int factor, Temps<3> tmp);
+  //  void mul16Const(int factor, Cell high, Temps<?> tmp);
+
+  
+  // TODO: constructive versions should accept "other" before result and carry
   void addDestructive(Cell other);
   void addConstructive(Cell result, Cell other, Temps<2> tmp);
   void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);

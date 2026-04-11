@@ -271,17 +271,17 @@ Slot Compiler::local(std::string const& varName, bool globalReference) const {
   std::unreachable();
 }
 
-Slot Compiler::getStructFieldImpl(values::LValue const &obj, int fieldIndex) {
+SlotProxy Compiler::getStructFieldImpl(values::LValue const &obj, int fieldIndex) {
   error_if(fieldIndex >= obj.type()->length(), "field index (", fieldIndex, ") out of bounds in call to getStructField.");
   return getStructFieldImpl(obj, obj.type()->fieldName(fieldIndex));
 }
 
-Slot Compiler::getStructFieldImpl(values::LValue const &obj, std::string const &fieldName) {
-  Slot const slot = obj.slot();
-  error_if(_currentFunction == nullptr, "called 'getStructField(", slot.name, ", ", fieldName, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'getStructField(", slot.name, ", ", fieldName, ")' outside code-block.");
-  error_if(not types::isStruct(slot.type), "tried to call 'getStructField' on '", slot.name, "', which is not a struct.");
+SlotProxy Compiler::getStructFieldImpl(values::LValue const &obj, std::string const &fieldName) {
+  error_if(_currentFunction == nullptr, "called 'getStructField(", obj.str(), ", ", fieldName, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'getStructField(", obj.str(), ", ", fieldName, ")' outside code-block.");
+  error_if(not types::isStruct(obj.type()), "tried to call 'getStructField' on '", obj.str(), "', which is not a struct.");
 
+  Slot const slot = obj.slot()->materialize(*this);  
   auto s = static_cast<types::StructType const *>(slot.type);
 
   auto [fieldIndex, offset] = [&]() -> std::pair<size_t, size_t> {
@@ -303,69 +303,32 @@ Slot Compiler::getStructFieldImpl(values::LValue const &obj, std::string const &
   };  
 }
 
-Slot Compiler::arrayElementConstImpl(values::LValue const &arr, int index) {
-  Slot const slot = arr.slot();
+SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index) {
   error_if(_currentFunction == nullptr, "called 'arrayElementConst(", arr.str(), ", ", index, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'arrayElementConst(", arr.str(), ", ", index, ")' outside code-block.");
-  error_if(not types::isArray(slot.type) && not types::isString(slot.type),
+  error_if(not types::isArray(arr.type()) && not types::isString(arr.type()),
 	   "tried to call 'arrayElementConst' on '", arr.str(), "', which is not an array.");
-  error_if(index >= slot.type->length(), "index [", index, "] out of bounds for '", arr.str(), "'.");
+  error_if(index >= arr.type()->length(), "index [", index, "] out of bounds for '", arr.str(), "'.");
 
-  // return a slot that represents the element 
-  return Slot {
-    .name = std::string("__elem_") + slot.name + "_" + std::to_string(index),
-    .type = slot.type->elementType(),
-    .kind = Slot::ArrayElement,
-    .offset = slot.offset + (index * slot.type->elementType()->size())
-  };
-}
+  return proxy::arrayElement(arr.slot(), index);  
+}  
 
-Slot Compiler::arrayElementImpl(values::LValue const &arr, values::RValue const &index, std::optional<values::LValue> const &dest) {
-  Slot const slot = arr.slot();
+SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, values::RValue const &index) {
+
   error_if(_currentFunction == nullptr, "called 'arrayElement(", arr.str(), ", ", index.str(), ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'arrayElement(", arr.str(), ", ", index.str(), ")' outside code-block.");
-  error_if(not types::isArray(slot.type) && not types::isString(slot.type),
+  error_if(not types::isArray(arr.type()) && not types::isString(arr.type()),
 	   "tried to call 'arrayElement' on '", arr.str(), "', which is not an array.");
   error_if(not types::isInteger(index.type()), "tried to call 'arrayElement' with index '", index.str(), "' which is not an integer.");
-  
-  if (not index.hasSlot()) {
-    return arrayElementConstImpl(arr, index.value()->value());
-  }
 
-  types::TypeHandle elementType = arr.type()->elementType();
-  Slot const indexSlot = index.slot();
-  Slot const destSlot = dest.has_value() ? dest->slot() : getTemp(elementType);
-
-  // TODO: multiply index by size of element -> implement mulConst and mul16Const
-  
-  // We need to do a dynamic fetch:
-  // Set a marker at the start of the array and fetch the value into the payload-fields.
-  // Then move the value into the destination slot.
-  moveTo(slot, MacroCell::Value0);
-  setSeekMarker();  
-  for (int i = 0; i != elementType->size(); ++i) {
-    fetchFromDynamicOffset(Cell{indexSlot, MacroCell::Value0},
-			   Cell{indexSlot, MacroCell::Value1},
-			   i,
-			   elementType->usesValue1() ? Payload::Double : Payload::Single,
-			   primitive::Left);
-
-    switchField(MacroCell::Payload0);
-    moveField(Cell{destSlot + i, MacroCell::Value0});
-    if (elementType->usesValue1()) {
-      switchField(MacroCell::Payload1);
-      moveField(Cell{destSlot + i, MacroCell::Value1});
-    }
-  }
-  
-  resetSeekMarker();
-  return destSlot;
+  if (index.hasSlot()) return proxy::arrayElement(arr.slot(), index.slot());
+  else return arrayElementImpl(arr, index.value()->value());  
 }
+
 
 
 void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
 				std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args) {
-
   error_if(_currentFunction == nullptr, "called 'callFunction(", functionName, ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'callFunction(", functionName, ")' outside code-block.");
   assert(_currentSeq != nullptr);
@@ -379,7 +342,7 @@ void Compiler::callFunctionImpl(std::string const& functionName, std::string con
       .name = metaBlockName,
       .caller = _currentFunction->name,
       .callee = functionName,
-      .returnSlot = returnSlot ? std::optional<Slot>(returnSlot->slot()) : std::nullopt,
+      .returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
       .nextBlockName = nextBlockName,
     });
 
@@ -432,93 +395,209 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret) 
   _nextBlockIsSet = true;  
 }
 
-void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) {
+
+void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
+  assert(types::isArray(arrSlot.type));
+  assert(types::isInteger(indexSlot.type));
+  assert(elementSlot.type == arrSlot.type->elementType());
+  types::TypeHandle elementType = elementSlot.type;
   
+  pushPtr();
+
+  // TODO: use constructive version when I have it
+  Slot const scaledIndexSlot = getTemp(TypeSystem::i8());
+  assignSlot(scaledIndexSlot, indexSlot);
+  moveTo(scaledIndexSlot, MacroCell::Value0);
+  mulConst(elementType->size(),
+	   Temps<3>::pack(scaledIndexSlot, MacroCell::Scratch0,
+			  scaledIndexSlot, MacroCell::Scratch1,			  
+			  scaledIndexSlot, MacroCell::Payload0
+			  ));
+  
+  moveTo(arrSlot, MacroCell::Value0);
+  setSeekMarker();
+  for (int i = 0; i != elementType->size(); ++i) {
+    fetchFromDynamicOffset(Cell{scaledIndexSlot, MacroCell::Value0},
+			   Cell{scaledIndexSlot, MacroCell::Value1},
+			   i,
+			   elementType->usesValue1() ? Payload::Double : Payload::Single,
+			   primitive::Left);
+
+    switchField(MacroCell::Payload0);
+    moveField(Cell{elementSlot + i, MacroCell::Value0});
+    if (elementType->usesValue1()) {
+      switchField(MacroCell::Payload1);
+      moveField(Cell{elementSlot + i, MacroCell::Value1});
+    }
+  }
+  resetSeekMarker();
+  popPtr();
+
+}
+
+void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot) {
+  assert(types::isArray(arrSlot.type));
+  assert(types::isInteger(indexSlot.type));
+  assert(srcSlot.type == arrSlot.type->elementType());
+  types::TypeHandle elementType = arrSlot.type->elementType();
+
+  // TODO: multiply index by elementsize
+  pushPtr();
+
+  Slot const scaledIndexSlot = getTemp(TypeSystem::i8());
+  assignSlot(scaledIndexSlot, indexSlot);
+  moveTo(scaledIndexSlot, MacroCell::Value0);
+  mulConst(elementType->size(),
+	   Temps<3>::pack(scaledIndexSlot, MacroCell::Scratch0,
+			  scaledIndexSlot, MacroCell::Scratch1,			  
+			  scaledIndexSlot, MacroCell::Payload0
+			  ));
+  
+  // Plant a seek marker at the start of the array
+  moveTo(arrSlot, MacroCell::Value0);
+  setSeekMarker();
+
+  // Plant another marker one (full element) beyond the start of the element we need
+  goToDynamicOffset(Cell{scaledIndexSlot, MacroCell::Value0},
+		    Cell{scaledIndexSlot, MacroCell::Value1});
+
+  _dp.set(0);
+  moveTo(elementType->size()); 
+  setSeekMarker();
+  moveTo(0);
+
+  // Move back to the start of the array
+  seek(MacroCell::SeekMarker, primitive::Left, Payload::None, true);
+  _dp.set(arrSlot);
+  
+  for (int i = 0; i != elementType->size(); ++i) {
+    // Copy the contents into the payload cells
+    moveTo(srcSlot + i, MacroCell::Value0);
+    copyField(Cell{arrSlot + i, MacroCell::Payload0},
+	      Temps<1>::pack(arrSlot + i, MacroCell::Scratch0));
+    if (elementType->usesValue1()) {
+      moveTo(srcSlot + i, MacroCell::Value1);
+      copyField(Cell{arrSlot + i, MacroCell::Payload1},
+		Temps<1>::pack(arrSlot + i, MacroCell::Scratch0));
+    }
+
+    // Move the payload into the cell containing the marker (one beyond actual start of the element)
+    moveTo(arrSlot + i);
+    seek(MacroCell::SeekMarker, primitive::Right,
+	 elementType->usesValue1() ? Payload::Double : Payload::Single,
+	 false);
+    _dp.set(elementType->size());
+    
+    // Move the payload into the value-cells
+    // Pointer value set to 1, 0 represents the start
+    // of the array -> i is element slot offset
+    switchField(MacroCell::Payload0);
+    moveField(Cell{i, MacroCell::Value0});
+    if (elementType->usesValue1()) {
+      switchField(MacroCell::Payload1);
+      moveField(Cell{i, MacroCell::Value1});
+    }
+
+    if (i + 1 == elementType->size()) {
+      resetSeekMarker();
+    }
+
+    // Go back to the start of the array
+    seek(MacroCell::SeekMarker, primitive::Left, Payload::None, false);
+    _dp.set(arrSlot);
+  }    
+
+  resetSeekMarker();
+  popPtr();
+}
+
+void Compiler::assignSlot(Slot const &dest, Slot const &src) {
+  assert(dest.size() == src.size());
+  
+  pushPtr();
+  // Copy src into slot
+  for (int i = 0; i != dest.size(); ++i) {
+    moveTo(src + i, MacroCell::Value0);
+    copyField(Cell{dest + i, MacroCell::Value0},
+	      Temps<1>::pack(dest + i, MacroCell::Scratch0));
+    if (dest.type->usesValue1()) {
+      moveTo(src + i, MacroCell::Value1);
+      copyField(Cell{dest + i, MacroCell::Value1},
+		Temps<1>::pack(dest + i, MacroCell::Scratch0));
+    }
+  }
+  popPtr();
+}
+
+void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
+  assert(slot.type->isConstructibleFrom(val->type()));
+
+  pushPtr();
+  if (types::isInteger(slot.type)) {
+    int const x = val->value();
+    moveTo(slot, MacroCell::Value0);
+    setToValue(x & 0xff);
+    if (slot.type->usesValue1()) {
+      moveTo(slot, MacroCell::Value1);
+      setToValue((x >> 8) & 0xff);
+    }
+  }
+  else if (types::isArray(slot.type) || types::isString(slot.type)) {
+    // recursive call for each element
+    for (int i = 0; i != val->type()->length(); ++i) {
+      arrayElement(slot, i)->write(*this, val->element(i));
+    }
+  }
+  else if (types::isStruct(slot.type)) {
+    // recursive call for each field	
+    for (int i = 0; i != val->type()->length(); ++i) {
+      getStructField(slot, i)->write(*this, val->field(i));
+    }
+  }
+  else if (types::isPointer(slot.type)) {
+    // first macrocell contains the frameDepth, second the offset
+    // The framedepth is initialized to 0 for new pointers.
+
+    int offset;	  
+    if (types::isPointer(val->type())) {
+      // If the pointer is initialized with pointer-value,
+      // set its offset to the slot-offset of the variable pointed to.
+      offset = local(val->pointee()->varName()).offset;
+    }
+    else {
+      // If the pointer is initialized with an integer,
+      // we can call value() on it to obtain the int value. This will be
+      // interpreted as an address.
+      assert(types::isInteger(val->type()));
+      offset = val->value();
+    }
+
+    // Set frame-depth to 0 
+    moveTo(slot + RuntimePointer::FrameDepth, MacroCell::Value0);
+    zeroCell();
+    // Construct offset in second cell
+    moveTo(slot + RuntimePointer::Offset, MacroCell::Value0);
+    setToValue(offset & 0xff);
+    moveTo(slot + RuntimePointer::Offset, MacroCell::Value1);
+    setToValue((offset >> 8) & 0xff);
+  }
+  else {
+    assert(false && "not implemented");
+  }
+  popPtr();
+}
+
+
+void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) {
   error_if(_currentFunction == nullptr, "called 'assign(", lhs.str(), ", ", rhs.str(), ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'assign(",  lhs.str(), ", ", rhs.str(), ")' outside code-block.");
   error_if(not lhs.type()->isConstructibleFrom(rhs.type()),
 	   "type mismatch in 'assign(", lhs.str(), ", ", rhs.str(), ")': '",
 	   lhs.str(), "' is of type '", lhs.type()->str(), "' while '", rhs.str(), "' is of type '", rhs.type()->str(), "'.");
 
-  pushPtr();
-  
-  // TODO: factor out each branch into a helper function
-  if (rhs.hasSlot()) {
-    Slot const dest = lhs.slot();
-    Slot const src  = rhs.slot();
-    types::TypeHandle const type = dest.type;
-    
-    // Copy src into dest
-    for (int i = 0; i != type->size(); ++i) {
-      moveTo(src + i, MacroCell::Value0);
-      copyField(Cell{dest + i, MacroCell::Value0},
-		Temps<1>::pack(dest + i, MacroCell::Scratch0));
-      if (type->usesValue1()) {
-	moveTo(src + i, MacroCell::Value1);
-	copyField(Cell{dest + i, MacroCell::Value1},
-		  Temps<1>::pack(dest + i, MacroCell::Scratch0));
-      }
-    }
-  }
-  else {
-    
-    // RHS is a value -> construct in slot
-    auto const constructInSlot = [&](auto&& self, Slot const &slot, values::Anonymous const &val) -> void {
-      assert(slot.type->isConstructibleFrom(val->type()));
-      
-      if (types::isInteger(slot.type)) {
-	int const x = val->value();
-	moveTo(slot, MacroCell::Value0);
-	setToValue(x & 0xff);
-	if (slot.type->usesValue1()) {
-	  moveTo(slot, MacroCell::Value1);
-	  setToValue((x >> 8) & 0xff);
-	}
-      }
-      else if (types::isArray(slot.type) || types::isString(slot.type)) {
-	// recursive call for each element
-	for (int i = 0; i != val->type()->length(); ++i) {
-	  self(self, arrayElementConst(slot, i), val->element(i));
-	}
-      }
-      else if (types::isStruct(slot.type)) {
-	// recursive call for each field	
-	for (int i = 0; i != val->type()->length(); ++i) {
-	  self(self, getStructField(slot, i), val->field(i));
-	}
-      }
-      else if (types::isPointer(slot.type)) {
-	// first macrocell contains the frameDepth, second the offset
-	// The framedepth is initialized to 0 for new pointers.
-
-	int offset;	  
-	if (types::isPointer(val->type())) {
-	  // If the pointer is initialized with pointer-value,
-	  // set its offset to the slot-offset of the variable pointed to.
-	  offset = local(val->pointee()->varName()).offset;
-	}
-	else {
-	  // If the pointer is initialized with an integer,
-	  // we can call value() on it to obtain the int value. This will be
-	  // interpreted as an address.
-	  assert(types::isInteger(val->type()));
-	  offset = val->value();
-	}
-
-	// Set frame-depth to 0 
-	moveTo(slot + RuntimePointer::FrameDepth, MacroCell::Value0); zeroCell();
-	// Construct offset in second cell
-	moveTo(slot + RuntimePointer::Offset, MacroCell::Value0); setToValue(offset & 0xff);
-	moveTo(slot + RuntimePointer::Offset, MacroCell::Value1); setToValue((offset >> 8) & 0xff);
-      }
-      else {
-	assert(false && "not implemented");
-      }
-    };
-    constructInSlot(constructInSlot, lhs.slot(), rhs.value());
-  }
-
-  popPtr();
+  rhs.hasSlot()
+    ? lhs.slot()->write(*this, rhs.slot())
+    : lhs.slot()->write(*this, rhs.value());
 }
 
 void Compiler::writeOutImpl(values::RValue const &rhs) {
@@ -527,13 +606,9 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
 
   pushPtr();
 
-  if (not rhs.hasSlot()) {
-    writeOut(rValue(getTemp(rhs.value())));
-    popPtr();
-    return;
-  }
-
-  Slot const slot = rhs.slot();
+  Slot const slot = rhs.hasSlot()
+    ? rhs.slot()->materialize(*this)
+    : getTemp(rhs.value());
 
   // Special case for Strings: look for NULL terminator
   if (types::isString(slot.type)) {
@@ -573,7 +648,7 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
   popPtr();
 }
 
-Slot Compiler::deref(values::RValue const &ptr) {
+SlotProxy Compiler::deref(values::RValue const &ptr) {
   assert(false && "deref not implemented");
 }  
 // assert(ptr.type()->tag() == types::POINTER);

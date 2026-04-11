@@ -18,10 +18,10 @@ c.begin(); {
     } c.endBlock();
 
     c.beginBlock("after_foo"); {
-      c.writeOut(c.arrayElementConst("x", 0));
-      c.writeOut(c.arrayElementConst("x", 1));
-      c.writeOut(c.arrayElementConst("x", 2));
-      c.writeOut(c.arrayElementConst("x", 3));
+      c.writeOut(c.arrayElement("x", 0));
+      c.writeOut(c.arrayElement("x", 1));
+      c.writeOut(c.arrayElement("x", 2));
+      c.writeOut(c.arrayElement("x", 3));
       c.returnFromFunction();
     } c.endBlock();
   } c.endFunction();
@@ -30,10 +30,10 @@ c.begin(); {
     c.declareLocal("x", array4);
     
     c.beginBlock("entry"); {
-      Slot x0 = c.arrayElementConst("x", 0);
-      Slot x1 = c.arrayElementConst("x", 1);
-      Slot x2 = c.arrayElementConst("x", 2);
-      Slot x3 = c.arrayElementConst("x", 3);
+      auto x0 = c.arrayElement("x", 0);
+      auto x1 = c.arrayElement("x", 1);
+      auto x2 = c.arrayElement("x", 2);
+      auto x3 = c.arrayElement("x", 3);
 
       c.assign(x0, values::i8('A'));
       c.assign(x1, values::i8('B'));

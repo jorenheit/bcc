@@ -83,6 +83,31 @@ void Compiler::subConst(int delta) {
   addConst(-delta);
 }
 
+void Compiler::mulConst(int factor, Temps<3> tmp) {
+  // TODO: optimize for powers of 2
+  // TODO: big factors should have runtime implementation
+  if (factor == 1) return;
+
+  pushPtr();
+  Cell const current = _dp.current();
+  Cell const copy1 = tmp.get<0>();
+  Cell const copy2 = tmp.get<1>();
+  
+  copyField(copy1, tmp.select<2>());
+  copyField(copy2, tmp.select<2>());
+  
+  for (int i = 0; i != factor - 1; ++i) {
+    addDestructive(copy1);
+    moveTo(copy2);
+    copyField(copy1, tmp.select<2>());
+    moveTo(current);
+  }
+  popPtr();
+}
+
+//void Compiler::mul16Const(int factor, Cell high, Temps<?> tmp);
+
+
 void Compiler::subConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
   addConstAndCarry(-delta, carry, tmp);
 }
@@ -470,22 +495,17 @@ void Compiler::equalConstructive(Cell result, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
-void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir) {
-  assert(payload != Payload::None);
+void Compiler::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
+  // WARNING: this leaves pointer in unknown position.
+  // Make sure to leave a marker in order to be able to seek back
   
-  // Within the current frame, move to the cell indicated by the 16-bit value stored
-  // in offsetLow and offsetHigh into the Payload cells of the cell marked with the
-  // SeekMarker, which should be in the direction indicated by seekDir.
-
-  pushPtr();
-
   // Copy offset (16-bit) into payload cells of the current cell  
   int const base = _dp.current().offset;
   moveTo(offsetLow);
-  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::pack(0, MacroCell::Scratch0));
+  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::pack(base, MacroCell::Scratch0));
   moveTo(offsetHigh);
-  copyField(Cell{base, MacroCell::Payload1}, Temps<1>::pack(0, MacroCell::Scratch0));
-
+  copyField(Cell{base, MacroCell::Payload1}, Temps<1>::pack(base, MacroCell::Scratch0));
+  
   // Starting at the current offset, move right while decrementing offset until
   // both bytes have become zero. Then move the value back to the seek-marker
   moveTo(base, MacroCell::Payload0);
@@ -519,7 +539,16 @@ void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseO
 				  base, MacroCell::Scratch1));
     switchField(MacroCell::Flag);
   } loopClose();
+  moveTo(base, MacroCell::Value0);
+}
 
+void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir) {
+  assert(payload != Payload::None);
+
+  int const base = _dp.current().offset;
+  pushPtr();
+  goToDynamicOffset(offsetLow, offsetHigh);
+  
   // Base is now the cell we arrived at (at offset).
   // Load values into payload
   moveTo(base + baseOffset, MacroCell::Value0);

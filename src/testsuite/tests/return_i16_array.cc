@@ -25,10 +25,10 @@ c.begin(); {
     c.declareLocal("x", array4);
     
     c.beginBlock("entry"); {
-      Slot x0 = c.arrayElementConst("x", 0);
-      Slot x1 = c.arrayElementConst("x", 1);
-      Slot x2 = c.arrayElementConst("x", 2);
-      Slot x3 = c.arrayElementConst("x", 3);
+      auto x0 = c.arrayElement("x", 0);
+      auto x1 = c.arrayElement("x", 1);
+      auto x2 = c.arrayElement("x", 2);
+      auto x3 = c.arrayElement("x", 3);
 
       c.assign(x0, values::i16(CAT('A','B')));
       c.assign(x1, values::i16(CAT('C','D')));
