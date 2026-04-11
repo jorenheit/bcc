@@ -14,27 +14,41 @@ int main() try {
   c.setEntryPoint("main");
 
   c.begin(); {
-    auto array2 = TypeSystem::array(TypeSystem::i8(), 2);
+auto point = c.defineStruct("Point",
+			    "x", TypeSystem::i8(),
+			    "y", TypeSystem::i8());
 
-    c.beginFunction("main"); {
-      c.declareLocal("x", TypeSystem::i8());
-      c.beginBlock("entry"); {
-	c.assign("x", values::i8('B'));
-	c.callFunction("foo", "after_foo", values::array(TypeSystem::i8(), 'A', "x"));
-      } c.endBlock();
+ c.declareGlobal("g", point);
 
-      c.beginBlock("after_foo"); {
-	c.returnFromFunction();
-      } c.endBlock();
-    } c.endFunction();
+ c.beginFunction("main"); {
+   c.referGlobals({"g"});
+      
+   c.beginBlock("entry"); {
+     auto gx = c.structField("g", "x");
+     auto gy = c.structField("g", "y");
 
-    c.beginFunction("foo", TypeSystem::voidT(),
-		    "arr", array2); {
-      c.beginBlock("entry"); {
-	c.writeOut("arr");
-	c.returnFromFunction();
-      } c.endBlock();
-    } c.endFunction();
+     c.assign(gx, values::i8('A'));
+     c.assign(gy, values::i8('B'));
+     c.writeOut("g");
+
+     c.callFunction("foo", "after_foo");
+   } c.endBlock();
+
+   c.beginBlock("after_foo"); {
+     c.writeOut("g");
+     c.returnFromFunction();
+   } c.endBlock();
+ } c.endFunction();
+
+ c.beginFunction("foo"); {
+   c.referGlobals({"g"});
+      
+   c.beginBlock("entry"); {
+     auto gy = c.structField("g", "y");
+     c.assign(gy, values::i8('C'));
+     c.returnFromFunction();
+   } c.endBlock();
+ } c.endFunction();
   } c.end();
 
   std::cout << c.dumpBrainfuck() << '\n';

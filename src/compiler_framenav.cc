@@ -46,7 +46,7 @@ void Compiler::popFrame() {
 }
 
 
-void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payload payload, bool checkCurrent) {  
+void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payload const &payload, bool checkCurrent) {  
   int const stride = MacroCell::FieldCount * ((dir == primitive::Right) ? 1 : -1);
 
   if (not checkCurrent) {
@@ -62,15 +62,24 @@ void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payl
 
   loopOpen(); {
     zeroCell();
+    
     // Move pointer and payload to the next cell
-    if (payload != Payload::None) {
+    int const start = (dir == primitive::Right) ? payload.size() - 1 : 0;
+    int const diff  = (dir == primitive::Right) ? -1 : 1;
+    auto const cmp  = [&](int i)  { return (dir == primitive::Right) ? (i >= 0) : (i != payload.size()); };
+
+    pushPtr();    
+    moveRel(start);
+    for (int i = start; cmp(i); i += diff) {
       switchField(MacroCell::Payload0);
       emit<primitive::MoveData>(stride);
-      if (payload == Payload::Double) {
+      if (payload.widthAt(i) == Payload::Width::Double) {
 	switchField(MacroCell::Payload1);
 	emit<primitive::MoveData>(stride);
       }
+      moveRel(diff);
     }
+    popPtr();
     emit<primitive::MovePointerRelative>(stride);
     
     // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
@@ -97,10 +106,15 @@ void Compiler::resetSeekMarker() {
   popPtr();
 }
 
-void Compiler::moveToPreviousFrame(Payload payload) {
+void Compiler::moveToPreviousFrame(Payload const &payload) {
   moveToOrigin();
   seek(MacroCell::FrameMarker, primitive::Left, payload, false);
 }
+
+// void Compiler::moveToPreviousFrame(PayloadOld payload) {
+//   moveToOrigin();
+//   seek(MacroCell::FrameMarker, primitive::Left, payload, false);
+// }
 
 
 void Compiler::initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args) {

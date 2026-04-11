@@ -18,15 +18,17 @@ void Compiler::moveTo(int offset, MacroCell::Field field) {
   assert(_currentSeq != nullptr);
 
   switchField(field);
-  int const diff = offset - _dp.current().offset;
-  emit<primitive::MovePointerRelative>(diff * MacroCell::FieldCount);
-  _dp.moveRelative(diff);
+  moveRel(offset - _dp.current().offset);
 }
 
 void Compiler::moveTo(Cell dest) {
   moveTo(dest.offset, dest.field);
 }
 
+void Compiler::moveRel(int diff) {
+  emit<primitive::MovePointerRelative>(diff * MacroCell::FieldCount);
+  _dp.moveRelative(diff);
+}
 
 void Compiler::moveToOrigin() {
   moveTo(0);
@@ -542,8 +544,8 @@ void Compiler::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
   moveTo(base, MacroCell::Value0);
 }
 
-void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir) {
-  assert(payload != Payload::None);
+void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload const &payload, primitive::Direction seekDir) {
+  assert(payload);
 
   int const base = _dp.current().offset;
   pushPtr();
@@ -551,13 +553,20 @@ void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseO
   
   // Base is now the cell we arrived at (at offset).
   // Load values into payload
-  moveTo(base + baseOffset, MacroCell::Value0);
-  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::pack(base, MacroCell::Scratch0));
-  if (payload == Payload::Double) {
-    moveTo(base + baseOffset, MacroCell::Value1);
-    copyField(Cell{base, MacroCell::Payload1}, Temps<1>::pack(base, MacroCell::Scratch0));
-  }
 
+  int baseOffset = 0;
+  for (Payload::Unit const &unit: payload.units) {
+    for (int i = 0; i != unit.size; ++i) {
+      moveTo(base + baseOffset, MacroCell::Value0);
+      copyField(Cell{base + baseOffset, MacroCell::Payload0}, Temps<1>::pack(base + baseOffset, MacroCell::Scratch0));
+      if (unit.width == Payload::Width::Double) {
+	moveTo(base + baseOffset, MacroCell::Value1);
+	copyField(Cell{base + baseOffset, MacroCell::Payload1}, Temps<1>::pack(base + baseOffset, MacroCell::Scratch0));
+      }
+      ++baseOffset;
+    }
+  }
+  
   // Bring payload back to cell that contains the SeekMarker
   moveTo(base);
   seek(MacroCell::SeekMarker, seekDir, payload, true);

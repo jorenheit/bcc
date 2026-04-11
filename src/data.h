@@ -83,6 +83,49 @@ public:
 // Temps
 // ============================================================
 
+struct Payload {
+
+  enum class Width {
+    None,
+    Single,
+    Double
+  };
+
+  struct Unit {
+    int size;
+    Width width;
+  };
+
+
+  std::vector<Unit> units;
+    
+  size_t unitCount() const { return units.size(); }
+  int size() const {
+    int result = 0;
+    for (Unit const &u: units) result += u.size;
+    return result;
+  }
+    
+  operator bool() const { return units.size() > 0; }
+
+  Width widthAt(int index) const {
+    assert(index < size());
+    int count = 0;
+    for (Unit const &u: units) {
+      for (int i = 0; i != u.size; ++i, ++count) {
+	if (count == index) return u.width;
+      }
+    }
+    std::unreachable();
+  }
+
+};
+
+
+// ============================================================
+// Temps
+// ============================================================
+
 template <size_t N>
 struct Temps {
   std::array<Cell, N> _cells;

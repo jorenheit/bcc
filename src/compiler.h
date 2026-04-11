@@ -158,11 +158,8 @@ public:
 
   
 private:
-  enum class Payload {
-    None,
-    Single,
-    Double
-  };
+
+  
   
   // Normalize to RValue or LValue
   values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
@@ -197,13 +194,14 @@ private:
   void moveTo(Cell cell);
   void moveTo(int offset, MacroCell::Field field = MacroCell::Value0);
   void moveToOrigin();
+  void moveRel(int diff);
   void switchField(MacroCell::Field field);  
   void zeroCell();
   void loopOpen(std::string const &tag = defaultOpenTag());
   void loopClose(std::string const &tag = defaultCloseTag());
 
   void goToDynamicOffset(Cell offsetLow, Cell offsetHigh);
-  void fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, int baseOffset, Payload payload, primitive::Direction seekDir);
+  void fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload const &payload, primitive::Direction seekDir);
   
   void moveField(Cell dest);
   void copyField(Cell dest, Temps<1> tmp);
@@ -278,10 +276,10 @@ private:
   
   void pushFrame();
   void popFrame();
-  void seek(MacroCell::Field markerField, primitive::Direction dir, Payload payload, bool checkCurrent);
+  void seek(MacroCell::Field markerField, primitive::Direction dir, Payload const &payload, bool checkCurrent);
   void setSeekMarker();
   void resetSeekMarker();
-  void moveToPreviousFrame(Payload payload = Payload::None);
+  void moveToPreviousFrame(Payload const &payload = {});  
   void initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args);  
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);

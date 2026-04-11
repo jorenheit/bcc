@@ -412,23 +412,30 @@ void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot,
 			  scaledIndexSlot, MacroCell::Scratch1,			  
 			  scaledIndexSlot, MacroCell::Payload0
 			  ));
+
+  Payload payload;
+  payload.units.push_back(Payload::Unit{
+      .size = elementType->size(),
+      .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
+    });
   
   moveTo(arrSlot, MacroCell::Value0);
   setSeekMarker();
-  for (int i = 0; i != elementType->size(); ++i) {
-    fetchFromDynamicOffset(Cell{scaledIndexSlot, MacroCell::Value0},
-			   Cell{scaledIndexSlot, MacroCell::Value1},
-			   i,
-			   elementType->usesValue1() ? Payload::Double : Payload::Single,
-			   primitive::Left);
+  fetchFromDynamicOffset(Cell{scaledIndexSlot, MacroCell::Value0},
+			 Cell{scaledIndexSlot, MacroCell::Value1},
+			 payload,
+			 primitive::Left);
 
-    switchField(MacroCell::Payload0);
+  for (int i = 0; i != elementType->size(); ++i) {
+    moveTo(arrSlot + i, MacroCell::Payload0);
     moveField(Cell{elementSlot + i, MacroCell::Value0});
     if (elementType->usesValue1()) {
-      switchField(MacroCell::Payload1);
+      moveTo(arrSlot + i, MacroCell::Payload1);
       moveField(Cell{elementSlot + i, MacroCell::Value1});
     }
   }
+  
+  moveTo(arrSlot);
   resetSeekMarker();
   popPtr();
 
@@ -467,7 +474,7 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
   moveTo(0);
 
   // Move back to the start of the array
-  seek(MacroCell::SeekMarker, primitive::Left, Payload::None, true);
+  seek(MacroCell::SeekMarker, primitive::Left, {}, true);
   _dp.set(arrSlot);
   
   for (int i = 0; i != elementType->size(); ++i) {
@@ -480,33 +487,37 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
       copyField(Cell{arrSlot + i, MacroCell::Payload1},
 		Temps<1>::pack(arrSlot + i, MacroCell::Scratch0));
     }
+  }
 
-    // Move the payload into the cell containing the marker (one beyond actual start of the element)
-    moveTo(arrSlot + i);
-    seek(MacroCell::SeekMarker, primitive::Right,
-	 elementType->usesValue1() ? Payload::Double : Payload::Single,
-	 false);
-    _dp.set(elementType->size());
+  // Move the payload into the cell containing the marker (one beyond actual start of the element)
+  moveTo(arrSlot);
+
+  Payload payload;
+  payload.units.push_back(Payload::Unit{
+      .size = elementType->size(),
+      .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
+    });
+  
+  seek(MacroCell::SeekMarker, primitive::Right, payload, false);
+  _dp.set(elementType->size());
     
-    // Move the payload into the value-cells
-    // Pointer value set to 1, 0 represents the start
-    // of the array -> i is element slot offset
-    switchField(MacroCell::Payload0);
+  // Move the payload into the value-cells
+  // Pointer value set to the start of the next element, so offset 0 represents the start of the target element
+  for (int i = 0; i != elementType->size(); ++i) {
+    moveTo(elementType->size() + i, MacroCell::Payload0);
     moveField(Cell{i, MacroCell::Value0});
     if (elementType->usesValue1()) {
-      switchField(MacroCell::Payload1);
+      moveTo(elementType->size() + i, MacroCell::Payload1);
       moveField(Cell{i, MacroCell::Value1});
     }
+  }
 
-    if (i + 1 == elementType->size()) {
-      resetSeekMarker();
-    }
+  moveTo(elementType->size());
+  resetSeekMarker();
 
-    // Go back to the start of the array
-    seek(MacroCell::SeekMarker, primitive::Left, Payload::None, false);
-    _dp.set(arrSlot);
-  }    
-
+  // Go back to the start of the array
+  seek(MacroCell::SeekMarker, primitive::Left, {}, false);
+  _dp.set(arrSlot);
   resetSeekMarker();
   popPtr();
 }
@@ -633,7 +644,7 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
     } loopClose();
 
     // We hit the end of the string -> return to seek marker (no payload, check current as well)
-    seek(MacroCell::SeekMarker, primitive::Left, Payload::None, true);
+    seek(MacroCell::SeekMarker, primitive::Left, {}, true);
     resetSeekMarker();
     popPtr();
     return;
