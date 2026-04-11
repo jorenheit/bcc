@@ -14,9 +14,10 @@
 // ============================================================
 
 class Compiler {
-  friend class proxy::Impl::Base;
+  //  friend class proxy::Impl::Base;
   friend class proxy::Impl::Direct;
   friend class proxy::Impl::ArrayElement;
+  friend class proxy::Impl::StructField;
 
   
   Program _program;
@@ -117,13 +118,13 @@ public:
   }
 
   template <typename L>
-  SlotProxy getStructField(L const &obj, std::string const &field) {
-    return getStructFieldImpl(lValue(obj), field);
+  SlotProxy structField(L const &obj, std::string const &field) {
+    return structFieldImpl(lValue(obj), field);
   }
 
   template <typename L>
-  SlotProxy getStructField(L const &obj, int fieldIndex) {
-    return getStructFieldImpl(lValue(obj), fieldIndex);
+  SlotProxy structField(L const &obj, int fieldIndex) {
+    return structFieldImpl(lValue(obj), fieldIndex);
   }
 
   template <typename Array>
@@ -177,8 +178,8 @@ private:
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
 			std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args);
   void returnFromFunctionImpl(std::optional<values::RValue> const &ret = {});
-  SlotProxy getStructFieldImpl(values::LValue const &obj, std::string const &field);
-  SlotProxy getStructFieldImpl(values::LValue const &obj, int fieldIndex);
+  SlotProxy structFieldImpl(values::LValue const &obj, std::string const &field);
+  SlotProxy structFieldImpl(values::LValue const &obj, int fieldIndex);
   SlotProxy arrayElementImpl(values::LValue const &arr, int index);
   SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index);
   SlotProxy deref(values::RValue const &ptr);

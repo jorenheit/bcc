@@ -82,5 +82,51 @@ namespace proxy {
     }
   }
 
+  Impl::StructField::StructField(SlotProxy obj, std::string fieldName):
+    Base(types::cast<types::StructType>(obj->type())->fieldType(fieldName)),
+    _obj(obj),
+    _fieldIndex(types::cast<types::StructType>(obj->type())->fieldIndex(fieldName)),
+    _fieldOffset(types::cast<types::StructType>(obj->type())->fieldOffset(fieldName)),
+    _fieldName(fieldName)
+  {}
+  
+  Slot Impl::StructField::getFieldSlot(Slot const obj) const {
+    auto structType = static_cast<types::StructType const *>(_obj->type());
+    return Slot {
+      .name = std::string("__field_") + name(),
+      .type = structType->_fields[_fieldIndex].type,
+      .kind = Slot::StructField,
+      .offset = obj.offset + _fieldOffset
+    };  
+  }
+  
+  
+  Slot Impl::StructField::materialize(Compiler &c) const {
+    return getFieldSlot(_obj->materialize(c));
+  }
+
+  // Write an anonymous value to a slot at known offset
+  void Impl::StructField::write(Compiler &c, values::Anonymous src) const {
+    Slot const objSlot = _obj->materialize(c);
+    Slot const fieldSlot = getFieldSlot(objSlot);
+
+    c.assignSlot(fieldSlot, src);
+    if (not _obj->direct()) {
+      _obj->write(c, objSlot);
+    }
+  }
+
+  // Write a slot-proxy to a slot at known offset
+  void Impl::StructField::write(Compiler &c, SlotProxy src) const {
+    Slot const srcSlot = src->materialize(c);
+    Slot const objSlot = _obj->materialize(c);
+    Slot const fieldSlot = getFieldSlot(objSlot);
+
+    c.assignSlot(fieldSlot, srcSlot);
+    if (not _obj->direct()) {
+      _obj->write(c, objSlot);
+    }
+  }
+  
 
 } // namespace proxy

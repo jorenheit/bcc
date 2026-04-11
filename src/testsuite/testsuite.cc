@@ -444,10 +444,13 @@ inline bftest::TestCase expectLoopingOutput(std::string name,
 #include "../compiler.h"
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
+#define TEST_BEGIN Compiler c; c.setEntryPoint("main"); c.begin();
+#define TEST_END c.end(); return c.dumpBrainfuck();
+
 static std::vector<bftest::TestCase> buildTests() {
   std::vector<bftest::TestCase> tests;
   tests.reserve(128);  
-
+    
   tests.push_back(expectOutput("Global Variables 1",
 			       "AF", []() {
 #include "tests/global_variables_1.cc"
@@ -626,9 +629,89 @@ static std::vector<bftest::TestCase> buildTests() {
 
   tests.push_back(expectOutput("Print Anonymous Struct",
 			       "AB", []() {
-#include "tests/assign_anonymous_struct.cc"
+#include "tests/print_anonymous_struct.cc"
 			       }));
   
+  tests.push_back(expectOutput("Assign Anonymous To Dynamic Array Element",
+			       "ABZD", []() {
+#include "tests/assign_anonymous_to_dynamic_array_element.cc"
+			       }));  
+
+  tests.push_back(expectOutput("Assign Runtime Value To Dynamic Array Element",
+			       "AYCD", []() {
+#include "tests/assign_runtime_value_to_dynamic_array_element.cc"
+			       }));
+
+  tests.push_back(expectOutput("Dynamic Nested Array Element Write",
+			       "ABXD", []() {
+#include "tests/dynamic_nested_array_element_write.cc"
+			       }));
+
+  tests.push_back(expectOutput("Dynamic Array Of Structs Field Write",
+			       "ABQRCD", []() {
+#include "tests/dynamic_array_of_structs_field_write.cc"
+			       }));
+
+  tests.push_back(expectOutput("Return Value Into Dynamic Array Slot",
+			       "ABCZ", []() {
+#include "tests/return_value_into_dynamic_array_slot.cc"
+			       }));
+
+  tests.push_back(expectOutput("Return Value Into Dynamic Nested Struct Field",
+			       "MNOQ", []() {
+#include "tests/return_value_into_dynamic_nested_struct_field.cc"
+			       })); 
+
+
+tests.push_back(expectOutput("Read Dynamic Array Element Into Local",
+                             "C", []() {
+#include "tests/read_dynamic_array_element_into_local.cc"
+                             }));
+
+ tests.push_back(expectOutput("Assign Dynamic Array Element From Dynamic Array Element",
+                             "ABAD", []() {
+#include "tests/assign_dynamic_array_element_from_dynamic_array_element.cc"
+                             }));
+
+ tests.push_back(expectOutput("Self Assign Dynamic Array Element",
+                             "ABCD", []() {
+#include "tests/self_assign_dynamic_array_element.cc"
+                             }));
+
+ tests.push_back(expectOutput("Dynamic Array Element Boundary First",
+                             "ZBCD", []() {
+#include "tests/dynamic_array_element_boundary_first.cc"
+                             }));
+ 
+ tests.push_back(expectOutput("Dynamic Array Element Boundary Last",
+                             "ABCZ", []() {
+#include "tests/dynamic_array_element_boundary_last.cc"
+                             }));
+
+tests.push_back(expectOutput("Struct Field Array Dynamic Write",
+                             "AQCD", []() {
+#include "tests/struct_field_array_dynamic_write.cc"
+                             }));
+
+ tests.push_back(expectOutput("Read Dynamic Array Of Structs Field Into Local",
+                             "C", []() {
+#include "tests/read_dynamic_array_of_structs_field_into_local.cc"
+                             }));
+
+ tests.push_back(expectOutput("Pass Dynamic Array Element As Argument",
+                             "C", []() {
+#include "tests/pass_dynamic_array_element_as_argument.cc"
+                             }));
+
+ tests.push_back(expectOutput("Reuse Dynamic Array Element After Call",
+                             "X", []() {
+#include "tests/reuse_dynamic_array_element_after_call.cc"
+                             }));
+
+ tests.push_back(expectOutput("Static And Dynamic Nested Array Access",
+                             "ABQD", []() {
+#include "tests/static_and_dynamic_nested_array_access.cc"
+                             }));
   
   return tests;
 }

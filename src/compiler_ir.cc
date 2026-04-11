@@ -271,36 +271,35 @@ Slot Compiler::local(std::string const& varName, bool globalReference) const {
   std::unreachable();
 }
 
-SlotProxy Compiler::getStructFieldImpl(values::LValue const &obj, int fieldIndex) {
-  error_if(fieldIndex >= obj.type()->length(), "field index (", fieldIndex, ") out of bounds in call to getStructField.");
-  return getStructFieldImpl(obj, obj.type()->fieldName(fieldIndex));
+SlotProxy Compiler::structFieldImpl(values::LValue const &obj, int fieldIndex) {
+  auto structType = types::cast<types::StructType>(obj.type());
+  error_if(fieldIndex >= structType->fieldCount(), "field index (", fieldIndex, ") out of bounds in call to structField.");
+  return structFieldImpl(obj, structType->fieldName(fieldIndex));
 }
 
-SlotProxy Compiler::getStructFieldImpl(values::LValue const &obj, std::string const &fieldName) {
-  error_if(_currentFunction == nullptr, "called 'getStructField(", obj.str(), ", ", fieldName, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'getStructField(", obj.str(), ", ", fieldName, ")' outside code-block.");
-  error_if(not types::isStruct(obj.type()), "tried to call 'getStructField' on '", obj.str(), "', which is not a struct.");
+SlotProxy Compiler::structFieldImpl(values::LValue const &obj, std::string const &fieldName) {
+  error_if(_currentFunction == nullptr, "called 'structField(", obj.str(), ", ", fieldName, ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'structField(", obj.str(), ", ", fieldName, ")' outside code-block.");
+  error_if(not types::isStruct(obj.type()), "tried to call 'structField' on '", obj.str(), "', which is not a struct.");
 
-  Slot const slot = obj.slot()->materialize(*this);  
-  auto s = static_cast<types::StructType const *>(slot.type);
+  // TODO: make this check work (after fixing all the virtual functions of the types and adding a member for easy check)
+  //  error_if(fieldIndex == -1UL, "variable '", obj.str(), "' of struct type '", obj.type()->str(), "' does not contain field '", fieldName, "'.");
 
-  auto [fieldIndex, offset] = [&]() -> std::pair<size_t, size_t> {
-    for (size_t idx = 0, offset = 0; idx != s->_fields.size(); ++idx) {
-      types::StructType::Field const &f = s->_fields[idx];
-      if (f.name == fieldName) return std::make_pair(idx, offset);
-      offset += f.type->size();
-    }
-    return std::make_pair(-1, 0);
-  }();
+  std::cout << "here\n";
+  return proxy::structField(obj.slot(), fieldName);
   
-  error_if(fieldIndex == -1UL, "variable '", slot.name, "' of struct type '", slot.type->str(), "' does not contain field '", fieldName, "'.");
 
-  return Slot {
-    .name = std::string("__field_") + slot.name + "_" + fieldName,
-    .type = s->_fields[fieldIndex].type,
-    .kind = Slot::StructField,
-    .offset = slot.offset + (int)offset
-  };  
+  
+
+  // Slot const slot = obj.slot()->materialize(*this);  
+  // auto s = static_cast<types::StructType const *>(slot.type);
+  
+  // return Slot {
+  //   .name = std::string("__field_") + slot.name + "_" + fieldName,
+  //   .type = s->_fields[fieldIndex].type,
+  //   .kind = Slot::StructField,
+  //   .offset = slot.offset + (int)offset
+  // };  
 }
 
 SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index) {
@@ -308,7 +307,7 @@ SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index) {
   error_if(_currentBlock == nullptr, "called 'arrayElementConst(", arr.str(), ", ", index, ")' outside code-block.");
   error_if(not types::isArray(arr.type()) && not types::isString(arr.type()),
 	   "tried to call 'arrayElementConst' on '", arr.str(), "', which is not an array.");
-  error_if(index >= arr.type()->length(), "index [", index, "] out of bounds for '", arr.str(), "'.");
+  error_if(index >= types::cast<types::ArrayLike>(arr.type())->length(), "index [", index, "] out of bounds for '", arr.str(), "'.");
 
   return proxy::arrayElement(arr.slot(), index);  
 }  
@@ -399,7 +398,7 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret) 
 void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
   assert(types::isArray(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
-  assert(elementSlot.type == arrSlot.type->elementType());
+  assert(elementSlot.type == cast<types::ArrayLike>(arrSlot.type)->elementType());
   types::TypeHandle elementType = elementSlot.type;
   
   pushPtr();
@@ -438,8 +437,9 @@ void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot,
 void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot) {
   assert(types::isArray(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
-  assert(srcSlot.type == arrSlot.type->elementType());
-  types::TypeHandle elementType = arrSlot.type->elementType();
+
+  types::TypeHandle elementType = types::cast<types::ArrayLike>(arrSlot.type)->elementType();
+  assert(srcSlot.type == elementType);
 
   // TODO: multiply index by elementsize
   pushPtr();
@@ -520,10 +520,13 @@ void Compiler::assignSlot(Slot const &dest, Slot const &src) {
     moveTo(src + i, MacroCell::Value0);
     copyField(Cell{dest + i, MacroCell::Value0},
 	      Temps<1>::pack(dest + i, MacroCell::Scratch0));
+    moveTo(src + i, MacroCell::Value1);
     if (dest.type->usesValue1()) {
-      moveTo(src + i, MacroCell::Value1);
       copyField(Cell{dest + i, MacroCell::Value1},
 		Temps<1>::pack(dest + i, MacroCell::Scratch0));
+    }
+    else {
+      setToValue(0);
     }
   }
   popPtr();
@@ -544,14 +547,14 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
   }
   else if (types::isArray(slot.type) || types::isString(slot.type)) {
     // recursive call for each element
-    for (int i = 0; i != val->type()->length(); ++i) {
+    for (int i = 0; i != types::cast<types::ArrayLike>(val->type())->length(); ++i) {
       arrayElement(slot, i)->write(*this, val->element(i));
     }
   }
   else if (types::isStruct(slot.type)) {
     // recursive call for each field	
-    for (int i = 0; i != val->type()->length(); ++i) {
-      getStructField(slot, i)->write(*this, val->field(i));
+    for (int i = 0; i != types::cast<types::StructType>(val->type())->fieldCount(); ++i) {
+      structField(slot, i)->write(*this, val->field(i));
     }
   }
   else if (types::isPointer(slot.type)) {

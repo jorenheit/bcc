@@ -20,90 +20,95 @@ namespace types {
     virtual TypeTag tag() const = 0;
     virtual std::string str() const = 0;
     virtual bool isConstructibleFrom(Type const *other) const = 0;
-
-    // TODO: some of these defaults should be errors
-    virtual int size() const { return 1; }
-    virtual int length() const { return 1; }
-    virtual bool usesValue1() const { return false; }
-    virtual Type const *elementType() const { return nullptr; }
-    virtual std::string fieldName(std::string const &) const { return ""; }
-    virtual std::string fieldName(size_t) const { return ""; }    
-    virtual Type const *fieldType(std::string const &) const { return nullptr; }
-    virtual Type const *fieldType(size_t) const { return nullptr; }
-    virtual Type const *pointeeType() const { return nullptr; }    
+    virtual int size() const = 0;
+    virtual bool usesValue1() const = 0;    
   };
 
   using TypeHandle = Type const *;
-  static constexpr TypeHandle null = nullptr;
+  static constexpr TypeHandle null = nullptr; // TODO: am i using this?
 
+
+  template <typename T> requires std::derived_from<T, Type>
+  T const *cast(TypeHandle t) {
+    T const *ptr = dynamic_cast<T const *>(t);
+    assert(ptr != nullptr && "invalid type cast");
+    return ptr;
+  }
+
+  
   struct RawType: Type {
     int const _size;
     RawType(int n): _size(n) {}
     virtual TypeTag tag() const { return RAW; }
     virtual int size() const { return _size; }
+    virtual bool usesValue1() const { return true; }
     virtual std::string str() const { return std::string("raw<") + std::to_string(_size) + ">"; }
     virtual bool isConstructibleFrom(Type const *other) const override {
       return other->size() <= _size;
     }
     
-  };
+  }; // struct RawType
   
   struct VoidType: Type {
     virtual TypeTag tag() const override { return VOID; }
     virtual int size() const override { return 0; }
     virtual int length() const { return 0; }
+    virtual bool usesValue1() const { return false; }    
     virtual std::string str() const { return "void"; }
     virtual bool isConstructibleFrom(Type const *) const override { return false; }
-  };
+  }; // struct VoidType
 
   struct IntegerType : Type {
     int const bits;
     IntegerType(int bits_): bits(bits_) {}
     virtual TypeTag tag() const override { return bits > 8 ? I16 : I8; }
+    virtual int size() const override { return 1; }
     virtual bool usesValue1() const override { return bits > 8; }
-    virtual std::string str() const { return tag() == I8 ? "i8" : "i16"; }
+    virtual std::string str() const override { return tag() == I8 ? "i8" : "i16"; }
     virtual bool isConstructibleFrom(Type const *other) const override {
       return (this->tag() == I16) ? true : (this->tag() == I8 && other->tag() == I8);
     }
-  };  
+  }; // struct IntegerType
 
-  struct ArrayType: Type {
+  struct ArrayLike: Type {
     TypeHandle _elementType;
     int _length;
 
-    ArrayType(TypeHandle elem, int len):  _elementType(elem), _length(len) {}
+    ArrayLike(TypeHandle elem, int len): _elementType(elem), _length(len) {}
+    int length() const { return _length; }
+    TypeHandle elementType() const { return _elementType; }
+    virtual int size() const override { return _length * _elementType->size(); }    
+  }; // struct ArrayLike
+  
+  struct ArrayType: ArrayLike {
+    ArrayType(TypeHandle elem, int len): ArrayLike(elem, len) {}
     virtual TypeTag tag() const override { return ARRAY; }
-    virtual int size() const override { return _length * _elementType->size(); }
-    virtual int length() const { return _length; }
     virtual bool usesValue1() const override { return _elementType->usesValue1(); }
-    virtual TypeHandle elementType() const override { return _elementType; }
-    virtual std::string str() const { return std::string("array<") + _elementType->str() + ", " + std::to_string(_length) + ">"; }
-    virtual bool isConstructibleFrom(Type const *other) const override {
+    virtual std::string str() const override {
+      return std::string("array<") + _elementType->str() + ", " + std::to_string(_length) + ">";
+    }    
+    virtual bool isConstructibleFrom(TypeHandle other) const override  {
       if (size() < other->size()) return false;
-      if (other->tag() == ARRAY)  return _elementType->isConstructibleFrom(other->elementType());
+      if (other->tag() == ARRAY)  {
+	return _elementType->isConstructibleFrom(cast<ArrayType>(other)->elementType());
+      }
       if (other->tag() == STRING) return _elementType->tag() == I8 || _elementType->tag() == I16;
       return false;
     }
-    
-  };
+  }; // struct ArrayType
 
-  struct StringType: Type {
-    TypeHandle _i8;
-    int _capacity;
-
-    StringType(TypeHandle i8, int maxLen):  _i8(i8), _capacity(maxLen + 1) {}
+  struct StringType: ArrayLike {
+    StringType(TypeHandle charType, int maxLen):  ArrayLike(charType, maxLen + 1) {} //_i8(i8), _capacity(maxLen + 1) {}
     virtual TypeTag tag() const override { return STRING; }
-    virtual int size() const override { return _capacity; }
-    virtual int length() const { return _capacity; }
-    virtual TypeHandle elementType() const override { return _i8; }    
-    virtual std::string str() const { return std::string("string<") + std::to_string(_capacity - 1) + ">"; }
+    virtual bool usesValue1() const override { return false; }
+    virtual std::string str() const { return std::string("string<") + std::to_string(length() - 1) + ">"; }
     virtual bool isConstructibleFrom(Type const *other) const override {
       if (size() < other->size()) return false;
-      if (other->tag() == ARRAY)  return other->elementType()->tag() == I8;
+      if (other->tag() == ARRAY)  return cast<ArrayType>(other)->elementType()->tag() == I8;
       if (other->tag() == STRING) return true;
       return false;
-    }    
-  };
+    }
+  }; // struct StringType
 
   struct StructType: Type {
     struct Field {
@@ -124,44 +129,53 @@ namespace types {
 
     virtual TypeTag tag() const override { return STRUCT; }
     virtual int size() const override { return _size; }
-    virtual int length() const override { return _fields.size(); }
     
     virtual bool usesValue1() const {
       for (Field const &f: _fields) if (f.type->usesValue1()) return true;
       return false;
     }
-    
-    virtual TypeHandle fieldType(std::string const &fieldName) const override {
-      for (Field const &f: _fields) {
-	if (f.name == fieldName) return f.type;
-      }
-      assert(false && "invalid field name");
-      std::unreachable();
-    }
 
-    virtual Type const *fieldType(size_t index) const override {
-      assert(index < _fields.size() && "index out of bounds");
-      return _fields[index].type;
-    }
-
-    virtual std::string fieldName(std::string const &fieldName) const override {
-      for (Field const &f: _fields) {
-	if (f.name == fieldName) return f.name;
-      }
-      assert(false && "invalid field name");
-      std::unreachable();
-    }
-    
-    virtual std::string fieldName(size_t index) const override {
-      assert(index < _fields.size() && "index out of bounds");
-      return _fields[index].name;
-    }    
-    
     virtual std::string str() const { return _name; }
     virtual bool isConstructibleFrom(Type const *other) const override {
       return other == this;
     }
 
+    int fieldCount() const { return _fields.size(); }
+
+    int fieldIndex(std::string const &fieldName) const {
+      for (size_t i = 0; i != _fields.size(); ++i) {
+	if (_fields[i].name == fieldName) return static_cast<int>(i);
+      }
+      assert(false && "invalid field name");
+      std::unreachable();
+    }
+    
+    TypeHandle fieldType(size_t index) const {
+      assert(index < _fields.size() && "index out of bounds");
+      return _fields[index].type;
+    }
+    
+    TypeHandle fieldType(std::string const &fieldName) const {
+      return fieldType(fieldIndex(fieldName));
+    }
+
+    int fieldOffset(size_t index) const {
+      assert(index < _fields.size() && "index out of bounds");      
+      int offset = 0;
+      for (size_t i = 0; i != index; ++i) {
+	offset += fieldType(i)->size();
+      }
+      return offset;
+    }
+
+    int fieldOffset(std::string const &fieldName) const {
+      return fieldOffset(fieldIndex(fieldName));
+    }
+    
+    std::string fieldName(size_t index) const {
+      assert(index < _fields.size() && "index out of bounds");
+      return _fields[index].name;
+    }
 
   private:
     void addFields() {}
@@ -185,19 +199,25 @@ namespace types {
     virtual int size() const override { return RuntimePointer::Size; }
     virtual bool usesValue1() const override { return true; }
     virtual std::string str() const override { return std::string("ptr<") + _pointeeType->str() + ">"; }
-    virtual Type const *pointeeType() const override { return _pointeeType; }    
     virtual bool isConstructibleFrom(Type const *other) const override {
       if (other->tag() == POINTER) return static_cast<PointerType const *>(other)->_pointeeType == this->_pointeeType;
       return (other->tag() == I8 || other->tag() == I16);
     }
-  };
-  
+
+    TypeHandle pointeeType() const { return _pointeeType; }    
+  }; // struct PointerType
+
+
+  // Convenience functions to check type categories
   inline bool isInteger(TypeHandle t) { return t->tag() == I8 || t->tag() == I16; }
   inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
   inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
   inline bool isPointer(TypeHandle t)   { return t->tag() == POINTER; }
 
+
+
+  
 } // namespace types
  
 class TypeSystem {

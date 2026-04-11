@@ -13,7 +13,11 @@ int main() try {
   Compiler c;
   c.setEntryPoint("main");
 
-  auto array = TypeSystem::array(TypeSystem::i8(), 4);
+  auto point = c.defineStruct("Point",
+			      "x", TypeSystem::i8(),
+			      "y", TypeSystem::i8());
+  
+  auto array = TypeSystem::array(point, 4);
   auto array2 = TypeSystem::array(array, 4);
   
   c.begin(); {
@@ -24,23 +28,22 @@ int main() try {
       c.declareLocal("j", TypeSystem::i16());
       
       c.beginBlock("entry"); {
-	c.assign("x", values::array(array,
-				    values::array(TypeSystem::i8(), 'A', 'A', 'A', 'A'),
-				    values::array(TypeSystem::i8(), 'B', 'B', 'B', 'B'),
-				    values::array(TypeSystem::i8(), 'C', 'C', 'C', 'C'),
-				    values::array(TypeSystem::i8(), 'D', 'D', 'D', 'D'))
-		 );
-
-
 	c.assign("i", values::i16(2));
 	c.assign("j", values::i16(2));
 
 	auto row = c.arrayElement("x", "i");
 	auto elem = c.arrayElement(row, "j");
+	auto field = c.structField(elem, "y");
+	
+	c.assign(row, values::array(point,
+				    values::structT(point, values::i8(1), values::i8(2)),
+				    values::structT(point, values::i8(3), values::i8(4)),
+				    values::structT(point, values::i8(5), values::i8(6)),
+				    values::structT(point, values::i8(7), values::i8(8)))
+		 );
 
-	c.assign(row, values::array(TypeSystem::i8(), 'X', 'X', 'X', 'X'));
-	c.assign(elem, values::i8('Y'));
-	c.writeOut("x");
+	c.writeOut(field);
+	
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

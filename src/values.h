@@ -100,15 +100,14 @@ namespace values {
       std::vector<Field> _fields;
       
       template <typename ... Values> requires (std::convertible_to<std::remove_cvref_t<Values>, std::shared_ptr<Base>> && ...)
-      structT(std::string const &name, Values&& ... values):
-	Base(TypeSystem::structT(name))
+      structT(types::TypeHandle type, Values&& ... values):
+	Base(type)
       {
 	// Initialize the fields with only their names
-	assert(this->type()->tag() == types::STRUCT);
-	auto structType = static_cast<types::StructType const *>(this->type());
-	for (auto const &f: structType->_fields) {
+	auto structType = types::cast<types::StructType>(type);
+	for (int i = 0; i != structType->fieldCount(); ++i) {
 	  _fields.push_back({
-	      .name = f.name,
+	      .name = structType->fieldName(i),
 	      .value = nullptr
 	    });
 	}
@@ -120,7 +119,7 @@ namespace values {
 
 	// Assert that all types match
 	for (size_t i = 0; i != _fields.size(); ++i) {
-	  assert(structType->_fields[i].type == _fields[i].value->type());
+	  assert(structType->fieldType(i) == _fields[i].value->type());
 	}
       }
 
@@ -266,8 +265,8 @@ namespace values {
   }
 
   template <typename ... Values>
-  inline Anonymous structT(std::string const &name, Values&& ... values) {
-    return std::make_shared<impl::structT>(name, std::forward<Values>(values)...);
+  inline Anonymous structT(types::TypeHandle structType, Values&& ... values) {
+    return std::make_shared<impl::structT>(structType, std::forward<Values>(values)...);
   }
 
   inline Anonymous pointer(types::TypeHandle pointee, std::string const &var) {

@@ -1,33 +1,33 @@
-Compiler c;
-c.setEntryPoint("main");
+// Store the return-value of a function into a struct-field
+// Expected: "A"
+
+TEST_BEGIN
 
 auto point = c.defineStruct("Point",
 			    "x", TypeSystem::i8(),
 			    "y", TypeSystem::i8());
 
-c.begin(); {
-  c.beginFunction("main"); {
-    c.declareLocal("s", point);
+c.beginFunction("main"); {
+  c.declareLocal("s", point);
 
-    c.beginBlock("entry"); {
-      auto x = c.getStructField("s", "x");
-      auto y = c.getStructField("s", "y");
+  c.beginBlock("entry"); {
+    auto x = c.structField("s", "x");
+    auto y = c.structField("s", "y");
 
-      c.assign(x, values::i8('A'));
-      c.callFunctionReturn("makeZ", "after_makeZ", y);
-    } c.endBlock();
+    c.assign(x, values::i8('A'));
+    c.callFunctionReturn("makeZ", "after_makeZ", y);
+  } c.endBlock();
 
-    c.beginBlock("after_makeZ"); {
-      c.writeOut("s");
-      c.returnFromFunction();
-    } c.endBlock();
-  } c.endFunction();
+  c.beginBlock("after_makeZ"); {
+    c.writeOut("s");
+    c.returnFromFunction();
+  } c.endBlock();
+} c.endFunction();
 
-  c.beginFunction("makeZ", TypeSystem::i8()); {
-    c.beginBlock("entry"); {
-      c.returnFromFunction(values::i8('Z'));
-    } c.endBlock();
-  } c.endFunction();
-} c.end();
+c.beginFunction("makeZ", TypeSystem::i8()); {
+  c.beginBlock("entry"); {
+    c.returnFromFunction(values::i8('Z'));
+  } c.endBlock();
+} c.endFunction();
 
-return c.dumpBrainfuck();
+TEST_END

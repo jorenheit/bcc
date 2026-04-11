@@ -131,12 +131,14 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 
 	moveTo(slot + i, MacroCell::Value0);
 	emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
+	moveTo(slot + i, MacroCell::Value1);
 	if (slot.type->usesValue1()) {
 	  int const varIndex1 = getFieldIndex(slot + i, MacroCell::Value1);
 	  primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
-
-	  moveTo(slot + i, MacroCell::Value1);
 	  emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
+	}
+	else {
+	  emit<primitive::ZeroCell>();
 	}
 
 	offset += MacroCell::FieldCount;
@@ -153,11 +155,9 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
 	setToValue(value & 0xff);
-	if (argType->usesValue1()) {
-	  switchField(MacroCell::Value1);
-	  setToValue((value >> 8) & 0xff);
-	  switchField(MacroCell::Value0);
-	}
+	switchField(MacroCell::Value1);
+	setToValue(argType->usesValue1() ? ((value >> 8) & 0xff) : 0);
+	switchField(MacroCell::Value0);
 	emit<primitive::MovePointerRelative>(-diff);
 	offset += MacroCell::FieldCount;
 	break;
@@ -165,7 +165,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
       case types::ARRAY:
       case types::STRING: {
 	// recursive call for each element
-	for (int i = 0; i != argType->length(); ++i)
+	for (int i = 0; i != types::cast<types::ArrayLike>(argType)->length(); ++i)
 	  self(self, offset, rValue(arg.value()->element(i)));
 	break;
       }
@@ -182,16 +182,9 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
   popPtr();
 }
 
-
-
-
 void Compiler::fetchReturnData() {
   assert(_currentSeq != nullptr);  
   assert(_currentFunction != nullptr);
-
-  // Need to fetch:
-  // 1. Run-state
-  // 2. Return-values (not implemented)
 
   primitive::DInt const stackFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;

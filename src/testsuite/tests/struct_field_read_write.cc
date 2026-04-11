@@ -1,36 +1,32 @@
 // Tests writing to struct fields and reading back from them.
 // Expected: "ABAB"
 
-Compiler c;
-c.setEntryPoint("main");
 
-// TODO: simplify syntax
+TEST_BEGIN
+
 auto point = c.defineStruct("Point",
 			    "x", TypeSystem::i8(),
 			    "y", TypeSystem::i8());
-  
-c.begin(); {
-  c.beginFunction("main"); {
-    c.declareLocal("s", point);
+
+c.beginFunction("main"); {
+  c.declareLocal("s", point);
 
       
-    c.beginBlock("entry"); {
-      auto x = c.getStructField("s", "x");
-      auto y = c.getStructField("s", "y");
+  c.beginBlock("entry"); {
+    auto x = c.structField("s", "x");
+    auto y = c.structField("s", "y");
       
-      c.assign(x, values::i8('A'));
-      c.assign(y, values::i8('B'));
+    c.assign(x, values::i8('A'));
+    c.assign(y, values::i8('B'));
 
-      c.writeOut(x);
-      c.writeOut(y);
-      c.writeOut("s");
+    c.writeOut(x);
+    c.writeOut(y);
+    c.writeOut("s");
 	
-      c.returnFromFunction();
-    } c.endBlock();
+    c.returnFromFunction();
+  } c.endBlock();
       
-  } c.endFunction();
+} c.endFunction();
 
     
-} c.end();
-
-return c.dumpBrainfuck();
+TEST_END

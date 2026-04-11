@@ -13,6 +13,7 @@ namespace proxy {
   namespace Impl {
     class Base;
     using BasePtr = std::shared_ptr<Base>;
+
     struct SlotProxy: public BasePtr {
       SlotProxy(BasePtr ptr): BasePtr(std::move(ptr)) {}
       SlotProxy(Slot const &slot);
@@ -29,7 +30,7 @@ namespace proxy {
       virtual Slot materialize(Compiler &c) const = 0;
       virtual void write(Compiler &c, SlotProxy src) const = 0;
       virtual void write(Compiler &c, values::Anonymous src) const = 0;
-      virtual bool direct() const { return false; }
+      virtual bool direct() const = 0;
     };
     
 
@@ -56,17 +57,21 @@ namespace proxy {
     
     public:
       ArrayElement(SlotProxy arr, int index):
-	Base(arr->type()->elementType()),
+	Base(cast<types::ArrayLike>(arr->type())->elementType()),
 	_arr(std::move(arr)),
 	_index(index)
       {}
       
       ArrayElement(SlotProxy arr, SlotProxy index):
-	Base(arr->type()->elementType()),
+	Base(cast<types::ArrayLike>(arr->type())->elementType()),
 	_arr(std::move(arr)),
 	_index(std::move(index))
       {}
 
+      virtual bool direct() const override {
+	return _arr->direct() && std::holds_alternative<int>(_index);
+      }
+      
       virtual std::string name() const override {
 	std::string idx = std::holds_alternative<int>(_index)
 	  ? std::to_string(std::get<int>(_index))
@@ -102,8 +107,36 @@ namespace proxy {
       void writeImpl(Compiler &c, SlotProxy index, values::Anonymous) const;
 
       Slot getElementSlot(Slot const &arrSlot, int index) const;
-    };
+    }; // ArrayElement
+
+    class StructField: public Base {
+      SlotProxy _obj;
+      int _fieldIndex;
+      int _fieldOffset;
+      std::string _fieldName;
+
+    public:
+      StructField(SlotProxy obj, std::string fieldName);
       
+      virtual bool direct() const override {
+	return _obj->direct();
+      }
+      
+      virtual std::string name() const override {
+	return _obj->name() + "." + _fieldName;
+      }
+
+      virtual Slot materialize(Compiler &c) const override;
+      virtual void write(Compiler &c, SlotProxy src) const override;
+      virtual void write(Compiler &c, values::Anonymous src) const override;
+
+    private:
+      Slot getFieldSlot(Slot const obj) const;
+      
+    };
+
+
+    
   } // namespace Impl
       
   using SlotProxy = Impl::SlotProxy;
@@ -119,7 +152,12 @@ namespace proxy {
   inline SlotProxy arrayElement(SlotProxy arr, SlotProxy index) {
     return SlotProxy(std::make_shared<Impl::ArrayElement>(std::move(arr), std::move(index)));
   }  
-    
+
+  inline SlotProxy structField(SlotProxy obj, std::string const &fieldName) {
+    return SlotProxy(std::make_shared<Impl::StructField>(std::move(obj), fieldName));
+  }
+
+  
 } // namespace proxy
   
 using SlotProxy = proxy::Impl::SlotProxy;
