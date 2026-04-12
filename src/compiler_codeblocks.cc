@@ -63,14 +63,6 @@ void Compiler::constructMetaBlocks() {
 	fetchReturnData();
       }
       else {
-	// Get or create the return slot to copy the return-variable into
-	// Slot const &returnSlot = [&](){
-	//   if (m.returnSlot) return *m.returnSlot;
-	//   static int retVarID = 0;
-	//   std::string const retVarName = std::string("__return_var_") + std::to_string(retVarID++);
-	//   return declareLocal(retVarName, callee->sig.returnType);
-	// }();
-
 	SlotProxy returnSlot = *m.returnSlot;
 	assert(callee->sig.returnType == returnSlot->type());
 

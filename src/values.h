@@ -173,25 +173,28 @@ namespace values {
     }; // structT
 
     struct pointer: Base {
-      std::shared_ptr<Ref> ref;
-
-      pointer(types::TypeHandle pointee, std::string const &ref):
-	Base(TypeSystem::pointer(pointee)),
-	ref(std::make_shared<Ref>(ref))
+      std::shared_ptr<Ref> _ref;
+      int const _offset;
+      
+      pointer(types::TypeHandle pointee, std::string const &ref, int const offset):
+        Base(TypeSystem::pointer(pointee)),
+	_ref(std::make_shared<Ref>(ref)),
+	_offset(offset)
       {}
-
+      
       pointer(pointer const &) = default;
-      pointer(...): Base(nullptr) { assert(false); }
+      pointer(...): Base(nullptr), _offset(0) { assert(false); }
       
       virtual std::shared_ptr<Base> clone() const override {
 	return std::make_shared<pointer>(*this);
       }      
 	    
       virtual std::string str() const override {
-	return std::string("ptr<") + ref->str() + ">";
+	return std::string("ptr<") + _ref->str() + ">";
       }
 
-      std::shared_ptr<Ref> pointee() const { return ref; }
+      std::shared_ptr<Ref> pointee() const { return _ref; }
+      int offset() const { return _offset; }
       
     }; // pointer
     
@@ -309,8 +312,8 @@ namespace values {
     return std::make_shared<impl::structT>(structType, std::forward<Values>(values)...);
   }
 
-  inline Anonymous pointer(types::TypeHandle pointee, std::string const &var) {
-    return std::make_shared<impl::pointer>(pointee, var);
+  inline Anonymous pointer(types::TypeHandle pointee, std::string const &var, int const offset = 0) {
+    return std::make_shared<impl::pointer>(pointee, var, offset);
   }
   
   template <typename ... Elements>

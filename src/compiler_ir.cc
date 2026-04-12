@@ -10,7 +10,9 @@ void Compiler::begin() {
   error_if(_state.begun, "called 'begin' before ending previous program.");
 
   _state.begun = true;
-  declareGlobal("__pad__", TypeSystem::raw(RuntimePointer::Size)); // A runtime pointer should not overlap data
+
+  // Globals should start at same frame offset as locals for consistency -> pad with raw
+  declareGlobal("__pad__", TypeSystem::raw(FrameLayout::ReturnValueStart)); 
 }
 
 void Compiler::end() {
@@ -569,16 +571,23 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
     if (types::isPointer(val->type())) {
       // If the pointer is initialized with pointer-value,
       // set its offset to the slot-offset of the variable pointed to.
-      Slot const localSlot = local(values::cast<types::PointerType>(val)->pointee()->varName());
+      auto pointerType = types::cast<types::PointerType>(val->type());
+      auto pointeeType = pointerType->pointeeType();
+      auto pointerVal = values::cast<types::PointerType>(val);
+      
+      Slot const localSlot = local(pointerVal->pointee()->varName());
       if (localSlot.name.starts_with("__g_")) {
 	std::string const globalName = localSlot.name.substr(std::string("__g_").size());
 	assert(_program.isGlobal(globalName));
-	offset = _program.globalSlot(globalName).offset;
+	Slot const globalSlot = _program.globalSlot(globalName);
+	assert(globalSlot.type == pointeeType);
+	
+	offset = globalSlot.offset + pointeeType->size() * pointerVal->offset();
 	localPointer = false;
 	_addressTakenGlobals.insert(globalName);
       }
       else {
-	offset = localSlot.offset;
+	offset = localSlot.offset + pointeeType->size() * pointerVal->offset();
       }
     }
     else {
@@ -674,6 +683,9 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
   }
   popPtr();
 }
+
+
+// TODO: factor common code out from these deref functions
 
 void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
   assert(types::isPointer(ptrSlot.type));
@@ -776,6 +788,9 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
   assert(types::isPointer(ptrSlot.type));
   assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
 
+  syncLocalToGlobal(true);
+
+  
   pushPtr();
 
   // Decompose the pointer into its frameDepth and offset

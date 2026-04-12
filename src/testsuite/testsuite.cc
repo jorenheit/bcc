@@ -748,6 +748,61 @@ tests.push_back(expectOutput("Reading from a local pointer inside function",
 #include "tests/array_of_passed_pointers.cc"
 			      }));
 
+ tests.push_back(expectOutput("Writing through two passed pointers",
+                             "ABXY", []() {
+#include "tests/writing_two_passed_pointers.cc"
+                             }));
+
+ tests.push_back(expectOutput("Reading from an array of passed pointers",
+                             "ABAB", []() {
+#include "tests/reading_array_of_passed_pointers.cc"
+                             }));
+
+ tests.push_back(expectOutput("Writing through an array of passed pointers",
+                             "ABXY", []() {
+#include "tests/writing_array_of_passed_pointers.cc"
+                             }));
+
+ tests.push_back(expectOutput("Reading through a global pointer locally",
+                             "GG", []() {
+#include "tests/reading_global_pointer_locally.cc"
+                             }));
+
+ tests.push_back(expectOutput("Writing through a global pointer locally",
+                             "GH", []() {
+#include "tests/writing_global_pointer_locally.cc"
+                             }));
+
+ tests.push_back(expectOutput("Reading and writing through a struct pointer field",
+                             "AX", []() {
+#include "tests/reading_and_writing_struct_pointer_field.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer to array element",
+                             "BXAC", []() {
+#include "tests/pointer_to_array_element.cc"
+                             }));
+
+tests.push_back(expectOutput("Struct with two pointer fields",
+                             "ABXY", []() {
+#include "tests/struct_with_two_pointer_fields.cc"
+                             }));
+
+tests.push_back(expectOutput("Array of structs with pointer field",
+                             "ABXY", []() {
+#include "tests/array_of_structs_with_pointer_field.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer passed through two calls",
+                             "AX", []() {
+#include "tests/pointer_passed_through_two_calls.cc"
+                             }));
+
+tests.push_back(expectOutput("Mixed named and pointer global access",
+                             "AXX", []() {
+#include "tests/mixed_named_and_pointer_global_access.cc"
+                             })); 
+
  return tests;
 }
 

@@ -13,44 +13,26 @@ int main() try {
   Compiler c;
   c.setEntryPoint("main");
 
-
-  auto i8   = TypeSystem::i8();
-  auto i8p  = TypeSystem::pointer(i8);
-  auto i8pa = TypeSystem::array(i8p, 2);
+  auto i8  = TypeSystem::i8();
+  auto i8p = TypeSystem::pointer(i8);
 
   c.begin(); {
+    c.declareGlobal("g", i8);
+
     c.beginFunction("main"); {
-      c.declareLocal("p", i8pa);
-      c.declareLocal("a", i8);
-      c.declareLocal("b", i8);
+      c.referGlobals({"g"});
+      c.declareLocal("p", i8p);
+      c.declareLocal("x", i8);
 
       c.beginBlock("entry"); {
-	c.assign("a", values::i8('A'));
-	c.assign("b", values::i8('B'));
+	c.assign("g", values::i8('G'));
+	c.assign("p", values::pointer(i8, "g"));
 
-	c.assign(c.arrayElement("p", 0), values::pointer(i8, "a"));
-	c.assign(c.arrayElement("p", 1), values::pointer(i8, "b"));
-
-	c.callFunction("foo", "after", "p");
-      } c.endBlock();
-
-      c.beginBlock("after"); {
-	c.writeOut("a");
-	c.writeOut("b");
-	c.returnFromFunction();
-      } c.endBlock();
-    } c.endFunction();
-
-    c.beginFunction("foo", TypeSystem::voidT(), "p", i8pa); {
-      c.beginBlock("entry"); {
-	auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
-	auto p1Deref = c.dereferencePointer(c.arrayElement("p", 1));
-
-	c.writeOut(p0Deref);
-	c.writeOut(p1Deref);
-
-	c.assign(p0Deref, values::i8('X'));
-	c.assign(p1Deref, values::i8('Y'));
+	auto pDeref = c.dereferencePointer("p");
+	c.assign("x", pDeref);
+	c.writeOut("g");
+	c.writeOut("x");
+	c.writeOut(pDeref);
 
 	c.returnFromFunction();
       } c.endBlock();
