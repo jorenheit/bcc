@@ -27,11 +27,8 @@ void Compiler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
   }
 
   // Bring payload back to origin-frame
-  Payload payload;
-  payload.units.push_back(Payload::Unit{
-      .size = size,
-      .width = useValue1 ? Payload::Width::Double : Payload::Width::Single
-    });
+  Payload payload(size,
+		  useValue1 ? Payload::Width::Double : Payload::Width::Single);
 
   moveTo(globalSlot);
   seek(MacroCell::SeekMarker, primitive::Right, payload, false);
@@ -75,12 +72,9 @@ void Compiler::putGlobal(Slot const &globalSlot, Slot const &localSlot) {
   }
 
   // Move the payload back to the global frame
-  Payload payload;
-  payload.units.push_back(Payload::Unit{
-      .size = size,
-      .width = useValue1 ? Payload::Width::Double : Payload::Width::Single
-    });
-  
+  Payload payload(size,
+		  useValue1 ? Payload::Width::Double : Payload::Width::Single);
+   
   moveToOrigin();
   setSeekMarker();
   seek(MacroCell::SeekMarker, primitive::Left, payload, false);

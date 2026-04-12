@@ -73,7 +73,7 @@ void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payl
     for (int i = start; cmp(i); i += diff) {
       switchField(MacroCell::Payload0);
       emit<primitive::MoveData>(stride);
-      if (payload.widthAt(i) == Payload::Width::Double) {
+      if (payload.width(i) == Payload::Width::Double) {
 	switchField(MacroCell::Payload1);
 	emit<primitive::MoveData>(stride);
       }
@@ -110,11 +110,6 @@ void Compiler::moveToPreviousFrame(Payload const &payload) {
   moveToOrigin();
   seek(MacroCell::FrameMarker, primitive::Left, payload, false);
 }
-
-// void Compiler::moveToPreviousFrame(PayloadOld payload) {
-//   moveToOrigin();
-//   seek(MacroCell::FrameMarker, primitive::Left, payload, false);
-// }
 
 
 void Compiler::initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args) {

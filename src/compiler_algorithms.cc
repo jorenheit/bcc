@@ -553,17 +553,12 @@ void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload c
   
   // Base is now the cell we arrived at (at offset).
   // Load values into payload
-
-  int baseOffset = 0;
-  for (Payload::Unit const &unit: payload.units) {
-    for (int i = 0; i != unit.size; ++i) {
-      moveTo(base + baseOffset, MacroCell::Value0);
-      copyField(Cell{base + baseOffset, MacroCell::Payload0}, Temps<1>::pack(base + baseOffset, MacroCell::Scratch0));
-      if (unit.width == Payload::Width::Double) {
-	moveTo(base + baseOffset, MacroCell::Value1);
-	copyField(Cell{base + baseOffset, MacroCell::Payload1}, Temps<1>::pack(base + baseOffset, MacroCell::Scratch0));
-      }
-      ++baseOffset;
+  for (int i = 0; i != payload.size(); ++i) {
+    moveTo(base + i, MacroCell::Value0);
+    copyField(Cell{base + i, MacroCell::Payload0}, Temps<1>::pack(base + i, MacroCell::Scratch0));
+    if (payload.width(i) == Payload::Width::Double) {
+      moveTo(base + i, MacroCell::Value1);
+      copyField(Cell{base + i, MacroCell::Payload1}, Temps<1>::pack(base + i, MacroCell::Scratch0));
     }
   }
   

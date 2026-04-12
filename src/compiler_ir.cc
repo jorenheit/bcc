@@ -413,11 +413,13 @@ void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot,
 			  scaledIndexSlot, MacroCell::Payload0
 			  ));
 
-  Payload payload;
-  payload.units.push_back(Payload::Unit{
-      .size = elementType->size(),
-      .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
-    });
+  Payload payload(elementType->size(),
+		  elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single);
+  
+  // payload.units.push_back(Payload::Unit{
+  //     .size = elementType->size(),
+  //     .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
+  //   });
   
   moveTo(arrSlot, MacroCell::Value0);
   setSeekMarker();
@@ -492,11 +494,12 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
   // Move the payload into the cell containing the marker (one beyond actual start of the element)
   moveTo(arrSlot);
 
-  Payload payload;
-  payload.units.push_back(Payload::Unit{
-      .size = elementType->size(),
-      .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
-    });
+  Payload payload(elementType->size(),
+		  elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single);	  
+  // payload.units.push_back(Payload::Unit{
+  //     .size = elementType->size(),
+  //     .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
+  //   });
   
   seek(MacroCell::SeekMarker, primitive::Right, payload, false);
   _dp.set(elementType->size());

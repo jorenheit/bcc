@@ -83,42 +83,46 @@ public:
 // Temps
 // ============================================================
 
-struct Payload {
+class Payload {
 
+public:  
   enum class Width {
     None,
     Single,
     Double
   };
 
-  struct Unit {
-    int size;
-    Width width;
-  };
+private:
+  std::vector<Width> units;
 
-
-  std::vector<Unit> units;
-    
-  size_t unitCount() const { return units.size(); }
-  int size() const {
-    int result = 0;
-    for (Unit const &u: units) result += u.size;
-    return result;
+public:  
+  template <typename ... Args>
+  Payload(Args ... args) {
+    addPairs(args ...);
   }
-    
-  operator bool() const { return units.size() > 0; }
+  
+  int size() const {  return units.size(); }
+  
+  operator bool() const {
+    return units.size() > 0;
+  }
 
-  Width widthAt(int index) const {
+  Width width(int index) const {
     assert(index < size());
-    int count = 0;
-    for (Unit const &u: units) {
-      for (int i = 0; i != u.size; ++i, ++count) {
-	if (count == index) return u.width;
-      }
-    }
-    std::unreachable();
+    return units[index];
   }
+  
+private:
+  void addPairs() {}
 
+  template <typename... Rest>
+  void addPairs(int count, Width width, Rest... rest) {
+    assert(count > 0);
+    for (int i = 0; i != count; ++i) {
+      units.push_back(width);
+    }
+    addPairs(rest...);
+  }  
 };
 
 
