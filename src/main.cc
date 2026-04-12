@@ -11,43 +11,52 @@
 
 int main() try {
   Compiler c;
-
-  types::TypeHandle i8 = TypeSystem::i8();
-  types::TypeHandle i8p = TypeSystem::pointer(TypeSystem::i8());
-  
   c.setEntryPoint("main");
 
+
+  auto i8   = TypeSystem::i8();
+  auto i8p  = TypeSystem::pointer(i8);
+  auto i8pa = TypeSystem::array(i8p, 2);
+
   c.begin(); {
-    c.declareGlobal("g", i8);
-    
     c.beginFunction("main"); {
-      c.referGlobals({"g"});
-      c.declareLocal("pg", i8p);
-      c.declareLocal("x", i8);
-   
+      c.declareLocal("p", i8pa);
+      c.declareLocal("a", i8);
+      c.declareLocal("b", i8);
+
       c.beginBlock("entry"); {
-	c.assign("pg", values::pointer(i8, "g"));
-	c.assign("g", values::i8('G'));
-	c.assign("x", values::i8('X'));
-	c.callFunction("foo", "after", "pg");
+	c.assign("a", values::i8('A'));
+	c.assign("b", values::i8('B'));
+
+	c.assign(c.arrayElement("p", 0), values::pointer(i8, "a"));
+	c.assign(c.arrayElement("p", 1), values::pointer(i8, "b"));
+
+	c.callFunction("foo", "after", "p");
       } c.endBlock();
 
       c.beginBlock("after"); {
-	c.writeOut("x");
+	c.writeOut("a");
+	c.writeOut("b");
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction("foo", TypeSystem::voidT(), "p", i8p); {
+    c.beginFunction("foo", TypeSystem::voidT(), "p", i8pa); {
       c.beginBlock("entry"); {
-	auto pDeref = c.dereferencePointer("p");
-	c.writeOut(pDeref);
+	auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
+	auto p1Deref = c.dereferencePointer(c.arrayElement("p", 1));
+
+	c.writeOut(p0Deref);
+	c.writeOut(p1Deref);
+
+	c.assign(p0Deref, values::i8('X'));
+	c.assign(p1Deref, values::i8('Y'));
+
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
-    
   } c.end();
-  
+
   std::cout << c.dumpBrainfuck() << '\n';
  } catch (std::exception const &e) {
   std::cerr << e.what() << '\n';

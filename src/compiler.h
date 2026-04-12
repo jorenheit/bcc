@@ -2,6 +2,7 @@
 #include <stack>
 #include <sstream>
 #include <optional>
+#include <unordered_set>
 #include "proxy.h"
 #include "program.h"
 #include "function.h"
@@ -24,7 +25,7 @@ class Compiler {
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
   Function::Scope* _currentScope = nullptr;
-  primitive::Sequence* _currentSeq = nullptr;  
+  primitive::Sequence* _currentSeq = nullptr; 
   bool _nextBlockIsSet = false;
 
   struct {
@@ -52,6 +53,8 @@ class Compiler {
   };
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
 
+  std::unordered_set<std::string> _addressTakenGlobals;
+  
 public:
   inline Compiler() { TypeSystem::init(); }
   
@@ -192,6 +195,7 @@ private:
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
   void dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot);
+  void writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot);
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(Cell cell);
@@ -300,12 +304,13 @@ private:
   void putGlobal(Slot const &globalSlot, Slot const &localSlot);
 
   template <auto FetchOrPut>
-  void syncGlobal(Slot const &localSlot) {
+  void syncGlobal(Slot const &localSlot, bool onlyAliasedGlobals = false) {
     assert(localSlot.kind == Slot::GlobalReference);
     
     std::string globalName = localSlot.name.substr(std::string("__g_").size());
     assert(_program.isGlobal(globalName));
-
+    if (onlyAliasedGlobals && not _addressTakenGlobals.contains(globalName)) return;
+    
     Slot const &globalSlot = _program.globalSlot(globalName);
     assert(globalSlot.size() == localSlot.size());
 
@@ -313,20 +318,20 @@ private:
   }  
 
   template <auto FetchOrPut>
-  void syncGlobals() {
+  void syncGlobals(bool onlyAliasedGlobals = false) {
     auto const &locals = _currentFunction->frame.locals;
     for (auto const &localSlot: locals) {
       if (localSlot.kind != Slot::GlobalReference) continue;
-      syncGlobal<FetchOrPut>(localSlot);
+      syncGlobal<FetchOrPut>(localSlot, onlyAliasedGlobals);
     }  
   }
 
-  void syncGlobalToLocal() {
-    syncGlobals<&Compiler::fetchGlobal>();
+  void syncGlobalToLocal(bool onlyAliasedGlobals = false) {
+    syncGlobals<&Compiler::fetchGlobal>(onlyAliasedGlobals);
   }
 
-  void syncLocalToGlobal() {
-    syncGlobals<&Compiler::putGlobal>();
+  void syncLocalToGlobal(bool onlyAliasedGlobals = false) {
+    syncGlobals<&Compiler::putGlobal>(onlyAliasedGlobals);
   }
   
   

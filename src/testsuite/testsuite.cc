@@ -712,8 +712,43 @@ tests.push_back(expectOutput("Struct Field Array Dynamic Write",
                              "ABQD", []() {
 #include "tests/static_and_dynamic_nested_array_access.cc"
                              }));
-  
-  return tests;
+
+ tests.push_back(expectOutput("Reading from a global pointer inside function",
+                             "GHX", []() {
+#include "tests/reading_global_pointer_from_function.cc"
+                             }));
+
+ tests.push_back(expectOutput("Reading and writing through a local pointer",
+			      "XXYX", []() {
+#include "tests/reading_and_writing_local_pointer.cc"
+			      }));
+
+tests.push_back(expectOutput("Reading from a local pointer inside function",
+                             "XX", []() {
+#include "tests/reading_local_pointer_from_function.cc"
+                             }));
+
+ tests.push_back(expectOutput("Writing through a local pointer inside function",
+			      "YY", []() {
+#include "tests/writing_local_pointer_from_function.cc"
+			      }));
+
+ tests.push_back(expectOutput("Writing through a global pointer inside function",
+			      "HH", []() {
+#include "tests/writing_global_pointer_from_function.cc"
+			      }));
+
+ tests.push_back(expectOutput("Array of local pointers",
+			      "ABXY", []() {
+#include "tests/array_of_local_pointers.cc"
+			      }));
+
+ tests.push_back(expectOutput("Array of passed pointers",
+			      "ABXY", []() {
+#include "tests/array_of_passed_pointers.cc"
+			      }));
+
+ return tests;
 }
 
 int main(int argc, char **argv) {

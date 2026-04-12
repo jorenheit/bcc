@@ -10,6 +10,7 @@ void Compiler::begin() {
   error_if(_state.begun, "called 'begin' before ending previous program.");
 
   _state.begun = true;
+  declareGlobal("__pad__", TypeSystem::raw(RuntimePointer::Size)); // A runtime pointer should not overlap data
 }
 
 void Compiler::end() {
@@ -441,7 +442,6 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
   types::TypeHandle elementType = types::cast<types::ArrayLike>(arrSlot.type)->elementType();
   assert(srcSlot.type == elementType);
 
-  // TODO: multiply index by elementsize
   pushPtr();
 
   Slot const scaledIndexSlot = getTemp(TypeSystem::i8());
@@ -487,10 +487,6 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
 
   Payload payload(elementType->size(),
 		  elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single);	  
-  // payload.units.push_back(Payload::Unit{
-  //     .size = elementType->size(),
-  //     .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
-  //   });
   
   seek(MacroCell::SeekMarker, primitive::Right, payload, false);
   _dp.set(elementType->size());
@@ -579,6 +575,7 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
 	assert(_program.isGlobal(globalName));
 	offset = _program.globalSlot(globalName).offset;
 	localPointer = false;
+	_addressTakenGlobals.insert(globalName);
       }
       else {
 	offset = localSlot.offset;
@@ -678,8 +675,104 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
   popPtr();
 }
 
+void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
+  assert(types::isPointer(ptrSlot.type));
+  assert(srcSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
+
+  pushPtr();
+
+  // Decompose the pointer into its frameDepth and offset
+  Cell const frameDepth { ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0 };
+  Cell const offsetLow  { ptrSlot + RuntimePointer::Offset, MacroCell::Value0 };
+  Cell const offsetHigh { ptrSlot + RuntimePointer::Offset, MacroCell::Value1 };
+
+  // Payload cells start at the origin. First, the pointer-fields
+  // TODO: just load payload into ptrSlot payload and move dynamically to FrameMarker?
+  Cell const frameDepthPayload { 0 + RuntimePointer::FrameDepth, MacroCell::Payload0 };
+  Cell const offsetLowPayload  { 0 + RuntimePointer::Offset, MacroCell::Payload0 };
+  Cell const offsetHighPayload { 0 + RuntimePointer::Offset, MacroCell::Payload1 };
+  
+  // Copy pointer (frameDepth and offset) to the payload-cells of cell 0 and 1
+  moveTo(frameDepth);
+  copyField(frameDepthPayload, Temps<1>::pack(frameDepthPayload, MacroCell::Scratch0));
+
+  moveTo(offsetLow);
+  copyField(offsetLowPayload,  Temps<1>::pack(offsetLowPayload, MacroCell::Scratch0));
+
+  moveTo(offsetHigh);
+  copyField(offsetHighPayload, Temps<1>::pack(offsetHighPayload, MacroCell::Scratch0));
+
+  // Leave a marker at the sourceSlot
+  moveTo(srcSlot);
+  setSeekMarker();
+
+  // If frameDepth is nonzero, we need to keep moving to the 
+  // previous frame start until the depth-counter becomes 0.
+  moveTo(frameDepthPayload);
+  loopOpen(); {
+    Payload payload{
+      1, Payload::Width::Single, // depth
+      1, Payload::Width::Double, // offset
+    };
+    moveToPreviousFrame(payload);
+    
+    // We're now at the start of the previous frame -> exit if depth == 0 after subtracting 1
+    moveTo(frameDepthPayload);
+    subConst(1); // TODO: dec()
+  } loopClose();
+
+  // At the target frame -> move to offset indicated by pointer value in payload
+  goToDynamicOffset(offsetLowPayload, offsetHighPayload);
+
+  // Set the marker and move back to the source
+  setSeekMarker();
+  seek(MacroCell::SeekMarker, primitive::Right, {}, false);
+  _dp.set(srcSlot);
+  
+  // Copy contents of the source-slot into the payload
+  for (int i = 0; i != srcSlot.size(); ++i) {
+    moveTo(srcSlot + i, MacroCell::Value0);
+    copyField(Cell{srcSlot + i, MacroCell::Payload0},
+	      Temps<1>::pack(srcSlot + i, MacroCell::Scratch0));
+    if (srcSlot.type->usesValue1()) {
+    moveTo(srcSlot + i, MacroCell::Value1);
+    copyField(Cell{srcSlot + i, MacroCell::Payload1},
+	      Temps<1>::pack(srcSlot + i, MacroCell::Scratch0));
+    }
+  }
+
+  // Seek back to the pointee's slot
+  moveTo(srcSlot);
+  Payload payload{
+    srcSlot.size(),
+    srcSlot.type->usesValue1() ? Payload::Width::Double : Payload::Width::Single
+  };
+  
+  seek(MacroCell::SeekMarker, primitive::Left, payload, false);
+  resetSeekMarker();
+  _dp.set(0);
+  
+  // Move contents of the payload in the slot
+  for (int i = 0; i != srcSlot.size(); ++i) {
+    moveTo(i, MacroCell::Payload0);
+    moveField(Cell{i, MacroCell::Value0});
+    if (srcSlot.type->usesValue1()) {
+      moveTo(i, MacroCell::Payload1);
+      moveField(Cell{i, MacroCell::Value1});
+    }
+  }
+
+  // Seek back to the source
+  seek(MacroCell::SeekMarker, primitive::Right, {}, false);
+  resetSeekMarker();
+  _dp.set(srcSlot);
+  
+  popPtr();
+
+  syncGlobalToLocal(true);
+}
+
 void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
-  //  assert(false && "deref not implemented");
   assert(types::isPointer(ptrSlot.type));
   assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
 
@@ -750,7 +843,7 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
     derefSlot.type->usesValue1() ? Payload::Width::Double : Payload::Width::Single
   };
 
-  seek(MacroCell::FrameMarker, primitive::Left, payload, true);
+  seek(MacroCell::FrameMarker, primitive::Left, payload, true); // TODO: this can become false again now that the padding was added to the global frame
   seek(MacroCell::SeekMarker, primitive::Right, payload, false);
   resetSeekMarker();
   

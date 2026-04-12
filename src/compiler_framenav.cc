@@ -131,41 +131,83 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
   primitive::DInt const paramStart = [callee = functionName](primitive::Context const &ctx) {
     return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
   };
+
+  auto const copyLeafToNextFrame = [&](int &offset, Slot const &slot) {
+    for (int i = 0; i != slot.type->size(); ++i) {
+      int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
+      primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
+      primitive::DInt const scratchIndex = paramIndex0 + (MacroCell::Scratch0 - MacroCell::Value0);
+
+      moveTo(slot + i, MacroCell::Value0);
+      emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
+      moveTo(slot + i, MacroCell::Value1);
+      if (slot.type->usesValue1()) {
+	int const varIndex1 = getFieldIndex(slot + i, MacroCell::Value1);
+	primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
+	emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
+      }
+      else {
+	emit<primitive::ZeroCell>();
+      }
+      offset += MacroCell::FieldCount;
+    }
+  };
   
   auto const constructInNextFrame = [&](auto&& self, int &offset, values::RValue const &arg) -> void {
 
     if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
       Slot slot = arg.slot()->materialize(*this);
-
-      // If it is a pointer that is being copied, increment its depth value
-      if (types::isPointer(slot.type)) {
-	Slot slotCopy = getTemp(slot.type);
-	assignSlot(slotCopy, slot);
-	moveTo(slotCopy + RuntimePointer::FrameDepth);
+      switch (slot.type->tag()) {
+      case types::I8:
+      case types::I16:
+      case types::STRING: {
+	copyLeafToNextFrame(offset, slot);
+	break;
+      }
+      case types::POINTER: {
+	int const destOffset = offset;
+	copyLeafToNextFrame(offset, slot);
+	primitive::DInt const distance = currentFrameSize + paramStart + destOffset + MacroCell::Value0;
+	moveTo(0, MacroCell::Value0);
+	emit<primitive::MovePointerRelative>(distance);
 	inc();
-	slot = slotCopy;
-      }
-      
-      for (int i = 0; i != slot.type->size(); ++i) {
-	int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
-	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
-	primitive::DInt const scratchIndex = paramIndex0 + (MacroCell::Scratch0 - MacroCell::Value0);
-
-	moveTo(slot + i, MacroCell::Value0);
-	emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
-	moveTo(slot + i, MacroCell::Value1);
-	if (slot.type->usesValue1()) {
-	  int const varIndex1 = getFieldIndex(slot + i, MacroCell::Value1);
-	  primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
-	  emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
+	emit<primitive::MovePointerRelative>(-distance);
+	break;
+      }	
+      case types::ARRAY: {
+	auto arrayType = types::cast<types::ArrayType>(slot.type);
+	auto elementType = arrayType->elementType();
+	
+	for (int i = 0; i != arrayType->length(); ++i) {
+	  Slot const elementSlot {
+	    .name = "dummy",
+	    .type = elementType,
+	    .kind = Slot::Dummy,
+	    .offset = slot.offset + i * elementType->size()
+	  };
+	  self(self, offset, rValue(elementSlot));
 	}
-	else {
-	  emit<primitive::ZeroCell>();
-	}
-
-	offset += MacroCell::FieldCount;
+	break;
       }
-
+      case types::STRUCT: {
+	auto structType = types::cast<types::StructType>(slot.type);
+	for (int i = 0; i != structType->fieldCount(); ++i) {
+	  auto fieldType = structType->fieldType(i);
+	  Slot const fieldSlot {
+	    .name = "dummy",
+	    .type = fieldType,
+	    .kind = Slot::Dummy,
+	    .offset = slot.offset + structType->fieldOffset(i)
+	  };
+	  self(self, offset, rValue(fieldSlot));
+	}
+	break;
+      }
+      default: {
+	assert(false && "What type is this?");
+	std::unreachable();
+      }
+      } // switch (tag)
     }
     else { // anonymous value -> construct in-place
       types::TypeHandle argType = arg.type();
@@ -192,6 +234,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.value())->element(i)));
 	break;
       }
+	//TODO: pointer and struct as anonymous
       default: assert(false && "passing this type as arg is not supported yet"); break;
       }
     }
