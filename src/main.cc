@@ -18,23 +18,22 @@ int main() try {
   c.setEntryPoint("main");
 
   c.begin(); {
+    c.declareGlobal("g", i8);
+    
     c.beginFunction("main"); {
-
+      c.referGlobals({"g"});
+      c.declareLocal("pg", i8p);
       c.declareLocal("x", i8);
-      c.declareLocal("px", i8p);
    
       c.beginBlock("entry"); {
-	c.assign("px", values::pointer(i8, "x"));	
-	c.assign("x", values::i8('A'));
-	c.callFunction("foo", "after1", "px");
+	c.assign("pg", values::pointer(i8, "g"));
+	c.assign("g", values::i8('G'));
+	c.assign("x", values::i8('X'));
+	c.callFunction("foo", "after", "pg");
       } c.endBlock();
 
-      c.beginBlock("after1"); {
-	c.assign("x", values::i8('B'));
-	c.callFunction("foo", "after2", "px");	
-      } c.endBlock();
-
-      c.beginBlock("after2"); {
+      c.beginBlock("after"); {
+	c.writeOut("x");
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

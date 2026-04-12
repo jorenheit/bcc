@@ -412,11 +412,6 @@ void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot,
   Payload payload(elementType->size(),
 		  elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single);
   
-  // payload.units.push_back(Payload::Unit{
-  //     .size = elementType->size(),
-  //     .width = elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single
-  //   });
-  
   moveTo(arrSlot, MacroCell::Value0);
   setSeekMarker();
   fetchFromDynamicOffset(Cell{scaledIndexSlot, MacroCell::Value0},
@@ -573,11 +568,21 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
     // first macrocell contains the frameDepth, second the offset
     // The framedepth is initialized to 0 for new pointers.
 
+    bool localPointer = true;
     int offset;	  
     if (types::isPointer(val->type())) {
       // If the pointer is initialized with pointer-value,
       // set its offset to the slot-offset of the variable pointed to.
-      offset = local(values::cast<types::PointerType>(val)->pointee()->varName()).offset;
+      Slot const localSlot = local(values::cast<types::PointerType>(val)->pointee()->varName());
+      if (localSlot.name.starts_with("__g_")) {
+	std::string const globalName = localSlot.name.substr(std::string("__g_").size());
+	assert(_program.isGlobal(globalName));
+	offset = _program.globalSlot(globalName).offset;
+	localPointer = false;
+      }
+      else {
+	offset = localSlot.offset;
+      }
     }
     else {
       // If the pointer is initialized with an integer,
@@ -587,9 +592,17 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
       offset = values::cast<types::IntegerType>(val)->value();
     }
 
-    // Set frame-depth to 0 
-    moveTo(slot + RuntimePointer::FrameDepth, MacroCell::Value0);
-    zeroCell();
+    // Set frame-depth to 0 for a local pointer, FrameID for a global pointer
+    if (localPointer) {
+      moveTo(slot + RuntimePointer::FrameDepth, MacroCell::Value0);
+      zeroCell();
+    } else {
+      moveTo(0, MacroCell::FrameMarker);
+      copyField(Cell{slot + RuntimePointer::FrameDepth, MacroCell::Value0},
+		Temps<1>::pack(slot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
+
+    }
+
     // Construct offset in second cell
     moveTo(slot + RuntimePointer::Offset, MacroCell::Value0);
     setToValue(offset & 0xff);
@@ -701,7 +714,6 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
   // previous frame start until the depth-counter becomes 0.
   moveTo(frameDepthPayload);
   loopOpen(); {
-
     Payload payload{
       1, Payload::Width::Single, // depth
       1, Payload::Width::Double, // offset
@@ -718,6 +730,7 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
   _dp.set(0);
 
   // Copy the value into the payload
+  pushPtr();
   for (int i = 0; i != derefSlot.size(); ++i) {
     moveTo(i, MacroCell::Value0);
     copyField(Cell{i, MacroCell::Payload0}, Temps<1>::pack(i, MacroCell::Scratch0));
@@ -726,6 +739,7 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
       copyField(Cell{i, MacroCell::Payload1}, Temps<1>::pack(i, MacroCell::Scratch0));
     }
   }
+  popPtr();
   
   // Seek back to the start of the frame, then to the seekmarker left behind
   // at the deref-slot. We can't seek to the seekmarker directly because
@@ -735,9 +749,9 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
     derefSlot.size(),
     derefSlot.type->usesValue1() ? Payload::Width::Double : Payload::Width::Single
   };
-  
+
   seek(MacroCell::FrameMarker, primitive::Left, payload, true);
-  seek(MacroCell::SeekMarker, primitive::Right, payload, true);
+  seek(MacroCell::SeekMarker, primitive::Right, payload, false);
   resetSeekMarker();
   
   // We're now at the marker that marks the deref-slot -> need to rebase.
