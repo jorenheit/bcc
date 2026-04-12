@@ -135,6 +135,25 @@ namespace proxy {
       
     };
 
+    class DereferencedPointer: public Base {
+      SlotProxy _ptr;
+
+    public:
+      DereferencedPointer(SlotProxy ptr):
+	Base(types::cast<types::PointerType>(ptr->type())->pointeeType()),
+	_ptr(std::move(ptr))
+      {}
+
+      virtual std::string name() const {
+	return std::string("deref<") + _ptr->name() + ">";
+      }
+      
+      virtual Slot materialize(Compiler &c) const;
+      virtual void write(Compiler &c, SlotProxy src) const;;
+      virtual void write(Compiler &c, values::Anonymous src) const;
+      virtual bool direct() const { return false; }
+    };
+    
 
     
   } // namespace Impl
@@ -157,6 +176,10 @@ namespace proxy {
     return SlotProxy(std::make_shared<Impl::StructField>(std::move(obj), fieldName));
   }
 
+  inline SlotProxy dereferencedPointer(SlotProxy ptr) {
+    return SlotProxy(std::make_shared<Impl::DereferencedPointer>(std::move(ptr)));
+  }
+  
   
 } // namespace proxy
   

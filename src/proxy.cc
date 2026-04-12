@@ -128,5 +128,20 @@ namespace proxy {
     }
   }
   
+  Slot Impl::DereferencedPointer::materialize(Compiler &c) const {
+    Slot const ptrSlot = _ptr->materialize(c);
+    Slot const destSlot = c.getTemp(this->type());
+    c.dereferencePointerIntoSlot(ptrSlot, destSlot);
+    return destSlot;
+  }
 
+  void Impl::DereferencedPointer::write(Compiler &c, SlotProxy src) const {
+    assert(false && "writing to deref not impemented yet");
+  }
+
+  void Impl::DereferencedPointer::write(Compiler &c, values::Anonymous src) const {
+    assert(false && "writing to deref not impemented yet");
+  }
+
+  
 } // namespace proxy

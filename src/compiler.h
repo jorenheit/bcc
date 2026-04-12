@@ -18,7 +18,7 @@ class Compiler {
   friend class proxy::Impl::Direct;
   friend class proxy::Impl::ArrayElement;
   friend class proxy::Impl::StructField;
-
+  friend class proxy::Impl::DereferencedPointer;
   
   Program _program;
   Function* _currentFunction = nullptr;
@@ -136,7 +136,12 @@ public:
   SlotProxy arrayElement(Array const &arr, Index const &index) {
     return arrayElementImpl(lValue(arr), rValue(index));
   }
-  
+
+  template <typename Pointer>
+  SlotProxy dereferencePointer(Pointer const &ptr) {
+    return dereferencePointerImpl(rValue(ptr));
+  }
+
   Slot declareLocal(std::string const &name, types::TypeHandle type);
   Slot declareGlobal(std::string const &name, types::TypeHandle type);
   Slot declareGlobalReference(Slot const &globalSlot);
@@ -158,14 +163,11 @@ public:
 
   
 private:
-
-  
-  
   // Normalize to RValue or LValue
   values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
-  values::RValue rValue(std::string const &var)    const { return values::RValue{local(var)};  }
-  values::RValue rValue(SlotProxy const &slot)          const { return values::RValue{slot};  }
-  values::RValue rValue(values::Anonymous const &val)  const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
+  values::RValue rValue(std::string const &var) const { return values::RValue{local(var)};  }
+  values::RValue rValue(SlotProxy const &slot) const { return values::RValue{slot};  }
+  values::RValue rValue(values::Anonymous const &val) const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
 
   values::LValue lValue(values::LValue const &val) const { return values::LValue{val}; }
   values::LValue lValue(std::string const &var)    const { return values::LValue{local(var)};  }
@@ -179,7 +181,7 @@ private:
   SlotProxy structFieldImpl(values::LValue const &obj, int fieldIndex);
   SlotProxy arrayElementImpl(values::LValue const &arr, int index);
   SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index);
-  SlotProxy deref(values::RValue const &ptr);
+  SlotProxy dereferencePointerImpl(values::RValue const &ptr);
 
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs);
   void writeOutImpl(values::RValue const &rhs); 
@@ -189,6 +191,7 @@ private:
   void assignSlot(Slot const &slot, values::Anonymous const &val);
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
+  void dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot);
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(Cell cell);

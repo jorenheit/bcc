@@ -45,6 +45,7 @@ struct RuntimePointer {
 struct Cell {
   int offset = 0;
   MacroCell::Field field = MacroCell::Value0;
+  operator int() const { return offset; }
 };
 
 // ============================================================

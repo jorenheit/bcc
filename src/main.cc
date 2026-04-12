@@ -11,46 +11,44 @@
 
 int main() try {
   Compiler c;
+
+  types::TypeHandle i8 = TypeSystem::i8();
+  types::TypeHandle i8p = TypeSystem::pointer(TypeSystem::i8());
+  
   c.setEntryPoint("main");
 
   c.begin(); {
-auto point = c.defineStruct("Point",
-			    "x", TypeSystem::i8(),
-			    "y", TypeSystem::i8());
+    c.beginFunction("main"); {
 
- c.declareGlobal("g", point);
+      c.declareLocal("x", i8);
+      c.declareLocal("px", i8p);
+   
+      c.beginBlock("entry"); {
+	c.assign("px", values::pointer(i8, "x"));	
+	c.assign("x", values::i8('A'));
+	c.callFunction("foo", "after1", "px");
+      } c.endBlock();
 
- c.beginFunction("main"); {
-   c.referGlobals({"g"});
-      
-   c.beginBlock("entry"); {
-     auto gx = c.structField("g", "x");
-     auto gy = c.structField("g", "y");
+      c.beginBlock("after1"); {
+	c.assign("x", values::i8('B'));
+	c.callFunction("foo", "after2", "px");	
+      } c.endBlock();
 
-     c.assign(gx, values::i8('A'));
-     c.assign(gy, values::i8('B'));
-     c.writeOut("g");
+      c.beginBlock("after2"); {
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
 
-     c.callFunction("foo", "after_foo");
-   } c.endBlock();
-
-   c.beginBlock("after_foo"); {
-     c.writeOut("g");
-     c.returnFromFunction();
-   } c.endBlock();
- } c.endFunction();
-
- c.beginFunction("foo"); {
-   c.referGlobals({"g"});
-      
-   c.beginBlock("entry"); {
-     auto gy = c.structField("g", "y");
-     c.assign(gy, values::i8('C'));
-     c.returnFromFunction();
-   } c.endBlock();
- } c.endFunction();
+    c.beginFunction("foo", TypeSystem::voidT(), "p", i8p); {
+      c.beginBlock("entry"); {
+	auto pDeref = c.dereferencePointer("p");
+	c.writeOut(pDeref);
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+    
   } c.end();
-
+  
   std::cout << c.dumpBrainfuck() << '\n';
  } catch (std::exception const &e) {
   std::cerr << e.what() << '\n';

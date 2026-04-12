@@ -6,16 +6,19 @@ void Compiler::pushFrame() {
   assert(_currentSeq != nullptr);
 
   // To push a frame, we need to move the pointer into the cell that marks the start of a fresh
-  // frame, starting just beyond the current one. We also initialize the FrameMarker set its run-state to 1.
+  // frame, starting just beyond the current one. We also increment the FrameMarker set its run-state to 1.
 
   primitive::DInt currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
   };
+
+  moveTo(0, MacroCell::FrameMarker);
+  emit<primitive::CopyData>(getFieldIndex(0, MacroCell::FrameMarker),
+			    currentFrameSize,
+			    getFieldIndex(0, MacroCell::Scratch0));
   
-  moveToOrigin();
-  switchField(MacroCell::FrameMarker);
   emit<primitive::MovePointerRelative>(currentFrameSize);
-  setToValue(1);
+  inc();
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   setToValue(1);
   moveToOrigin();
@@ -132,7 +135,17 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
   auto const constructInNextFrame = [&](auto&& self, int &offset, values::RValue const &arg) -> void {
 
     if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
-      Slot const slot = arg.slot()->materialize(*this);
+      Slot slot = arg.slot()->materialize(*this);
+
+      // If it is a pointer that is being copied, increment its depth value
+      if (types::isPointer(slot.type)) {
+	Slot slotCopy = getTemp(slot.type);
+	assignSlot(slotCopy, slot);
+	moveTo(slotCopy + RuntimePointer::FrameDepth);
+	inc();
+	slot = slotCopy;
+      }
+      
       for (int i = 0; i != slot.type->size(); ++i) {
 	int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
 	primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
@@ -152,6 +165,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 
 	offset += MacroCell::FieldCount;
       }
+
     }
     else { // anonymous value -> construct in-place
       types::TypeHandle argType = arg.type();

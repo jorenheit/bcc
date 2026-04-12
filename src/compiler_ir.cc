@@ -25,22 +25,24 @@ void Compiler::end() {
 
   
   // To bootstrap the system, we need to do the following:
-  // 1. Mark cell 0 using the FrameID field to indicate that this is where
-  //    the global data frame starts. Leave the pointer in the value-field.
+  // 1. Mark cell 0 using the SeekMarker field to indicate that this is where
+  //    the global data frame starts, for easy navigation to this frame. 
   // 2. Move the pointer to the first stackframe and reset the origin.
   // 3. Initialize the first stack-frame, where we set the TargetBlock to the
-  //    index of the entry-function and the run-state to 1.
+  //    index of the entry-function and the run-state to 1. It is assigned
+  //    FrameMarker 1, which from hereon will be copied and incremented for
+  //    deeper frames.
   // 4. Open the main-loop and leave the pointer in cell 0 of the frame.
 
   setTargetSequence(&_program.bootstrap);
 
   resetOrigin();
-  _dp.set(static_cast<MacroCell::Field>(0));
   switchField(MacroCell::SeekMarker);
-  addConst(1);
-  switchField(MacroCell::Value0);
-  moveTo(1 + _program.globalVariableFrameSize()); 
+  setToValue(1);
+  switchField(MacroCell::FrameMarker);
+  setToValue(1);
 
+  moveTo(1 + _program.globalVariableFrameSize()); 
   resetOrigin();
   switchField(MacroCell::FrameMarker);
   setToValue(1);
@@ -285,21 +287,7 @@ SlotProxy Compiler::structFieldImpl(values::LValue const &obj, std::string const
   // TODO: make this check work (after fixing all the virtual functions of the types and adding a member for easy check)
   //  error_if(fieldIndex == -1UL, "variable '", obj.str(), "' of struct type '", obj.type()->str(), "' does not contain field '", fieldName, "'.");
 
-  std::cout << "here\n";
   return proxy::structField(obj.slot(), fieldName);
-  
-
-  
-
-  // Slot const slot = obj.slot()->materialize(*this);  
-  // auto s = static_cast<types::StructType const *>(slot.type);
-  
-  // return Slot {
-  //   .name = std::string("__field_") + slot.name + "_" + fieldName,
-  //   .type = s->_fields[fieldIndex].type,
-  //   .kind = Slot::StructField,
-  //   .offset = slot.offset + (int)offset
-  // };  
 }
 
 SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index) {
@@ -325,6 +313,14 @@ SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, values::RValue c
 }
 
 
+SlotProxy Compiler::dereferencePointerImpl(values::RValue const &ptr) {
+  error_if(_currentFunction == nullptr, "called 'dereferencePointer(", ptr.str(), ")' outside function-block.");
+  error_if(_currentBlock == nullptr, "called 'dereferencePointer((",  ptr.str(), ")' outside code-block.");
+  error_if(not types::isPointer(ptr.type()), "type mismatch in 'dereferencePointer(", ptr.str(), ")': '",
+	   ptr.str(), "' is of type '", ptr.type()->str(), "', which is not a pointer.");
+
+  return proxy::dereferencedPointer(ptr.hasSlot() ? ptr.slot() : getTemp(ptr.value()));
+}
 
 void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
 				std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args) {
@@ -527,6 +523,8 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
 
 void Compiler::assignSlot(Slot const &dest, Slot const &src) {
   assert(dest.size() == src.size());
+
+  // TODO: if src is a tmp we can move from it.
   
   pushPtr();
   // Copy src into slot
@@ -617,6 +615,8 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
     : lhs.slot()->write(*this, rhs.value());
 }
 
+
+
 void Compiler::writeOutImpl(values::RValue const &rhs) {
   error_if(_currentFunction == nullptr, "called 'writeOut(", rhs.str(), ")' outside function-block.");
   error_if(_currentBlock == nullptr, "called 'writeOut(",  rhs.str(), ")' outside code-block.");
@@ -665,9 +665,100 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
   popPtr();
 }
 
-SlotProxy Compiler::deref(values::RValue const &ptr) {
-  assert(false && "deref not implemented");
+void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
+  //  assert(false && "deref not implemented");
+  assert(types::isPointer(ptrSlot.type));
+  assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
+
+  pushPtr();
+
+  // Decompose the pointer into its frameDepth and offset
+  Cell const frameDepth { ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0 };
+  Cell const offsetLow  { ptrSlot + RuntimePointer::Offset, MacroCell::Value0 };
+  Cell const offsetHigh { ptrSlot + RuntimePointer::Offset, MacroCell::Value1 };
+
+  // Payload cells will be at the origin
+  // TODO: just load payload into ptrSlot payload and move dynamically to FrameMarker?
+  Cell const frameDepthPayload { 0 + RuntimePointer::FrameDepth, MacroCell::Payload0 };
+  Cell const offsetLowPayload  { 0 + RuntimePointer::Offset, MacroCell::Payload0 };
+  Cell const offsetHighPayload { 0 + RuntimePointer::Offset, MacroCell::Payload1 };
+
+  // Copy both values (frameDepth and offset) to the payload-cells of cell 0 and 1
+  moveTo(frameDepth);
+  copyField(frameDepthPayload, Temps<1>::pack(frameDepthPayload, MacroCell::Scratch0));
+
+  moveTo(offsetLow);
+  copyField(offsetLowPayload,  Temps<1>::pack(offsetLowPayload, MacroCell::Scratch0));
+
+  moveTo(offsetHigh);
+  copyField(offsetHighPayload, Temps<1>::pack(offsetHighPayload, MacroCell::Scratch0));
+
+  // Leave a marker at the destination
+  moveTo(derefSlot);
+  setSeekMarker();
+
+  // If frameDepth is nonzero, we need to keep moving to the 
+  // previous frame start until the depth-counter becomes 0.
+  moveTo(frameDepthPayload);
+  loopOpen(); {
+
+    Payload payload{
+      1, Payload::Width::Single, // depth
+      1, Payload::Width::Double, // offset
+    };
+    moveToPreviousFrame(payload);
+    
+    // We're now at the start of the previous frame -> exit if depth == 0 after subtracting 1
+    moveTo(frameDepthPayload);
+    subConst(1);
+  } loopClose();
+
+  // At the target frame -> move to offset indicated by pointer value in payload
+  goToDynamicOffset(offsetLowPayload, offsetHighPayload);
+  _dp.set(0);
+
+  // Copy the value into the payload
+  for (int i = 0; i != derefSlot.size(); ++i) {
+    moveTo(i, MacroCell::Value0);
+    copyField(Cell{i, MacroCell::Payload0}, Temps<1>::pack(i, MacroCell::Scratch0));
+    if (derefSlot.type->usesValue1()) {
+      moveTo(i, MacroCell::Value1);    
+      copyField(Cell{i, MacroCell::Payload1}, Temps<1>::pack(i, MacroCell::Scratch0));
+    }
+  }
+  
+  // Seek back to the start of the frame, then to the seekmarker left behind
+  // at the deref-slot. We can't seek to the seekmarker directly because
+  // we might have ended up to the right of it, when we're still in the target frame.
+
+  Payload payload {
+    derefSlot.size(),
+    derefSlot.type->usesValue1() ? Payload::Width::Double : Payload::Width::Single
+  };
+  
+  seek(MacroCell::FrameMarker, primitive::Left, payload, true);
+  seek(MacroCell::SeekMarker, primitive::Right, payload, true);
+  resetSeekMarker();
+  
+  // We're now at the marker that marks the deref-slot -> need to rebase.
+  _dp.set(derefSlot);
+
+  // Move payload into value-cells
+  for (int i = 0; i != derefSlot.size(); ++i) {
+    moveTo(derefSlot + i, MacroCell::Payload0);
+    moveField(Cell{derefSlot + i, MacroCell::Value0});
+    if (derefSlot.type->usesValue1()) {
+      moveTo(derefSlot + i, MacroCell::Payload1);    
+      moveField(Cell{derefSlot + i, MacroCell::Value1});
+    } else {
+      moveTo(derefSlot + i, MacroCell::Value1);
+      zeroCell();
+    }
+  }
+  
+  popPtr();
 }  
+
 // assert(ptr.type()->tag() == types::POINTER);
   
 // // Go to the frame/offset stored in the pointer. We need the data to
