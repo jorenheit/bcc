@@ -314,12 +314,28 @@ namespace Algorithm {
   std::string less(int current, int other, int tmp1, int tmp2) {
     assert(util::allDifferent(current, other, tmp1, tmp2));
 
-    // Reduce pair -> if current < other, other is nonzero -> return other
+    // Reduce pair -> if current < other, other is nonzero
     std::ostringstream oss;
-    oss << reducePair(current, other, tmp1, tmp2) 
+    oss << reducePair(current, other, tmp1, tmp2)
+	<< movePtr(tmp1, current)
+	<< setToValue(1)
 	<< movePtr(other, tmp1)
-	<< moveValue(other, current)
-	<< movePtr(current, other);
+	<< "["
+	<<   zero()
+        <<   movePtr(current, other)
+	<<   setToValue(1)
+	<<   movePtr(tmp1, current)
+	<<   setToValue(0)
+	<<   movePtr(other, tmp1)
+	<< "]"
+	<< movePtr(tmp1, other)
+	<< "["
+	<<   zero()
+	<<   movePtr(current, tmp1)
+	<<   setToValue(0)
+	<<   movePtr(tmp1, current)
+	<< "]"
+	<< movePtr(current, tmp1);
       
     return oss.str();
   }
@@ -345,12 +361,29 @@ namespace Algorithm {
   std::string greater(int current, int other, int tmp1, int tmp2) {
     assert(util::allDifferent(current, other, tmp1, tmp2));
 
-    // Reduce pair -> if current > other, current is nonzero -> return current
+    // Reduce pair -> if current > other, current is nonzero
     std::ostringstream oss;
     oss << reducePair(current, other, tmp1, tmp2)
-	<< movePtr(other, current)
-	<< zero()
-	<< movePtr(current, other);
+	<< moveValue(current, other)
+      	<< movePtr(tmp1, current)
+	<< setToValue(1)
+	<< movePtr(other, tmp1)
+	<< "["
+	<<   zero()
+	<<   movePtr(current, other)
+	<<   setToValue(1)
+	<<   movePtr(tmp1, current)
+	<<   zero()
+	<<   movePtr(other, tmp1)
+	<< "]"
+	<< movePtr(tmp1, other)
+	<< "["
+	<<   zero()
+	<<   movePtr(current, tmp1)
+	<<   setToValue(1)
+	<<   movePtr(tmp1, current)
+	<< "]"
+	<< movePtr(current, tmp1);
       
     return oss.str();
   }

@@ -116,7 +116,6 @@ public:
     (result.emplace_back(rValue(std::forward<Args>(args), API_FWD)), ...);
     return result;
   }
-
 #define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
   
   void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
@@ -130,7 +129,8 @@ public:
   }
 
   void returnFromFunction(API_FUNC) { API_FUNC_BEGIN("returnFromFunction"); returnFromFunctionImpl({}, API_FWD); }
-  
+
+  // TODO: seperate template declarations from implementations in tpp file
   template <typename R>
   void returnFromFunction(R const &rhs, API_FUNC) { API_FUNC_BEGIN("returnFromFunction");
     returnFromFunctionImpl(rValue(rhs, API_FWD), API_FWD);
@@ -172,22 +172,32 @@ public:
   }
 
   template <typename L, typename R>
-  void addTo(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addTo");
-    addToImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  void addAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addTo");
+    addAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L, typename R>
   SlotProxy add(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("add");
-    return add(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+    return addImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L, typename R>
-  void multiplyBy(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiplyBy");
-    multiplyByImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  void subAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addTo");
+    subAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L, typename R>
-  SlotProxy multiply(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiply");
+  SlotProxy sub(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("add");
+    return subImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+  
+  template <typename L, typename R>
+  void mulAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiplyBy");
+    multiplyAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy mul(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiply");
     return multiplyImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
@@ -216,7 +226,7 @@ public:
 
   
 private:
-  // Diagnostics
+  // Diagnostics (compiler_diag.cc)
   std::string currentFunction() const;
   std::string currentBlock() const;
   bool programStarted() const;
@@ -226,22 +236,14 @@ private:
   bool inCurrentScope(std::string const &name) const;
   int currentScopeDepth() const;
   
-  // Normalize to RValue or LValue
-  values::RValue rValue(values::RValue const &val, API_CTX) const { return values::RValue{val}; }
-  values::RValue rValue(std::string const &var, API_CTX) const {
-    API_REQUIRE_IN_SCOPE(var);
-    return values::RValue{local(var)};
-  }
-  values::RValue rValue(SlotProxy const &slot, API_CTX) const { return values::RValue{slot};  }
-  values::RValue rValue(values::Anonymous const &val, API_CTX) const { return (val->isRef() ? rValue(val->varName(), API_FWD) : values::RValue{val});  }
-
-  values::LValue lValue(values::LValue const &val, API_CTX) const { return values::LValue{val}; }
-  values::LValue lValue(std::string const &var, API_CTX) const {
-    API_REQUIRE_IN_SCOPE(var);
-    return values::LValue{local(var)};
-  }
-  
-  values::LValue lValue(SlotProxy const &slot, API_CTX) const { return values::LValue{slot};  }
+  // Normalize to RValue or LValue (compiler_rlvalue.cc)
+  values::RValue rValue(values::RValue const &val, API_CTX) const;
+  values::RValue rValue(std::string const &var, API_CTX) const;
+  values::RValue rValue(SlotProxy const &slot, API_CTX) const;
+  values::RValue rValue(values::Anonymous const &val, API_CTX) const;
+  values::LValue lValue(values::LValue const &val, API_CTX) const;
+  values::LValue lValue(std::string const &var, API_CTX) const;  
+  values::LValue lValue(SlotProxy const &slot, API_CTX) const;
 
   // Implementation functions for public interface
   void setNextBlockImpl(int index);
@@ -255,10 +257,12 @@ private:
   SlotProxy arrayElementImpl(values::LValue const &arr, int index, API_CTX);
   SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX);
   SlotProxy dereferencePointerImpl(values::RValue const &ptr, API_CTX);
-  void addToImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void multiplyByImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy multiplyImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void writeOutImpl(values::RValue const &rhs, API_CTX); 
@@ -267,6 +271,10 @@ private:
   // Slot operations
   void assignSlot(Slot const &dest, Slot const &src);
   void assignSlot(Slot const &slot, values::Anonymous const &val);
+  void addSlotToSlot(Slot const &lhs, Slot const &rhs);
+  void addConstToSlot(Slot const &lhs, int delta);
+  void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
+  void subConstFromSlot(Slot const &lhs, int delta);
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
   void dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot);
@@ -306,23 +314,23 @@ private:
   void sub16Const(int delta, Cell high, Temps<4> tmp);
 
   void mulConst(int factor, Temps<3> tmp);
-  void mul16Const(int factor, Cell high, Temps<7> tmp);
+  void mul16Const(int factor, Cell high, Temps<8> tmp);
 
   
   // TODO: constructive versions should accept "other" before result and carry
   void addDestructive(Cell other);
   void addConstructive(Cell result, Cell other, Temps<2> tmp);
-  void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
-  void add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
-  void addAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp);
-  void addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp);
+  void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp);
+  void add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp);
+  void addAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp);
+  void addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp);
 
   void subDestructive(Cell other);
   void subConstructive(Cell result, Cell other, Temps<2> tmp);
-  void sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
-  void sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
-  void subAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp);
-  void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp);
+  void sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp);
+  void sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp);
+  void subAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp);
+  void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp);
 
   void mulDestructive(Cell other);
   void mulConstructive(Cell result, Cell other, Temps<2> tmp);

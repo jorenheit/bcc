@@ -66,16 +66,16 @@ void Compiler::addConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
     return;
   }
 
-  Cell const probe = tmp.get<0>();    
+  Cell const resultCopy = tmp.get<0>();      
   copyField(carry, tmp.select<1>());
   addConst(delta);
-  copyField(probe, tmp.select<1>());
+  copyField(resultCopy, tmp.select<1>());
 
-  moveTo(probe);
+  moveTo(carry);
   if (delta > 0) {
-    lessDestructive(carry, tmp.select<1, 2>());
+    greaterDestructive(resultCopy, tmp.select<1, 2>());
   } else {
-    greaterDestructive(carry, tmp.select<1, 2>());
+    lessDestructive(resultCopy, tmp.select<1, 2>());
   }
 
   popPtr();
@@ -107,7 +107,7 @@ void Compiler::mulConst(int factor, Temps<3> tmp) {
   popPtr();
 }
 
-void Compiler::mul16Const(int factor, Cell high, Temps<7> tmp) {
+void Compiler::mul16Const(int factor, Cell high, Temps<8> tmp) {
   if (factor == 1) return;
 
   pushPtr();
@@ -128,7 +128,7 @@ void Compiler::mul16Const(int factor, Cell high, Temps<7> tmp) {
 
   for (int i = 0; i != factor - 1; ++i) {
     moveTo(currentLow);
-    add16Destructive(currentHigh, copy1low, copy1high, tmp.select<4, 5, 6>());
+    add16Destructive(currentHigh, copy1low, copy1high, tmp.select<4, 5, 6, 7>());
     moveTo(copy2low);
     copyField(copy1low, tmp.select<4>());
     moveTo(copy2high);
@@ -176,6 +176,7 @@ void Compiler::dec16(Cell high, Temps<2> tmp) {
 
 void Compiler::add16Const(int delta, Cell high, Temps<4> tmp) {
   if (delta == 0) return;
+  if (delta < 0) sub16Const(-delta, high, tmp);
   
   int const lowDelta  = delta & 0xff;
   int const highDelta = (delta >> 8) & 0xff;
@@ -191,7 +192,19 @@ void Compiler::add16Const(int delta, Cell high, Temps<4> tmp) {
 
 
 void Compiler::sub16Const(int delta, Cell high, Temps<4> tmp) {
-  add16Const(-delta, high, tmp);
+  if (delta == 0) return;
+  if (delta < 0) add16Const(-delta, high, tmp);
+  
+  int const lowDelta  = delta & 0xff;
+  int const highDelta = (delta >> 8) & 0xff;
+  Cell const carry = tmp.get<0>();
+
+  pushPtr();
+  if (lowDelta != 0)  subConstAndCarry(lowDelta, carry, tmp.select<1, 2, 3>());
+  moveTo(high);
+  if (highDelta != 0) subConst(highDelta);
+  subDestructive(carry);
+  popPtr();
 }
 
 void Compiler::addDestructive(Cell other) {
@@ -224,53 +237,60 @@ void Compiler::subConstructive(Cell result, Cell other, Temps<2> tmp) {
   popPtr();
 }
 
-void Compiler::addAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp) {
+void Compiler::addAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
+  Cell resultCopy = tmp.get<0>();
+
   pushPtr();
-  copyField(carry, tmp.get<0>());
+  copyField(carry, tmp.get<1>());  
   addDestructive(other);
-  lessDestructive(carry, tmp);
+  copyField(resultCopy, tmp.get<1>());
+  moveTo(carry); // contains old value
+  greaterDestructive(resultCopy, tmp.select<1, 2>());
   popPtr();
 }
 
-void Compiler::addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp) {
+void Compiler::addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp) {
   pushPtr();
   copyField(result, tmp.get<0>());
   moveTo(other);
   copyField(tmp.get<0>(), tmp.get<1>());
   moveTo(result);
-  addAndCarryDestructive(carry, tmp.get<0>(), tmp.select<1, 2>()); 
+  addAndCarryDestructive(carry, tmp.get<0>(), tmp.select<1, 2, 3>()); 
   popPtr();
 }
 
-void Compiler::subAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp) {
+void Compiler::subAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
+  Cell resultCopy = tmp.get<0>();
+
   pushPtr();
-  copyField(carry, tmp.get<0>());
+  copyField(carry, tmp.get<1>());  
   subDestructive(other);
-  greaterDestructive(carry, tmp);
+  copyField(resultCopy, tmp.get<1>());
+  moveTo(carry); // contains old value
+  lessDestructive(resultCopy, tmp.select<1, 2>());
   popPtr();
 }
 
-void Compiler::subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp) {
+void Compiler::subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp) {
   pushPtr();
   copyField(result, tmp.get<0>());
   moveTo(other);
   copyField(tmp.get<0>(), tmp.get<1>());
   moveTo(result);
-  subAndCarryDestructive(carry, tmp.get<0>(), tmp.select<1, 2>()); 
+  subAndCarryDestructive(carry, tmp.get<0>(), tmp.select<1, 2, 3>()); 
   popPtr();
 }
 
 
-void Compiler::add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp) {
+void Compiler::add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
 
   pushPtr();
-
   Cell const &low   = _dp.current();
   Cell const &carry = tmp.get<0>();
-
+  
   // add low bytes and get the carry
   moveTo(low);
-  addAndCarryDestructive(carry, otherLow, tmp.select<1, 2>());
+  addAndCarryDestructive(carry, otherLow, tmp.select<1, 2, 3>());
 
   // if carry -> increment high byte
   moveTo(carry);
@@ -289,7 +309,7 @@ void Compiler::add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<
 }
 
 
-void Compiler::add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp) {
+void Compiler::add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp) {
 
   Cell const & low      = _dp.current();
   Cell const & otherLowCopy  = tmp.get<0>();
@@ -302,12 +322,12 @@ void Compiler::add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cel
   moveTo(otherHigh); copyField(otherHighCopy, tmp.select<2>());
 
   moveTo(resultLow);
-  add16Destructive(resultHigh, otherLowCopy, otherHighCopy, tmp.select<2, 3, 4>());
+  add16Destructive(resultHigh, otherLowCopy, otherHighCopy, tmp.select<2, 3, 4, 5>());
   popPtr();
 }
 
 
-void Compiler::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp) {
+void Compiler::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
 
   Cell const &low = _dp.current();
   Cell const &carry = tmp.get<0>();
@@ -316,7 +336,7 @@ void Compiler::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<
 
   // subtract low bytes and get the carry
   moveTo(low);
-  subAndCarryDestructive(carry, otherLow, tmp.select<1, 2>());
+  subAndCarryDestructive(carry, otherLow, tmp.select<1, 2, 3>());
 
   // if carry -> increment high byte
   moveTo(carry);
@@ -334,7 +354,7 @@ void Compiler::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<
   popPtr();
 }
 
-void Compiler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp) {
+void Compiler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp) {
 
   Cell const &low = _dp.current();
   Cell const &otherLowCopy  = tmp.get<0>();
@@ -347,7 +367,7 @@ void Compiler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cel
   moveTo(otherHigh); copyField(otherHighCopy, tmp.select<2>());
 
   moveTo(resultLow);
-  sub16Destructive(resultHigh, otherLowCopy, otherHighCopy, tmp.select<2, 3, 4>());
+  sub16Destructive(resultHigh, otherLowCopy, otherHighCopy, tmp.select<2, 3, 4, 5>());
   popPtr();
 }
 

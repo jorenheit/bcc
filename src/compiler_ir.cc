@@ -594,7 +594,7 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
 void Compiler::assignSlot(Slot const &dest, Slot const &src) {
   assert(dest.size() == src.size());
 
-  // TODO: if src is a tmp we can move from it.
+  // TODO: if src is a tmp we can claim ownership of the tmp and make the original slot available for allocation
   
   pushPtr();
   // Copy src into slot
@@ -710,8 +710,75 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs, 
 }
 
 
+void Compiler::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
+  pushPtr();
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  moveTo(lhs, MacroCell::Value0);
+  if (lhs.type->usesValue1()) {
+    add16Destructive(Cell{lhs, MacroCell::Value1},
+		     Cell{rhsCopy, MacroCell::Value0},
+		     Cell{rhsCopy, MacroCell::Value1},
+		     Temps<4>::select(lhs, MacroCell::Scratch0,
+				      lhs, MacroCell::Scratch1,
+				      rhsCopy, MacroCell::Scratch0,
+				      rhsCopy, MacroCell::Scratch1));
+  } else {
+    addDestructive(Cell{rhsCopy, MacroCell::Value0});
+  }
+  popPtr();
+}
 
-void Compiler::addToImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+void Compiler::subSlotFromSlot(Slot const &lhs, Slot const &rhs) {
+  pushPtr();
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  moveTo(lhs, MacroCell::Value0);
+  if (lhs.type->usesValue1()) {
+    sub16Destructive(Cell{lhs, MacroCell::Value1},
+		     Cell{rhsCopy, MacroCell::Value0},
+		     Cell{rhsCopy, MacroCell::Value1},
+		     Temps<4>::select(lhs, MacroCell::Scratch0,
+				      lhs, MacroCell::Scratch1,
+				      rhsCopy, MacroCell::Scratch0,
+				      rhsCopy, MacroCell::Scratch1));
+  } else {
+    subDestructive(Cell{rhsCopy, MacroCell::Value0});
+  }
+  popPtr();
+}
+
+
+void Compiler::addConstToSlot(Slot const &lhs, int delta) {
+  pushPtr();
+  moveTo(lhs, MacroCell::Value0);    
+  (lhs.type->usesValue1())
+    ? add16Const(delta, Cell{lhs, MacroCell::Value1},
+		 Temps<4>::select(lhs, MacroCell::Scratch0,
+				  lhs, MacroCell::Scratch1,
+				  lhs, MacroCell::Payload0,
+				  lhs, MacroCell::Payload1))
+    : addConst(delta);
+  popPtr();
+}
+
+
+void Compiler::subConstFromSlot(Slot const &lhs, int delta) {
+  pushPtr();
+  moveTo(lhs, MacroCell::Value0);    
+  (lhs.type->usesValue1())
+    ? sub16Const(delta,
+		 Cell{lhs, MacroCell::Value1},
+		 Temps<4>::select(lhs, MacroCell::Scratch0,
+				  lhs, MacroCell::Scratch1,
+				  lhs, MacroCell::Payload0,
+				  lhs, MacroCell::Payload1))
+    : subConst(delta);
+  popPtr();
+}
+
+
+void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
@@ -719,28 +786,11 @@ void Compiler::addToImpl(values::LValue const &lhs, values::RValue const &rhs, A
   pushPtr();
   Slot const lhsSlot = lhs.slot()->materialize(*this);
   if (rhs.hasSlot()) {
-    Slot const rhsSlot = getTemp(rhs.type());
-    assign(rhsSlot, rhs);
-    moveTo(lhsSlot, MacroCell::Value0);
-    (lhsSlot.type->usesValue1())
-      ? add16Destructive(Cell{lhsSlot, MacroCell::Value1},
-			 Cell{rhsSlot, MacroCell::Value0},
-			 Cell{rhsSlot, MacroCell::Value1},
-			 Temps<3>::select(lhsSlot, MacroCell::Scratch0,
-					  lhsSlot, MacroCell::Scratch1,
-					  rhsSlot, MacroCell::Payload0))
-      : addDestructive(Cell{rhsSlot, MacroCell::Value0});
+    addSlotToSlot(lhsSlot, rhs.slot()->materialize(*this));
   }
   else {
     int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-    moveTo(lhsSlot, MacroCell::Value0);    
-    (lhsSlot.type->usesValue1())
-      ? add16Const(delta, Cell{lhsSlot, MacroCell::Value1},
-		   Temps<4>::select(lhsSlot, MacroCell::Scratch0,
-				    lhsSlot, MacroCell::Scratch1,
-				    lhsSlot, MacroCell::Payload0,
-				    lhsSlot, MacroCell::Payload1))
-      : addConst(delta);
+    addConstToSlot(lhsSlot, delta);
   }
 
   if (not lhs.slot()->direct()) {
@@ -760,12 +810,47 @@ SlotProxy Compiler::addImpl(values::LValue const &lhs, values::RValue const &rhs
   
   Slot const result = getTemp(addResult.type);
   assign(result, lhs);
-  addTo(result, rhs);
+  addAssign(result, rhs);
   return result;
 }
 
+void Compiler::subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Sub, lhs.type(), rhs.type());
 
-void Compiler::multiplyByImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  pushPtr();
+  Slot const lhsSlot = lhs.slot()->materialize(*this);
+  if (rhs.hasSlot()) {
+    subSlotFromSlot(lhsSlot, rhs.slot()->materialize(*this));
+  }
+  else {
+    int const delta = values::cast<types::IntegerType>(rhs.value())->value();
+    subConstFromSlot(lhsSlot, delta);
+  }
+
+  if (not lhs.slot()->direct()) {
+    lhs.slot()->write(*this, lhsSlot);
+  }
+  
+  popPtr();  
+}
+
+SlotProxy Compiler::subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Sub, lhs.type(), rhs.type());
+
+  auto subResult = types::rules::binOpResult(BinOp::Sub, lhs.type(), rhs.type());
+  assert(subResult);
+  
+  Slot const result = getTemp(subResult.type);
+  assign(result, lhs);
+  subAssign(result, rhs);
+  return result;
+}
+
+void Compiler::mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
@@ -811,7 +896,7 @@ void Compiler::multiplyByImpl(values::LValue const &lhs, values::RValue const &r
   // popPtr();  
 }
 
-SlotProxy Compiler::multiplyImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+SlotProxy Compiler::mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
