@@ -20,9 +20,8 @@ c.beginFunction("main"); {
     c.assign(arr1, values::i8('E'));
     c.assign(arr2, values::i8('F'));
 
-    c.callFunction("foo", "after_foo", "a",
-		   "b",
-		   "arr");
+    auto args = c.constructFunctionArguments("a", "b", "arr");
+    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -30,10 +29,11 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(),
-		"p0", TypeSystem::i8(),
-		"p1", TypeSystem::i16(),
-		"p2", array3); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					   "p0", TypeSystem::i8(),
+					   "p1", TypeSystem::i16(),
+					   "p2", array3);
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
     c.writeOut("p0");
     c.writeOut("p1");

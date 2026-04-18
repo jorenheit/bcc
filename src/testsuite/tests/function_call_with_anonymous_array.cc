@@ -6,7 +6,8 @@ auto array4 = TypeSystem::array(TypeSystem::i8(), 4);
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo", values::array(TypeSystem::i8(), 'A', 'B', 'C', 'D'));
+    auto args = c.constructFunctionArguments(values::array(TypeSystem::i8(), 'A', 'B', 'C', 'D'));
+    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -14,8 +15,9 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(),
-		"arr", array4); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+			     "arr", array4);
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
     c.writeOut("arr");
     c.returnFromFunction();

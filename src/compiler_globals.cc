@@ -17,12 +17,12 @@ void Compiler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
   for (int i = 0; i != size; ++i) {
     moveTo(globalSlot + i, MacroCell::Value0);
     copyField(Cell{globalSlot + i, MacroCell::Payload0},
-	      Temps<1>::pack(globalSlot + i, MacroCell::Scratch0));
+	      Temps<1>::select(globalSlot + i, MacroCell::Scratch0));
     
     if (useValue1) {
       moveTo(globalSlot + i, MacroCell::Value1); 
       copyField(Cell{globalSlot + i, MacroCell::Payload1},
-		Temps<1>::pack(globalSlot + i, MacroCell::Scratch0));
+		Temps<1>::select(globalSlot + i, MacroCell::Scratch0));
     }
   }
 
@@ -62,12 +62,12 @@ void Compiler::putGlobal(Slot const &globalSlot, Slot const &localSlot) {
   for (int i = 0; i != size; ++i) {
     moveTo(localSlot + i, MacroCell::Value0);
     copyField(Cell{i, MacroCell::Payload0},
-	      Temps<1>::pack(i, MacroCell::Scratch0));
+	      Temps<1>::select(i, MacroCell::Scratch0));
 
     if (useValue1) {
       moveTo(localSlot + i, MacroCell::Value1);
       copyField(Cell{i, MacroCell::Payload1},
-		Temps<1>::pack(i, MacroCell::Scratch0));
+		Temps<1>::select(i, MacroCell::Scratch0));
     }
   }
 

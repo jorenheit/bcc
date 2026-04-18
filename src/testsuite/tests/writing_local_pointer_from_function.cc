@@ -14,7 +14,8 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     c.assign("x", values::i8('X'));
     c.assign("p", values::pointer(i8, "x"));
-    c.callFunction("foo", "after", "p");
+    auto args = c.constructFunctionArguments("p");
+    c.callFunction("foo", "after", args);
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -23,7 +24,10 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(), "p", i8p); {
+auto sig = c.constructFunctionSignature(TypeSystem::voidT(),
+			     "p", i8p);
+
+c.beginFunction("foo", sig); {
   c.beginBlock("entry"); {
     auto pDeref = c.dereferencePointer("p");
     c.assign(pDeref, values::i8('Y'));

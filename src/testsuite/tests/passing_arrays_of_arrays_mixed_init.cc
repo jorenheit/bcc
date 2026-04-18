@@ -16,8 +16,9 @@ c.beginFunction("main"); {
     auto arr0 = values::array(TypeSystem::i8(), 'A', "B2");
     auto arr1 = values::array(TypeSystem::i8(), C, 'D');
     auto arrarr = values::array(array2, arr0, arr1);
-	
-    c.callFunctionReturn("foo", "after_foo", "E", arrarr);
+
+    auto args = c.constructFunctionArguments(arrarr);
+    c.callFunction("foo", "after_foo", args, "E");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -26,7 +27,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::i8(), "arr", array22); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::i8(), "arr", array22);
+c.beginFunction("foo", fooSig); {
   c.declareLocal("E", TypeSystem::i8());
   c.beginBlock("entry"); {
     c.writeOut("arr");

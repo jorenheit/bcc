@@ -16,14 +16,14 @@ void Compiler::blockOpen() {
   compare16ToConstConstructive(/* value =    */ _currentBlock->globalBlockIndex,
 			       /* highByte = */ Cell{FrameLayout::TargetBlock, MacroCell::Value1},
 			       /* result =   */ Cell{FrameLayout::TargetBlock, MacroCell::Flag},
-			       Temps<2>::pack(FrameLayout::TargetBlock, MacroCell::Scratch0,
+			       Temps<2>::select(FrameLayout::TargetBlock, MacroCell::Scratch0,
 					      FrameLayout::TargetBlock, MacroCell::Scratch1)
 			       );
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   andConstructive(/* result = */ Cell{FrameLayout::RunState, MacroCell::Flag},
 		  /* other  = */ Cell{FrameLayout::TargetBlock, MacroCell::Flag},
-		  Temps<2>::pack(FrameLayout::RunState, MacroCell::Scratch0,
+		  Temps<2>::select(FrameLayout::RunState, MacroCell::Scratch0,
 				 FrameLayout::RunState, MacroCell::Scratch1)
 		  );
 
@@ -83,7 +83,7 @@ void Compiler::constructMetaBlocks() {
       // Check if the run-state has become 0. If so, unwind the stack
       moveTo(FrameLayout::RunState, MacroCell::Value0);
       copyField(Cell{FrameLayout::RunState, MacroCell::Scratch0},
-		Temps<1>::pack(_dp.current().offset, MacroCell::Scratch1)); 
+		Temps<1>::select(_dp.current().offset, MacroCell::Scratch1)); 
       moveTo(FrameLayout::RunState, MacroCell::Scratch1);
       setToValue(1);
       
@@ -103,7 +103,7 @@ void Compiler::constructMetaBlocks() {
 	popFrame(); // This leaves us at the Scratch1 cell in another frame: guaranteed 0
       } loopClose();
       switchField(MacroCell::Value0);
-      
+      API_EXPECT_NEXT("endBlock");
     } endBlock();
   }
 

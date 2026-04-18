@@ -12,28 +12,27 @@
 int main() try {
   Compiler c;
   c.setEntryPoint("main");
-
-  auto i8  = TypeSystem::i8();
-  auto i8p = TypeSystem::pointer(i8);
-
   c.begin(); {
-    c.declareGlobal("g", i8);
+    auto array2 = TypeSystem::array(TypeSystem::i8(), 2);
 
     c.beginFunction("main"); {
-      c.referGlobals({"g"});
-      c.declareLocal("p", i8p);
-      c.declareLocal("x", i8);
-
+      c.declareLocal("x", TypeSystem::i8());
       c.beginBlock("entry"); {
-	c.assign("g", values::i8('G'));
-	c.assign("p", values::pointer(i8, "g"));
+	c.assign("x", values::i8('B'));
+	auto args = c.constructFunctionArguments(values::array(TypeSystem::i8(), 'A', "x"));
+	c.callFunction("foo", "after_foo", args);
+      } c.endBlock();
 
-	auto pDeref = c.dereferencePointer("p");
-	c.assign("x", pDeref);
-	c.writeOut("g");
-	c.writeOut("x");
-	c.writeOut(pDeref);
+      c.beginBlock("after_foo"); {
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
 
+    auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					       "arr", array2);
+    c.beginFunction("foo", fooSig); {
+      c.beginBlock("entry"); {
+	c.writeOut("arr");
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

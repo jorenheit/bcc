@@ -14,7 +14,7 @@ c.beginFunction("main"); {
     c.assign("idx", values::i8(3));
 
     auto dest = c.arrayElement("arr", "idx");
-    c.callFunctionReturn("makeZ", "after_makeZ", dest);
+    c.callFunction("makeZ", "after_makeZ", {}, dest);
   } c.endBlock();
 
   c.beginBlock("after_makeZ"); {
@@ -23,7 +23,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("makeZ", TypeSystem::i8()); {
+auto sig = c.constructFunctionSignature(TypeSystem::i8());
+c.beginFunction("makeZ", sig); {
   c.beginBlock("entry"); {
     c.returnFromFunction(values::i8('Z'));
   } c.endBlock();

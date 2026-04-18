@@ -2,9 +2,9 @@
 // Expected: "AB"
 
 TEST_BEGIN
-auto point = c.defineStruct("Point",
-			    "x", TypeSystem::i8(),
-			    "y", TypeSystem::i8());
+auto pointFields = c.constructFields("x", TypeSystem::i8(),
+				     "y", TypeSystem::i8());
+auto point = c.defineStruct("Point", pointFields);
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);

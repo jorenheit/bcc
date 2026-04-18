@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <concepts>
 #include "data.h"
+#include "common.h"
 
 namespace types {
 
@@ -16,7 +17,7 @@ namespace types {
   };
   
   struct Type {
-    ~Type() = default;
+    virtual ~Type() = default;
     virtual TypeTag tag() const = 0;
     virtual std::string str() const = 0;
     virtual bool isConstructibleFrom(Type const *other) const = 0;
@@ -98,7 +99,7 @@ namespace types {
   }; // struct ArrayType
 
   struct StringType: ArrayLike {
-    StringType(TypeHandle charType, int maxLen):  ArrayLike(charType, maxLen + 1) {} //_i8(i8), _capacity(maxLen + 1) {}
+    StringType(TypeHandle charType, int maxLen):  ArrayLike(charType, maxLen + 1) {}
     virtual TypeTag tag() const override { return STRING; }
     virtual bool usesValue1() const override { return false; }
     virtual std::string str() const { return std::string("string<") + std::to_string(length() - 1) + ">"; }
@@ -111,27 +112,24 @@ namespace types {
   }; // struct StringType
 
   struct StructType: Type {
-    struct Field {
-      std::string name;
-      Type const *type;
-    };
-
     std::string _name;
-    std::vector<Field> _fields;
+    StructFields _fields;
     int _size;
 
     template <typename ... Args>
-    StructType(std::string const &name, Args&& ... args): _name(name), _size(0) {
-      _fields.reserve(sizeof...(args));
-      addFields(std::forward<Args>(args)...);
-      for (Field const &f: _fields) _size += f.type->size();
+    StructType(std::string const &name, StructFields const &fields):
+      _name(name),
+      _fields(fields),
+      _size(0)
+    {
+      for (auto const &f: _fields) _size += f.type->size();
     }
 
     virtual TypeTag tag() const override { return STRUCT; }
     virtual int size() const override { return _size; }
     
     virtual bool usesValue1() const {
-      for (Field const &f: _fields) if (f.type->usesValue1()) return true;
+      for (auto const &f: _fields) if (f.type->usesValue1()) return true;
       return false;
     }
 
@@ -146,8 +144,7 @@ namespace types {
       for (size_t i = 0; i != _fields.size(); ++i) {
 	if (_fields[i].name == fieldName) return static_cast<int>(i);
       }
-      assert(false && "invalid field name");
-      std::unreachable();
+      return -1;
     }
     
     TypeHandle fieldType(size_t index) const {
@@ -177,17 +174,17 @@ namespace types {
       return _fields[index].name;
     }
 
-  private:
-    void addFields() {}
+  // private:
+  //   void addFields() {}
 
-    template <typename Name, typename... Rest>
-    void addFields(Name&& name, Type const* type, Rest&&... rest) {
-      _fields.push_back(Field{
-	  std::string(std::forward<Name>(name)),
-	  type
-	});
-      addFields(std::forward<Rest>(rest)...);
-    }    
+  //   template <typename Name, typename... Rest>
+  //   void addFields(Name&& name, Type const* type, Rest&&... rest) {
+  //     _fields.push_back(Field{
+  // 	  std::string(std::forward<Name>(name)),
+  // 	  type
+  // 	});
+  //     addFields(std::forward<Rest>(rest)...);
+  //   }    
   }; // struct StructType
 
 
@@ -209,15 +206,14 @@ namespace types {
 
 
   // Convenience functions to check type categories
-  inline bool isInteger(TypeHandle t) { return t->tag() == I8 || t->tag() == I16; }
+  inline bool isI8(types::TypeHandle t) { return t->tag() == types::I8; }
+  inline bool isI16(types::TypeHandle t) { return t->tag() == types::I16; }
+  inline bool isInteger(TypeHandle t) { return isI8(t) || isI16(t); }
   inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
   inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
   inline bool isPointer(TypeHandle t)   { return t->tag() == POINTER; }
 
-
-
-  
 } // namespace types
  
 class TypeSystem {

@@ -9,9 +9,8 @@ c.beginFunction("main"); {
        
   c.beginBlock("entry"); {
     c.assign("x", values::i8('A'));
-    c.callFunctionReturn("foo", "after_foo", "y",
-			 values::i8('B'),
-			 "x");
+    auto args = c.constructFunctionArguments("x", values::i8('B'));
+    c.callFunction("foo", "after_foo", args, "y");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -21,9 +20,13 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::i8(), "arg1", TypeSystem::i8(), "arg2", TypeSystem::i8()); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::i8(),
+					   "arg1", TypeSystem::i8(),
+					   "arg2", TypeSystem::i8());
+
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
-    c.returnFromFunction("arg1");
+    c.returnFromFunction("arg2");
   } c.endBlock();
 } c.endFunction();
 

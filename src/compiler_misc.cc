@@ -46,7 +46,7 @@ std::string Compiler::simplifyProgram(std::string const &bf) {
 
 void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
 					  std::string const &callee,
-					  std::vector<values::RValue> const &args) {
+					  std::vector<values::RValue> const &args, API_CTX) {
   auto const getHandles = [&](){
     std::vector<types::TypeHandle> result;
     for (auto const &arg: args) {
@@ -56,6 +56,7 @@ void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
   };
 
   _deferredFunctionCallTypeChecks.emplace_back(FunctionCall{
+      .API_CTX_NAME = API_FWD,
       .caller = caller,
       .callee = callee,
       .args = getHandles()
@@ -65,15 +66,21 @@ void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
 void Compiler::functionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
-  for (auto const &[caller, callee, args]: _deferredFunctionCallTypeChecks) {
+  for (auto const &[API_CTX_NAME, caller, callee, args]: _deferredFunctionCallTypeChecks) {
+    
     auto const &params = _program.function(callee).sig.params;
-    error_if(params.size() != args.size(),
-	     "invalid number of arguments in call to '", callee, "' (in funcion '", caller, "'): ",
-	     "expected ", params.size(), ", got ", args.size(), ".");
+    API_REQUIRE(params.size() == args.size(),
+		"invalid number of arguments in function-call to '", callee, "': "
+		"expected ", params.size(), ", got ", args.size(), ".");
+
+    // error::throw_if(params.size() != args.size(),
+    // 		    "invalid number of arguments in call to '", callee, "' (in funcion '", caller, "'): ",
+    // 		    "expected ", params.size(), ", got ", args.size(), ".");
     for (size_t i = 0; i != args.size(); ++i) {
-      error_if(not params[i].type->isConstructibleFrom(args[i]),
-	       "type mismatch in argument ", (i+1), " of call to '", callee, "' (in function '", caller, "'): ",
-	       "expected '", params[i].type->str(), "', got '", args[i]->str(), "'.");
+      API_REQUIRE_ASSIGNABLE(params[i].type, args[i]);
+      // error_if(not params[i].type->isConstructibleFrom(args[i]),
+      // 	       "type mismatch in argument ", (i+1), " of call to '", callee, "' (in function '", caller, "'): ",
+      // 	       "expected '", params[i].type->str(), "', got '", args[i]->str(), "'.");
     }
   }
 

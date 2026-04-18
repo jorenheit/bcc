@@ -8,7 +8,8 @@ auto string = TypeSystem::string(str.size());
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("print", "return", values::string(str));
+    auto args = c.constructFunctionArguments(values::string(str));
+    c.callFunction("print", "return", args);
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -17,8 +18,9 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-c.beginFunction("print", TypeSystem::voidT(),
-		"s", string); {
+auto printSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					     "s", string);
+c.beginFunction("print", printSig); {
   c.beginBlock("entry"); {
     c.writeOut("s");
     c.returnFromFunction();

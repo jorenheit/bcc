@@ -17,7 +17,6 @@ struct Program {
   
   std::vector<Function> functions;
   std::unordered_map<std::string, size_t> functionByName;
-  //  std::unordered_map<std::string, Slot> globals;
   std::vector<Slot> globals;
   std::vector<Function::Block*> globalBlockOrder;
 

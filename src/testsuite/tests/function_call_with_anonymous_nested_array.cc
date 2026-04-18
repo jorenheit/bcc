@@ -10,7 +10,8 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     auto ab = values::array(TypeSystem::i8(), 'A', 'B');
     auto cd = values::array(TypeSystem::i8(), 'C', 'D');
-    c.callFunction("foo", "after_foo", values::array(array2, ab, cd));
+    auto args = c.constructFunctionArguments(values::array(array2, ab, cd));
+    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -18,8 +19,9 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(),
-		"arr", array22); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					   "arr", array22);
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
     c.writeOut("arr");
     c.returnFromFunction();

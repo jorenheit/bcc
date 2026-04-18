@@ -19,7 +19,8 @@ c.beginFunction("main"); {
     c.assign(x3, values::i8('D'));
 
     c.writeOut("x");
-    c.callFunction("foo", "after_foo", "x");
+    auto args = c.constructFunctionArguments("x");
+    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -27,7 +28,10 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(), "x", array4); {
+
+auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					   "x", array4);
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
     c.writeOut("x");
     c.returnFromFunction();

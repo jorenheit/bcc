@@ -7,9 +7,9 @@ TEST_BEGIN
 auto i8  = TypeSystem::i8();
 auto i8p = TypeSystem::pointer(i8);
 
-auto pair = c.defineStruct("Pair",
-                           "pa", i8p,
-                           "pb", i8p);
+auto pairFields = c.constructFields("pa", i8p,
+				    "pb", i8p);
+auto pair = c.defineStruct("Pair", pairFields);
 
 c.beginFunction("main"); {
   c.declareLocal("s", pair);
@@ -23,7 +23,8 @@ c.beginFunction("main"); {
     c.assign(c.structField("s", "pa"), values::pointer(i8, "a"));
     c.assign(c.structField("s", "pb"), values::pointer(i8, "b"));
 
-    c.callFunction("foo", "after", "s");
+    auto args = c.constructFunctionArguments("s");
+    c.callFunction("foo", "after", args);
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -33,7 +34,9 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(), "s", pair); {
+auto sig = c.constructFunctionSignature(TypeSystem::voidT(),
+					"s", pair);
+c.beginFunction("foo", sig); {
   c.beginBlock("entry"); {
     auto pa = c.structField("s", "pa");
     auto pb = c.structField("s", "pb");

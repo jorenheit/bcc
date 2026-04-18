@@ -19,6 +19,11 @@ namespace proxy {
     c.assignSlot(_slot, src);
   }
 
+  Slot Impl::Direct::addressOf(Compiler &c) const {
+    assert(false && "Direct::addressOf not implemented yet");
+    // return c.addressOf(_slot);
+  }
+  
   Slot Impl::ArrayElement::getElementSlot(Slot const &arrSlot, int index) const {
     return Slot {
       .name = std::string("__element::") + arrSlot.name + "[" + std::to_string(index) + "]",
@@ -82,6 +87,22 @@ namespace proxy {
     }
   }
 
+  Slot Impl::ArrayElement::addressOf(Compiler &c) const {
+    assert(false && "ArrayElement::addressOf not implemented yet.");
+    // Slot const ptr = _arr->addressOf(c);
+    // if (std::holds_alternative<int>(_index)) {
+    //   int const offset = std::get<int>(_index) * this->type()->size();
+    //   c.addTo(ptr.sub(TypeSystem::i16(), RuntimePointer::Offset),
+    // 	      values::i16(offset));
+    // }
+    // else {
+    //   auto const offset = c.multiply(std::get<SlotProxy>(_index),
+    // 				     values::i16(this->type()->size()));
+    //   c.addTo(ptr.sub(TypeSystem::i16(), RuntimePointer::Offset), offset);
+    // }
+    // return ptr;
+  }
+  
   Impl::StructField::StructField(SlotProxy obj, std::string fieldName):
     Base(types::cast<types::StructType>(obj->type())->fieldType(fieldName)),
     _obj(obj),
@@ -127,6 +148,13 @@ namespace proxy {
       _obj->write(c, objSlot);
     }
   }
+
+  Slot Impl::StructField::addressOf(Compiler &c) const {
+    assert(false && "StructField::addressOf not implemented yet");
+    // Slot const ptr = _obj->addressOf(c);
+    // c.addTo(ptr.sub(TypeSystem::i16(), RuntimePointer::Offset), values::i16(_fieldOffset));
+    // return ptr;
+  }
   
   Slot Impl::DereferencedPointer::materialize(Compiler &c) const {
     Slot const ptrSlot = _ptr->materialize(c);
@@ -147,5 +175,9 @@ namespace proxy {
     c.writeSlotThroughDereferencedPointer(ptrSlot, srcSlot);
   }
 
+  Slot Impl::DereferencedPointer::addressOf(Compiler &c) const {
+    assert(false && "DereferencedPointer::addressOf not implemented yet");
+    // return _ptr->materialize(c);
+  }
   
 } // namespace proxy

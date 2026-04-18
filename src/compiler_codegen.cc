@@ -11,7 +11,7 @@ primitive::Context Compiler::constructContext() const {
     for (auto const &f: _program.functions) {
       // Special block ID equal to the first block of a function to indicate
       // the entry-point of this function (easy lookup).
-      error_if(f.blocks.size() == 0, "function '", f.name, "' does not contain any code-blocks.");
+      assert(f.blocks.size() > 0 && "function does not contain any code-blocks."); // TODO: Error?
       result[f.name] = f.blocks[0]->globalBlockIndex;
       for (auto const &b: f.blocks) {
 	std::string const id = f.name + "." + b->name;

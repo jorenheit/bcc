@@ -19,6 +19,8 @@ namespace proxy {
       SlotProxy(Slot const &slot);
     };
 
+    // TODO: all members are const now, even when they semantically aren't const
+    // (modify the represented slot). Should they become non-const?
     class Base {
       types::TypeHandle _type;
     public:
@@ -30,11 +32,11 @@ namespace proxy {
       virtual Slot materialize(Compiler &c) const = 0;
       virtual void write(Compiler &c, SlotProxy src) const = 0;
       virtual void write(Compiler &c, values::Anonymous src) const = 0;
+      virtual Slot addressOf(Compiler &c) const = 0;
       virtual bool direct() const = 0;
     };
     
 
-  
     class Direct: public Base {
       Slot _slot;
     
@@ -44,6 +46,7 @@ namespace proxy {
       virtual void write(Compiler &c, SlotProxy src) const override;
       virtual void write(Compiler &c, values::Anonymous src) const override;      
       virtual bool direct() const override { return true; }
+      virtual Slot addressOf(Compiler &c) const override;
 
       virtual std::string name() const override {
 	return _slot.name;
@@ -96,6 +99,9 @@ namespace proxy {
 	  ? writeImpl(c, std::get<int>(_index), src)
 	  : writeImpl(c, std::get<SlotProxy>(_index), src);
       }
+
+      virtual Slot addressOf(Compiler &c) const override;
+
       
     private:
       Slot materializeImpl(Compiler &c, int index) const;
@@ -129,6 +135,7 @@ namespace proxy {
       virtual Slot materialize(Compiler &c) const override;
       virtual void write(Compiler &c, SlotProxy src) const override;
       virtual void write(Compiler &c, values::Anonymous src) const override;
+      virtual Slot addressOf(Compiler &c) const override;
 
     private:
       Slot getFieldSlot(Slot const obj) const;
@@ -151,6 +158,7 @@ namespace proxy {
       virtual Slot materialize(Compiler &c) const;
       virtual void write(Compiler &c, SlotProxy src) const;;
       virtual void write(Compiler &c, values::Anonymous src) const;
+      virtual Slot addressOf(Compiler &c) const override;      
       virtual bool direct() const { return false; }
     };
     

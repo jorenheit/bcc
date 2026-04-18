@@ -14,7 +14,8 @@ c.beginFunction("main"); {
     c.assign("idx", values::i8(2));
 
     auto elem = c.arrayElement("arr", "idx");
-    c.callFunction("printChar", "return", elem);
+    auto args = c.constructFunctionArguments(elem);
+    c.callFunction("printChar", "return", args);
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -22,7 +23,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printChar", TypeSystem::voidT(), "ch", TypeSystem::i8()); {
+auto sig = c.constructFunctionSignature(TypeSystem::voidT(), "ch", TypeSystem::i8());
+c.beginFunction("printChar", sig); {
   c.beginBlock("entry"); {
     c.writeOut("ch");
     c.returnFromFunction();

@@ -13,7 +13,8 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("s", values::string(str));
-    c.callFunction("print", "return", "s");
+    auto args = c.constructFunctionArguments("s");
+    c.callFunction("print", "return", args);
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -22,8 +23,9 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-c.beginFunction("print", TypeSystem::voidT(),
-		"s", bigString); {
+auto printSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					     "s", bigString);
+c.beginFunction("print", printSig); {
   c.beginBlock("entry"); {
     c.writeOut("s");
     c.returnFromFunction();

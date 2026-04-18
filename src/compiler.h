@@ -10,16 +10,19 @@
 #include "rlvalue.h"
 #include "types.h"
 
+#define API_HEADER
+#include "api.h"
+
 // ============================================================
 // Compiler
 // ============================================================
 
 class Compiler {
-  //  friend class proxy::Impl::Base;
   friend class proxy::Impl::Direct;
   friend class proxy::Impl::ArrayElement;
   friend class proxy::Impl::StructField;
   friend class proxy::Impl::DereferencedPointer;
+  friend class api::Context;
   
   Program _program;
   Function* _currentFunction = nullptr;
@@ -30,8 +33,7 @@ class Compiler {
 
   struct {
     bool begun = false;
-    bool allowGlobalDefinitions = true;
-    bool seekMarkerSet = false;
+    bool allowGlobalDefinitions = true; // TODO: rename to allowGlobalDeclarations
   } _state;
   
   DataPointer _dp;
@@ -48,12 +50,13 @@ class Compiler {
   std::stack<Cell> _ptrStack;
 
   struct FunctionCall {
+    api::Context API_CTX_NAME;
     std::string caller, callee;
     std::vector<types::TypeHandle> args;
   };
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
 
-  std::unordered_set<std::string> _addressTakenGlobals;
+  std::unordered_set<std::string> _aliasedGlobals;
   
 public:
   inline Compiler() { TypeSystem::init(); }
@@ -62,132 +65,204 @@ public:
   std::string dumpBrainfuck() const;
 
   // IR Directives
-  void setEntryPoint(std::string functionName);
-  void begin();
-  void end();
-  void beginFunction(std::string const &name, FunctionSignature const &sig);
-  void endFunction();
-  void beginScope();
-  void endScope();
-  void beginBlock(std::string name);
-  void endBlock();
-  void setNextBlock(int index);
-  void setNextBlock(std::string f, std::string b);
-  void abortProgram();
-  void referGlobals(std::vector<std::string> const &names);
+  void setEntryPoint(std::string functionName, API_FUNC);
+  void begin(API_FUNC);
+  void end(API_FUNC);
+  void endFunction(API_FUNC);
+  void beginScope(API_FUNC);
+  void endScope(API_FUNC);
+  void beginBlock(std::string name, API_FUNC);
+  void endBlock(API_FUNC);
+  void setNextBlock(int index, API_FUNC);
+  void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
+  void abortProgram(API_FUNC);
+  void referGlobals(std::vector<std::string> const &names, API_FUNC);
 
-  template <typename ... Args> 
-  types::TypeHandle defineStruct(std::string const &name, Args&& ... args){
-    types::TypeHandle s = TypeSystem::defineStruct(name, std::forward<Args>(args)...);
-    error_if(s == nullptr, "conflicting definitions of struct '", name, "'.");
-    return s;
+
+  template <typename ... Args>
+  StructFields constructFields(Args&& ... args) {
+    static_assert(sizeof ... (Args) % 2 == 0);
+    StructFields fields; fields.reserve(sizeof...(args) / 2);
+
+    auto addField = [&]<typename ... Rest>(auto&& self, std::string const &name, types::TypeHandle type, Rest&& ... rest) -> void {
+      fields.push_back(StructField{name, type});
+      if constexpr (sizeof ... (Rest) == 0) return;
+      else self(self, std::forward<Rest>(rest)...);
+    };
+
+    addField(addField, std::forward<Args>(args)...);
+    return fields;
+  }    
+
+  // Todo: move to compiler_ir.cc
+  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC) {
+    API_FUNC_BEGIN("defineStruct");
+    API_REQUIRE_INSIDE_PROGRAM_BLOCK();
+    API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+    
+    types::TypeHandle sType = TypeSystem::defineStruct(name, std::move(fields));
+    API_REQUIRE(sType != nullptr, "conficting struct declaration: '", name, "' previously defined.");
+    return sType;
   }
+
+
+  using ArgList = std::vector<values::RValue>;
 
   template <typename... Args>
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, Args&&... args) {
-    callFunctionImpl(functionName, nextBlockName, std::optional<values::LValue>{},
-		     constructArgumentList(std::forward<Args>(args)...));
+  ArgList constructFunctionArguments_(API_FUNC_SOURCE, Args&&... args) {
+    API_FUNC_BEGIN("constructFunctionArguments");
+    ArgList result;
+    result.reserve(sizeof...(args));
+    (result.emplace_back(rValue(std::forward<Args>(args), API_FWD)), ...);
+    return result;
   }
 
-  template <typename L, typename... Args>
-  void callFunctionReturn(std::string const& functionName, std::string const& nextBlockName, L&& returnSlot, Args&&... args) {
-    callFunctionImpl(functionName, nextBlockName,
-		     std::make_optional<values::LValue>(lValue(std::forward<L>(returnSlot))),
-		     constructArgumentList(std::forward<Args>(args)...));
-  }
-
-  void callFunction(std::string const& functionName, std::string const& nextBlockName) {
-    callFunctionImpl(functionName, nextBlockName, {}, {});
-  }
+#define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
   
-
-  template <typename R>
-  void returnFromFunction(R const &rhs) {
-    returnFromFunctionImpl(std::make_optional<values::RValue>(rValue(rhs)));
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC);
+  
+  template <typename L>
+  void callFunction(std::string const& functionName, std::string const& nextBlockName,
+		    ArgList const &args, L&& returnSlot, API_FUNC) {
+    API_FUNC_BEGIN("callFunction");
+    callFunctionImpl(functionName, nextBlockName, lValue(std::forward<L>(returnSlot), API_FWD), args, API_FWD);
   }
 
-  void returnFromFunction() {
-    returnFromFunctionImpl({});
+  void returnFromFunction(API_FUNC) { API_FUNC_BEGIN("returnFromFunction"); returnFromFunctionImpl({}, API_FWD); }
+  
+  template <typename R>
+  void returnFromFunction(R const &rhs, API_FUNC) { API_FUNC_BEGIN("returnFromFunction");
+    returnFromFunctionImpl(rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L, typename R>
-  void assign(L const &lhs, R const &rhs) {
-    assignImpl(lValue(lhs), rValue(rhs));
+  void assign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("assign");
+    assignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename R>
-  void writeOut(R const &rhs) {
-    writeOutImpl(rValue(rhs));
+  void writeOut(R const &rhs, API_FUNC) { API_FUNC_BEGIN("writeOut");
+    writeOutImpl(rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L>
-  SlotProxy structField(L const &obj, std::string const &field) {
-    return structFieldImpl(lValue(obj), field);
+  SlotProxy structField(L const &obj, std::string const &field, API_FUNC) { API_FUNC_BEGIN("structField");
+    return structFieldImpl(lValue(obj, API_FWD), field, API_FWD);
   }
 
   template <typename L>
-  SlotProxy structField(L const &obj, int fieldIndex) {
-    return structFieldImpl(lValue(obj), fieldIndex);
+  SlotProxy structField(L const &obj, int fieldIndex, API_FUNC) { API_FUNC_BEGIN("structField");
+    return structFieldImpl(lValue(obj, API_FWD), fieldIndex, API_FWD);
   }
 
   template <typename Array>
-  SlotProxy arrayElement(Array const &arr, int index) {
-    return arrayElementImpl(lValue(arr), index);
+  SlotProxy arrayElement(Array const &arr, int index, API_FUNC) { API_FUNC_BEGIN("structField");
+    return arrayElementImpl(lValue(arr, API_FWD), index, API_FWD);
   }
   
   template <typename Array, typename Index>
-  SlotProxy arrayElement(Array const &arr, Index const &index) {
-    return arrayElementImpl(lValue(arr), rValue(index));
+  SlotProxy arrayElement(Array const &arr, Index const &index, API_FUNC) { API_FUNC_BEGIN("arrayElement");
+    return arrayElementImpl(lValue(arr, API_FWD), rValue(index, API_FWD), API_FWD);
   }
 
   template <typename Pointer>
-  SlotProxy dereferencePointer(Pointer const &ptr) {
-    return dereferencePointerImpl(rValue(ptr));
+  SlotProxy dereferencePointer(Pointer const &ptr, API_FUNC) { API_FUNC_BEGIN("dereferencePointer");
+    return dereferencePointerImpl(rValue(ptr, API_FWD), API_FWD);
   }
 
-  Slot declareLocal(std::string const &name, types::TypeHandle type);
-  Slot declareGlobal(std::string const &name, types::TypeHandle type);
+  template <typename L, typename R>
+  void addTo(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addTo");
+    addToImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy add(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("add");
+    return add(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  void multiplyBy(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiplyBy");
+    multiplyByImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy multiply(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiply");
+    return multiplyImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L>
+  SlotProxy addressOf(L const &obj, API_FUNC) { API_FUNC_BEGIN("addressOf");
+    return addressOfImpl(lValue(obj, API_FWD), API_FWD);
+  }
+
+  Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
+  Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobalReference(Slot const &globalSlot);
 
   // TODO: rename to resolveVar(...)
   Slot local(std::string const& name, bool globalReference = false) const;
 
-  template <typename ... Args>
-  void beginFunction(std::string const &name, types::TypeHandle returnType, Args&& ... args) {
-    beginFunction(name, FunctionSignature{
-	returnType,
-	std::forward<Args>(args)...
-      });
-  }
 
+  template <typename ... Args>
+  FunctionSignature constructFunctionSignature(Args&& ... args) {
+    return FunctionSignature{std::forward<Args>(args)...};
+  }
+  
+  void beginFunction(std::string const &name, FunctionSignature const &sig, API_FUNC); 
   inline void beginFunction(std::string const &name) {
-    beginFunction(name, TypeSystem::voidT());
+    beginFunction(name, constructFunctionSignature(TypeSystem::voidT()));
   }
 
   
 private:
+  // Diagnostics
+  std::string currentFunction() const;
+  std::string currentBlock() const;
+  bool programStarted() const;
+  bool declaredAsGlobal(std::string const &name) const;
+  bool globalDeclarationsAllowed() const;
+  bool inScope(std::string const &name) const;
+  bool inCurrentScope(std::string const &name) const;
+  int currentScopeDepth() const;
+  
   // Normalize to RValue or LValue
-  values::RValue rValue(values::RValue const &val) const { return values::RValue{val}; }
-  values::RValue rValue(std::string const &var) const { return values::RValue{local(var)};  }
-  values::RValue rValue(SlotProxy const &slot) const { return values::RValue{slot};  }
-  values::RValue rValue(values::Anonymous const &val) const { return (val->isRef() ? rValue(val->varName()) : values::RValue{val});  }
+  values::RValue rValue(values::RValue const &val, API_CTX) const { return values::RValue{val}; }
+  values::RValue rValue(std::string const &var, API_CTX) const {
+    API_REQUIRE_IN_SCOPE(var);
+    return values::RValue{local(var)};
+  }
+  values::RValue rValue(SlotProxy const &slot, API_CTX) const { return values::RValue{slot};  }
+  values::RValue rValue(values::Anonymous const &val, API_CTX) const { return (val->isRef() ? rValue(val->varName(), API_FWD) : values::RValue{val});  }
 
-  values::LValue lValue(values::LValue const &val) const { return values::LValue{val}; }
-  values::LValue lValue(std::string const &var)    const { return values::LValue{local(var)};  }
-  values::LValue lValue(SlotProxy const &slot)          const { return values::LValue{slot};  }
+  values::LValue lValue(values::LValue const &val, API_CTX) const { return values::LValue{val}; }
+  values::LValue lValue(std::string const &var, API_CTX) const {
+    API_REQUIRE_IN_SCOPE(var);
+    return values::LValue{local(var)};
+  }
+  
+  values::LValue lValue(SlotProxy const &slot, API_CTX) const { return values::LValue{slot};  }
 
   // Implementation functions for public interface
+  void setNextBlockImpl(int index);
+  void setNextBlockImpl(std::string const &f, std::string const &b);
+  
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-			std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args);
-  void returnFromFunctionImpl(std::optional<values::RValue> const &ret = {});
-  SlotProxy structFieldImpl(values::LValue const &obj, std::string const &field);
-  SlotProxy structFieldImpl(values::LValue const &obj, int fieldIndex);
-  SlotProxy arrayElementImpl(values::LValue const &arr, int index);
-  SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index);
-  SlotProxy dereferencePointerImpl(values::RValue const &ptr);
-
-  void assignImpl(values::LValue const &lhs, values::RValue const &rhs);
-  void writeOutImpl(values::RValue const &rhs); 
+			std::optional<values::LValue> const &returnSlot, ArgList const &args, API_CTX);
+  void returnFromFunctionImpl(std::optional<values::RValue> const &ret, API_CTX);
+  SlotProxy structFieldImpl(values::LValue const &obj, std::string const &field, API_CTX);
+  SlotProxy structFieldImpl(values::LValue const &obj, int fieldIndex, API_CTX);
+  SlotProxy arrayElementImpl(values::LValue const &arr, int index, API_CTX);
+  SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX);
+  SlotProxy dereferencePointerImpl(values::RValue const &ptr, API_CTX);
+  void addToImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void multiplyByImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy multiplyImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  
+  void assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void writeOutImpl(values::RValue const &rhs, API_CTX); 
+  SlotProxy addressOfImpl(values::LValue const &obj, API_CTX);
   
   // Slot operations
   void assignSlot(Slot const &dest, Slot const &src);
@@ -196,6 +271,7 @@ private:
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
   void dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot);
   void writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot);
+  SlotProxy addressOfSlot(Slot const &slot);
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(Cell cell);
@@ -230,7 +306,7 @@ private:
   void sub16Const(int delta, Cell high, Temps<4> tmp);
 
   void mulConst(int factor, Temps<3> tmp);
-  //  void mul16Const(int factor, Cell high, Temps<?> tmp);
+  void mul16Const(int factor, Cell high, Temps<7> tmp);
 
   
   // TODO: constructive versions should accept "other" before result and carry
@@ -248,6 +324,11 @@ private:
   void subAndCarryDestructive(Cell carry, Cell other, Temps<2> tmp);
   void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<3> tmp);
 
+  void mulDestructive(Cell other);
+  void mulConstructive(Cell result, Cell other, Temps<2> tmp);
+  void mul16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
+  void mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
+  
   void notDestructive(Temps<1> tmp);
   void notConstructive(Cell result, Temps<1> tmp);
 
@@ -277,7 +358,6 @@ private:
 
   void equalDestructive(Cell other, Temps<2> tmp);
   void equalConstructive(Cell result, Cell other, Temps<3> tmp);
-
   
   // Frame Navigation (compiler_framenav.cc)
   
@@ -287,7 +367,7 @@ private:
   void setSeekMarker();
   void resetSeekMarker();
   void moveToPreviousFrame(Payload const &payload = {});  
-  void initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args);  
+  void initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args, API_CTX);  
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
 
@@ -309,7 +389,7 @@ private:
     
     std::string globalName = localSlot.name.substr(std::string("__g_").size());
     assert(_program.isGlobal(globalName));
-    if (onlyAliasedGlobals && not _addressTakenGlobals.contains(globalName)) return;
+    if (onlyAliasedGlobals && not _aliasedGlobals.contains(globalName)) return;
     
     Slot const &globalSlot = _program.globalSlot(globalName);
     assert(globalSlot.size() == localSlot.size());
@@ -334,7 +414,6 @@ private:
     syncGlobals<&Compiler::putGlobal>(onlyAliasedGlobals);
   }
   
-  
   // Codeblock construction (compiler_codeblocks.cc)
   void blockOpen();
   void blockClose();
@@ -344,7 +423,6 @@ private:
   void setTargetSequence(primitive::Sequence *seq);
   primitive::Context constructContext() const;    
   primitive::Sequence compilePrimitives() const;
-
   
   // Pointer management (compiler_misc.cc)
   void resetOrigin();
@@ -353,7 +431,7 @@ private:
 
   // Post processing/optimization (compiler_misc.cc)
   void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
-				  std::vector<values::RValue> const &args);
+				  std::vector<values::RValue> const &args, API_CTX);
 
   void functionCallTypeChecks();
   
@@ -388,55 +466,55 @@ private:
     return std::make_tuple(getFieldIndex(static_cast<Cell>(args))...);
   }
 
-  // Helper for creating argument vector
-  template <typename ... Args> 
-  std::vector<values::RValue> constructArgumentList(Args&& ... args) {
-    std::vector<values::RValue> result; result.reserve(sizeof...(args));
-    (result.emplace_back(rValue(std::forward<Args>(args))), ...);
-    return result;
-  }
+  // // Helper for creating argument vector
+  // template <typename ... Args> 
+  // std::vector<values::RValue> constructArgumentList(Args&& ... args) {
+  //   std::vector<values::RValue> result; result.reserve(sizeof...(args));
+  //   (result.emplace_back(rValue(std::forward<Args>(args))), ...);
+  //   return result;
+  // }
   
   
-  // Error Handling
-  struct Error: std::exception {
+  // // Error Handling
+  // struct Error: std::exception {
 
-    std::string msg;
-    Error(std::string const &msgHead): msg(msgHead) {}
+  //   std::string msg;
+  //   Error(std::string const &msgHead): msg(msgHead) {}
     
-    template <typename T>
-    Error &operator<<(T const &val) {
-      std::ostringstream oss;
-      oss << val;
-      msg += oss.str();
-      return *this;
-    }
+  //   template <typename T>
+  //   Error &operator<<(T const &val) {
+  //     std::ostringstream oss;
+  //     oss << val;
+  //     msg += oss.str();
+  //     return *this;
+  //   }
 
-    virtual char const *what() const noexcept override {
-      return msg.c_str();
-    }
-  };
+  //   virtual char const *what() const noexcept override {
+  //     return msg.c_str();
+  //   }
+  // };
 
-  template <typename ... Args> requires (sizeof...(Args) > 0)
-  void error(Args&& ... args) const {
-    Error err("Backend error: "); (err << ... << args);
-    throw err;
-  }
+  // template <typename ... Args> requires (sizeof...(Args) > 0)
+  // void error(Args&& ... args) const {
+  //   Error err("Backend error: "); (err << ... << args);
+  //   throw err;
+  // }
 
-  template <typename ... Args> requires (sizeof...(Args) > 0)
-  void warning(Args&& ... args) const {
-    Error err("Backend warning: "); (err << ... << args);
-    throw err;
-  }
+  // template <typename ... Args> requires (sizeof...(Args) > 0)
+  // void warning(Args&& ... args) const {
+  //   Error err("Backend warning: "); (err << ... << args);
+  //   throw err;
+  // }
   
-  template <typename ... Args> requires (sizeof...(Args) > 0)
-  void error_if(bool const condition, Args&& ... args) const {
-    if (condition) error(std::forward<Args>(args)...);
-  }
+  // template <typename ... Args> requires (sizeof...(Args) > 0)
+  // void error_if(bool const condition, Args&& ... args) const {
+  //   if (condition) error(std::forward<Args>(args)...);
+  // }
 
-  template <typename ... Args> requires (sizeof...(Args) > 0)
-  void warning_if(bool const condition, Args&& ... args) const {
-    if (condition) warning(std::forward<Args>(args)...);
-  }
+  // template <typename ... Args> requires (sizeof...(Args) > 0)
+  // void warning_if(bool const condition, Args&& ... args) const {
+  //   if (condition) warning(std::forward<Args>(args)...);
+  // }
 
   
   

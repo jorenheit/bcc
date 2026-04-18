@@ -8,7 +8,7 @@ c.beginFunction("main"); {
   c.referGlobals({"g"});
       
   c.beginBlock("entry"); {
-    c.callFunctionReturn("foo", "after_foo", "g");
+    c.callFunction("foo", "after_foo", {}, "g");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -22,7 +22,8 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::i8()); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::i8());
+c.beginFunction("foo", fooSig); {
   c.declareLocal("y", TypeSystem::i8());
   c.beginBlock("entry"); {
     c.assign("y", values::i8('Y'));

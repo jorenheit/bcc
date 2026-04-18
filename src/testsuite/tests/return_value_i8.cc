@@ -8,7 +8,7 @@ c.beginFunction("main"); {
   c.declareLocal("x", TypeSystem::i8());
 
   c.beginBlock("entry"); {
-    c.callFunctionReturn("foo", "after_foo", "x");
+    c.callFunction("foo", "after_foo", {}, "x");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -19,7 +19,8 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 // foo: returns i8
-c.beginFunction("foo", TypeSystem::i8()); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::i8());
+c.beginFunction("foo", fooSig); {
 
   c.beginBlock("entry"); {
     c.returnFromFunction(values::i8('X'));

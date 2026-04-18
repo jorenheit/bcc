@@ -153,8 +153,8 @@ struct Temps {
     return Temps<sizeof ... (Is)>{ _cells[Is] ... };
   }
 
-  template <typename ... Args>
-  static constexpr Temps pack(Args ... args) {
+  template <typename ... Args> requires (sizeof...(Args) > 0)
+  static constexpr Temps select(Args ... args) {
     static_assert(sizeof...(Args) % 2 == 0,
 		  "makeTemps requires offset/field pairs");
     static_assert(sizeof...(Args) / 2 == N, "wrong number or args");

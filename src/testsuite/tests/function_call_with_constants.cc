@@ -11,11 +11,8 @@ c.beginFunction("main"); {
     c.assign("a", values::i8('Z'));
     c.assign("b", values::i8('Y'));
 
-    c.callFunction("foo", "after_foo",
-		   values::i8('A'),
-		   "a",
-		   values::i8('B'),
-		   "b");
+    auto args = c.constructFunctionArguments(values::i8('A'), "a", values::i8('B'), "b");
+    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -23,11 +20,12 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(),
-		"p0", TypeSystem::i8(),
-		"p1", TypeSystem::i8(),
-		"p2", TypeSystem::i8(),
-		"p3", TypeSystem::i8()); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					   "p0", TypeSystem::i8(),
+					   "p1", TypeSystem::i8(),
+					   "p2", TypeSystem::i8(),
+					   "p3", TypeSystem::i8());
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
     c.writeOut("p0");
     c.writeOut("p1");

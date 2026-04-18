@@ -59,7 +59,7 @@ void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payl
   else {
     switchField(markerField);
     notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
-		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
+		    Temps<1>::select(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   }
 
@@ -88,7 +88,7 @@ void Compiler::seek(MacroCell::Field markerField, primitive::Direction dir, Payl
     // Check if flag was hit by storing NOT(SeekMarker) in Flag. If hit, flag0 becomes 0 and we exit the loop
     switchField(markerField);
     notConstructive(Cell{_dp.current().offset, MacroCell::Flag},
-		    Temps<1>::pack(_dp.current().offset, MacroCell::Scratch0));
+		    Temps<1>::select(_dp.current().offset, MacroCell::Scratch0));
     switchField(MacroCell::Flag);
   } loopClose();
   switchField(static_cast<MacroCell::Field>(0));
@@ -115,7 +115,7 @@ void Compiler::moveToPreviousFrame(Payload const &payload) {
 }
 
 
-void Compiler::initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args) {
+void Compiler::initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args, API_CTX) {
 
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
@@ -185,7 +185,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 	    .kind = Slot::Dummy,
 	    .offset = slot.offset + i * elementType->size()
 	  };
-	  self(self, offset, rValue(elementSlot));
+	  self(self, offset, rValue(elementSlot, API_FWD));
 	}
 	break;
       }
@@ -199,7 +199,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 	    .kind = Slot::Dummy,
 	    .offset = slot.offset + structType->fieldOffset(i)
 	  };
-	  self(self, offset, rValue(fieldSlot));
+	  self(self, offset, rValue(fieldSlot, API_FWD));
 	}
 	break;
       }
@@ -231,7 +231,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
       case types::STRING: {
 	// recursive call for each element
 	for (int i = 0; i != types::cast<types::ArrayLike>(argType)->length(); ++i)
-	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.value())->element(i)));
+	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.value())->element(i), API_FWD));
 	break;
       }
 	//TODO: pointer and struct as anonymous

@@ -14,7 +14,8 @@ struct Slot {
     StructField,
     Dummy,
     Available,
-    Temp
+    Temp,
+    Invalid
   };
 
   std::string name;  
@@ -25,6 +26,28 @@ struct Slot {
 	 
   int size() const { return type->size(); }
   operator int() const { return offset; }
+
+  Slot sub(types::TypeHandle subType, int subOffset) const {
+    return Slot {
+      .name = name + "<" + std::to_string(subOffset) + ">",
+      .type = subType,
+      .kind = Dummy,
+      .offset = offset + subOffset,
+      .scope = scope
+    };
+  }
+
+  bool valid() const { return kind != Invalid; }
+  
+  static Slot invalid() {
+    return Slot {
+      .name = "",
+      .type = types::null,
+      .kind = Invalid,
+      .offset = 0,
+      .scope = nullptr
+    };
+  }
 };
 
 

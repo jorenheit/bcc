@@ -7,7 +7,8 @@ std::string str = "Hello World";
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("print", "return", values::string(str));
+    auto args = c.constructFunctionArguments(values::string(str));
+    c.callFunction("print", "return", args);
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -16,8 +17,9 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-c.beginFunction("print", TypeSystem::voidT(),
-		"s", TypeSystem::string(str.size() * 2)); {
+auto printSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					     "s", TypeSystem::string(str.size() * 2));
+c.beginFunction("print", printSig); {
   c.beginBlock("entry"); {
     c.writeOut("s");
     c.returnFromFunction();

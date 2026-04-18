@@ -1,13 +1,17 @@
 #include "compiler.ih"
 
-void Compiler::setEntryPoint(std::string functionName) {
+void Compiler::setEntryPoint(std::string functionName, API_FUNC) {
+  API_FUNC_BEGIN("setEntryPoint");
+  API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
+  
   _program.entryFunctionName = std::move(functionName);
 }
 
-void Compiler::begin() {
-  error_if(_program.entryFunctionName.empty(),
-	   "No entry point set before calling 'begin'; call 'setEntryPoint' first.");
-  error_if(_state.begun, "called 'begin' before ending previous program.");
+void Compiler::begin(API_FUNC) {
+  API_FUNC_BEGIN("begin");
+  API_CHECK_EXPECTED();
+  API_REQUIRE(not _program.entryFunctionName.empty(), "no entry point set; call 'setEntryPoint' first.");
+  API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
 
   _state.begun = true;
 
@@ -15,12 +19,12 @@ void Compiler::begin() {
   declareGlobal("__pad__", TypeSystem::raw(FrameLayout::ReturnValueStart)); 
 }
 
-void Compiler::end() {
-  error_if(not _state.begun, "called 'end' before 'begin'.");
-  error_if(_currentFunction != nullptr, "called 'end' before ending function '", _currentFunction->name, "'."); 
-  error_if(_currentBlock != nullptr, "called 'end' before ending block '", _currentBlock->name, "'."); 
-  error_if(_currentScope != nullptr, "called 'end' before ending scope."); 
-  
+void Compiler::end(API_FUNC) {
+  API_FUNC_BEGIN("end");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_PROGRAM_BLOCK();
+  API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+      
   functionCallTypeChecks();
   
   // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
@@ -50,7 +54,7 @@ void Compiler::end() {
   switchField(MacroCell::FrameMarker);
   setToValue(1);
 
-  setNextBlock(_program.entryFunctionName, "");
+  setNextBlockImpl(_program.entryFunctionName, "");
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   setToValue(1);
   loopOpen("main loop");
@@ -65,11 +69,12 @@ void Compiler::end() {
 }
 
 
-void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig) {
-  error_if(not _state.begun, "called 'beginFunction(", name, ")' outside of a program-block; call 'begin' first.");  
-  error_if(_currentFunction != nullptr, "called 'beginFunction(", name, ")' while in existing function-block; call 'endFunction' first.");
-  error_if(_currentScope != nullptr,    "called 'beginFunction(", name, ")' while in a scope-block; call 'endScope' first.");
-  error_if(_currentBlock != nullptr,    "called 'beginFunction(", name, ")' while in a code-block; call 'endBlock' first.");
+void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig, API_FUNC) {
+  API_FUNC_BEGIN("beginFunction");
+  API_CHECK_EXPECTED();  
+  API_REQUIRE_INSIDE_PROGRAM_BLOCK();
+  API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+  
   _state.allowGlobalDefinitions = false;
   
   _currentFunction = &_program.createFunction(name, sig);  
@@ -79,37 +84,41 @@ void Compiler::beginFunction(std::string const &name, FunctionSignature const &s
 
 }
 
-void Compiler::endFunction() {  
-  error_if(_currentFunction == nullptr, "called 'endFunction' outside of a function-block.");
-  error_if(_currentBlock != nullptr,    "called 'endFunction' (", _currentFunction->name, ") while inside a code-block (", _currentBlock->name, "); ""call 'endBlock' first.");
-  error_if(_currentScope != nullptr,    "called 'endFunction' (", _currentFunction->name, ") while inside a scope-block; call 'endScope' first.");
+void Compiler::endFunction(API_FUNC) {
+  API_FUNC_BEGIN("endFunction");
+  API_CHECK_EXPECTED();  
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_NO_SCOPE();
   
   _currentFunction = nullptr;
 }
 
-void Compiler::beginScope() {
-  error_if(not _state.begun, "called 'beginScope' outside of a program-block; call 'begin' first.");    
-  error_if(_currentFunction == nullptr, "called 'beginScope' outside of a function-block; scopes are only defined within functions.");
-  error_if(_currentBlock != nullptr,    "called 'beginScope' inside of a code-block (", _currentBlock->name, "); scopes can only enclose code-blocks.");
+void Compiler::beginScope(API_FUNC) {
+  API_FUNC_BEGIN("beginScope");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
   _currentScope = &_currentFunction->createScope(_currentScope);
 }
 
-void Compiler::endScope() {
-  error_if(_currentFunction == nullptr, "called 'endScope' outside of a function-block; scopes care only defined within functions.");
-  error_if(_currentScope == nullptr,    "called 'endScope' before calling 'beginScope'.");
-  error_if(_currentBlock != nullptr,    "called 'endScope' inside of a code-block (", _currentBlock->name, "); scopes can only enclose code-blocks.");
+void Compiler::endScope(API_FUNC) {
+  API_FUNC_BEGIN("endScope");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
   freeScope(_currentScope);
   _currentScope = _currentScope->parent;
 }
 
 
-void Compiler::beginBlock(std::string name) {
-  error_if(not _state.begun, "called 'beginBlock(", name, ")' outside of a program-block; call 'begin' first.");    
-  error_if(_currentFunction == nullptr, "called 'beginBlock(", name, ")' outside of a function-block; blocks are only defined within functions.");
-  error_if(_currentBlock != nullptr,    "called 'beginBlock(", name, ")' before ending the current block (", _currentBlock->name, ").");
-
+void Compiler::beginBlock(std::string name, API_FUNC) {
+  API_FUNC_BEGIN("beginBlock");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_OUTSIDE_CODE_BLOCK();
+  
   auto globalIdx = _program.nextGlobalBlockIndex();
   Function::Block &block = _currentFunction->createBlock(std::move(name), globalIdx);
   _program.registerBlock(block);
@@ -126,35 +135,53 @@ void Compiler::beginBlock(std::string name) {
   blockOpen();
 }
 
-void Compiler::endBlock() {
-  error_if(_currentBlock == nullptr, "called 'endBlock' before calling 'beginBlock'.");
-  assert(_nextBlockIsSet);
+void Compiler::endBlock(API_FUNC) {
+  API_FUNC_BEGIN("endBlock");
+  API_CHECK_EXPECTED_STRICT();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
 
   blockClose();
   freeTemps();
   _currentBlock = nullptr;
 }
 
-void Compiler::setNextBlock(int index) {
-  assert(_currentSeq != nullptr);
+// TODO: setNextBlock is not at API interface
+void Compiler::setNextBlock(int index, API_FUNC) {
+  API_FUNC_BEGIN("setNextBlock");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
 
+  setNextBlockImpl(index);
+
+  API_EXPECT_NEXT("endBlock");
+}
+
+void Compiler::setNextBlockImpl(int index) {
   pushPtr();
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
   popPtr();
   _nextBlockIsSet = true;
 }
-    
-void Compiler::setNextBlock(std::string f, std::string b) {
-  assert(_currentSeq != nullptr);
 
+void Compiler::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
+  API_FUNC_BEGIN("setNextBlock");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+
+  setNextBlockImpl(f, b);
+
+  API_EXPECT_NEXT("endBlock");  
+}
+
+void Compiler::setNextBlockImpl(std::string const &f, std::string const &b) {
   // It is possible that the function or block name has not been
   // defined yet. So we need to check for this first.
   if (_program.isFunctionDefined(f)) {
     Function const &func = _program.function(f);
     if (func.isBlockDefined(b)) {
       // both defined -> use global block index
-      return setNextBlock(func.block(b).globalBlockIndex);
+      return setNextBlockImpl(func.block(b).globalBlockIndex);
     }
   }
 
@@ -176,11 +203,16 @@ void Compiler::setNextBlock(std::string f, std::string b) {
   _nextBlockIsSet = true;
   popPtr();
 }
+    
 
 
-Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
-  error_if(not _state.allowGlobalDefinitions, "Global variable '", name, "' must be defined before the first function.");
-  error_if(_program.isGlobal(name), "Multiple definitions of global variable '", name, "'.");
+Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
+  API_FUNC_BEGIN("declareGlobal");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_DECLARE_GLOBAL_ALLOWED();
+  API_REQUIRE_INSIDE_PROGRAM_BLOCK();
+  API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_GLOBAL_NAME_AVAILABLE(name);
 
   int const offset = _program.globalVariableFrameSize();
   Slot slot {
@@ -196,19 +228,13 @@ Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type) {
 }
 
 
-Slot Compiler::declareLocal(std::string const& name, types::TypeHandle type) {
-  assert(_currentFunction != nullptr);
+Slot Compiler::declareLocal(std::string const& name, types::TypeHandle type, API_FUNC) {
+  API_FUNC_BEGIN("declareLocal");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_OUTSIDE_CODE_BLOCK();
+  API_REQUIRE_NOT_IN_CURRENT_SCOPE(name);
 
-  // Check if name is available in this scope
-  auto &frame = _currentFunction->frame;
-  bool available = true;
-  for (auto const &slot: frame.locals) {
-    if (slot.name == name && slot.scope == _currentScope) {
-      available = false;
-      break;
-    }
-  }
-  assert(available && "variable with same name declared in this scope");
   return allocSlot(name, type, Slot::Local);
 }
 
@@ -233,17 +259,20 @@ Slot Compiler::declareGlobalReference(Slot const &globalSlot) {
 }
 
 
-void Compiler::referGlobals(std::vector<std::string> const &names) {
-  error_if(_currentFunction == nullptr, "called 'referGlobals' outside a function block");
-  error_if(_currentBlock != nullptr, "called 'referGlobals' inside code-block");
-
+void Compiler::referGlobals(std::vector<std::string> const &names, API_FUNC) {
+  API_FUNC_BEGIN("referGlobals");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_OUTSIDE_CODE_BLOCK();
+  
   beginBlock(std::string("__prologue_") + _currentFunction->name); {
 
     std::unordered_set<std::string> declared;
     for (std::string const &name: names) {
-      error_if(not _program.isGlobal(name), "in function '", _currentFunction->name, "': symbol '", name, "' was not declared as a global variable.");
-      error_if(not declared.insert(name).second, "in function '", _currentFunction->name, "': symbol '", name, "' was referred to multiple times.");
+      API_REQUIRE_IS_GLOBAL(name);
 
+      auto [_, unique] = declared.insert(name);
+      API_REQUIRE(unique, "multiple references to ", name, ".");
       declareGlobalReference(_program.globalSlot(name));      
     }
 
@@ -272,70 +301,76 @@ Slot Compiler::local(std::string const& varName, bool globalReference) const {
     return local(globalReferenceName, true);
   }
 
-  error("variable '", varName, "' not declared in this scope (function '", _currentFunction, "').");
-  std::unreachable();
+  return Slot::invalid();
 }
 
-SlotProxy Compiler::structFieldImpl(values::LValue const &obj, int fieldIndex) {
-  auto structType = types::cast<types::StructType>(obj.type());
-  error_if(fieldIndex >= structType->fieldCount(), "field index (", fieldIndex, ") out of bounds in call to structField.");
-  return structFieldImpl(obj, structType->fieldName(fieldIndex));
+SlotProxy Compiler::structFieldImpl(values::LValue const &obj, int fieldIndex, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_STRUCT(obj);
+  API_REQUIRE_FIELD_INDEX_IN_BOUNDS(obj, fieldIndex);
+  
+  auto structType = types::cast<types::StructType>(obj.type());  
+  return structFieldImpl(obj, structType->fieldName(fieldIndex), API_FWD);
 }
 
-SlotProxy Compiler::structFieldImpl(values::LValue const &obj, std::string const &fieldName) {
-  error_if(_currentFunction == nullptr, "called 'structField(", obj.str(), ", ", fieldName, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'structField(", obj.str(), ", ", fieldName, ")' outside code-block.");
-  error_if(not types::isStruct(obj.type()), "tried to call 'structField' on '", obj.str(), "', which is not a struct.");
-
-  // TODO: make this check work (after fixing all the virtual functions of the types and adding a member for easy check)
-  //  error_if(fieldIndex == -1UL, "variable '", obj.str(), "' of struct type '", obj.type()->str(), "' does not contain field '", fieldName, "'.");
+SlotProxy Compiler::structFieldImpl(values::LValue const &obj, std::string const &fieldName, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_STRUCT(obj);
+  API_REQUIRE_IS_FIELD(obj, fieldName);
 
   return proxy::structField(obj.slot(), fieldName);
 }
 
-SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index) {
-  error_if(_currentFunction == nullptr, "called 'arrayElementConst(", arr.str(), ", ", index, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'arrayElementConst(", arr.str(), ", ", index, ")' outside code-block.");
-  error_if(not types::isArray(arr.type()) && not types::isString(arr.type()),
-	   "tried to call 'arrayElementConst' on '", arr.str(), "', which is not an array.");
-  error_if(index >= types::cast<types::ArrayLike>(arr.type())->length(), "index [", index, "] out of bounds for '", arr.str(), "'.");
+SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_ARRAY_OR_STRING(arr);
+  API_REQUIRE_INDEX_IN_BOUNDS(arr, index);
 
   return proxy::arrayElement(arr.slot(), index);  
 }  
 
-SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, values::RValue const &index) {
-
-  error_if(_currentFunction == nullptr, "called 'arrayElement(", arr.str(), ", ", index.str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'arrayElement(", arr.str(), ", ", index.str(), ")' outside code-block.");
-  error_if(not types::isArray(arr.type()) && not types::isString(arr.type()),
-	   "tried to call 'arrayElement' on '", arr.str(), "', which is not an array.");
-  error_if(not types::isInteger(index.type()), "tried to call 'arrayElement' with index '", index.str(), "' which is not an integer.");
+SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_ARRAY_OR_STRING(arr);
+  API_REQUIRE_IS_INTEGER(index);
 
   if (index.hasSlot()) return proxy::arrayElement(arr.slot(), index.slot());
-  else return arrayElementImpl(arr, values::cast<types::IntegerType>(index.value())->value());  
+  else return arrayElementImpl(arr, values::cast<types::IntegerType>(index.value())->value(), API_FWD);  
 }
 
 
-SlotProxy Compiler::dereferencePointerImpl(values::RValue const &ptr) {
-  error_if(_currentFunction == nullptr, "called 'dereferencePointer(", ptr.str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'dereferencePointer((",  ptr.str(), ")' outside code-block.");
-  error_if(not types::isPointer(ptr.type()), "type mismatch in 'dereferencePointer(", ptr.str(), ")': '",
-	   ptr.str(), "' is of type '", ptr.type()->str(), "', which is not a pointer.");
+SlotProxy Compiler::dereferencePointerImpl(values::RValue const &ptr, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_POINTER(ptr);
 
   return proxy::dereferencedPointer(ptr.hasSlot() ? ptr.slot() : getTemp(ptr.value()));
 }
 
+void Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC) {
+  API_FUNC_BEGIN("callFunction");
+  callFunctionImpl(functionName, nextBlockName, {}, args, API_FWD);
+}
+
+void Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
+  API_FUNC_BEGIN("callFunction");
+  callFunctionImpl(functionName, nextBlockName, {}, {}, API_FWD);
+}
+
 void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-				std::optional<values::LValue> const &returnSlot, std::vector<values::RValue> const &args) {
-  error_if(_currentFunction == nullptr, "called 'callFunction(", functionName, ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'callFunction(", functionName, ")' outside code-block.");
-  assert(_currentSeq != nullptr);
+				std::optional<values::LValue> const &returnSlot, ArgList const &args, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
 
   syncLocalToGlobal();
 
   std::string const metaBlockName = std::string("__ret_meta_") + _currentFunction->name + "_" + std::to_string(_metaBlocks.size());
 
-  setNextBlock(_currentFunction->name, metaBlockName);
+  setNextBlockImpl(_currentFunction->name, metaBlockName);
   _metaBlocks.push_back(MetaBlock{
       .name = metaBlockName,
       .caller = _currentFunction->name,
@@ -344,33 +379,37 @@ void Compiler::callFunctionImpl(std::string const& functionName, std::string con
       .nextBlockName = nextBlockName,
     });
 
-  deferFunctionCallTypeCheck(_currentFunction->name, functionName, args);
-  initializeArguments(functionName, args);
+  deferFunctionCallTypeCheck(_currentFunction->name, functionName, args, API_FWD);
+  initializeArguments(functionName, args, API_FWD);
   pushFrame();
-  setNextBlock(functionName, "");
+
+  setNextBlockImpl(functionName, "");
+  API_EXPECT_NEXT("endBlock");
 }
 
 
-void Compiler::abortProgram() {
-  error_if(_currentFunction == nullptr, "called 'abortProgram' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'abortProgram' outside code-block.");
+void Compiler::abortProgram(API_FUNC) {
+  API_FUNC_BEGIN("abortProgram");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   zeroCell();
 
   // Sync and pop
   popFrame();
-  _nextBlockIsSet = true;
+  _nextBlockIsSet = true; // TODO: shouldn't need this flag when macro's have been implemented
+
+  API_EXPECT_NEXT("endBlock");
 }
 
 
-void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret) {
+void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  
   if (ret) {
-    error_if(_currentFunction == nullptr, "called 'returnFromFunction(", ret->str(),")' outside function-block.");
-    error_if(_currentBlock == nullptr, "called 'returnFromFunction(", ret->str(),")' outside code-block.");
-    error_if(ret->type() != _currentFunction->sig.returnType,
-	     "type of return-value does not match function signature of '':"
-	     "expected '", _currentFunction->sig.returnType->str(), "', got '", ret->type()->str(), "'.");
+    API_REQUIRE_ASSIGNABLE(ret->type(), _currentFunction->sig.returnType);
 
     // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
     Slot returnSlot = {
@@ -383,16 +422,54 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret) 
     
     assign(returnSlot, *ret);
   }
-  else {
-    error_if(_currentFunction == nullptr, "called 'returnFromFunction' outside function-block.");
-    error_if(_currentBlock == nullptr, "called 'returnFromFunction' outside code-block.");
-  }
   
   syncLocalToGlobal();
   popFrame();
-  _nextBlockIsSet = true;  
+  _nextBlockIsSet = true;
+  API_EXPECT_NEXT("endBlock");
 }
 
+// SlotProxy Compiler::addressOfImpl(LValue const &obj, API_CTX) {
+//   assert(false && "Compiler::addressOf not implemented yet");
+// }
+
+
+SlotProxy Compiler::addressOfSlot(Slot const &slot) {
+  assert(false && "Compiler::addressOf not implemented yet");
+  // auto pointeeType = slot.type;
+  // auto pointerType = TypeSystem::pointer(pointeeType);
+
+  // int offset = slot.offset;
+  // bool localPointer = true;
+  // if (slot.kind == Slot::Kind::GlobalReference) {
+  //   std::string const globalName = slot.name.substr(std::string("__g_").size());
+  //   assert(_program.isGlobal(globalName));
+  //   Slot const globalSlot = _program.globalSlot(globalName);
+  //   assert(globalSlot.type == pointeeType);
+  //   offset = globalSlot.offset;
+  //   localPointer = false;
+  //   _aliasedGlobals.insert(globalName);
+  // }
+
+  // // Set frame-depth to 0 for a local pointer, FrameID for a global pointer
+  // Slot const ptrSlot = getTemp(pointerType);
+  // if (localPointer) {
+  //   moveTo(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0);
+  //   zeroCell();
+  // } else {
+  //   moveTo(0, MacroCell::FrameMarker);
+  //   copyField(Cell{ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0},
+  // 	      Temps<1>::select(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
+  // }
+
+  // // Construct offset in second cell
+  // moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value0);
+  // setToValue(offset & 0xff);
+  // moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value1);
+  // setToValue((offset >> 8) & 0xff);
+
+  // return ptrSlot;
+}
 
 void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
   assert(types::isArray(arrSlot.type));
@@ -407,10 +484,10 @@ void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot,
   assignSlot(scaledIndexSlot, indexSlot);
   moveTo(scaledIndexSlot, MacroCell::Value0);
   mulConst(elementType->size(),
-	   Temps<3>::pack(scaledIndexSlot, MacroCell::Scratch0,
-			  scaledIndexSlot, MacroCell::Scratch1,			  
-			  scaledIndexSlot, MacroCell::Payload0
-			  ));
+	   Temps<3>::select(scaledIndexSlot, MacroCell::Scratch0,
+			    scaledIndexSlot, MacroCell::Scratch1,			  
+			    scaledIndexSlot, MacroCell::Payload0
+			    ));
 
   Payload payload(elementType->size(),
 		  elementType->usesValue1() ? Payload::Width::Double : Payload::Width::Single);
@@ -450,10 +527,10 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
   assignSlot(scaledIndexSlot, indexSlot);
   moveTo(scaledIndexSlot, MacroCell::Value0);
   mulConst(elementType->size(),
-	   Temps<3>::pack(scaledIndexSlot, MacroCell::Scratch0,
-			  scaledIndexSlot, MacroCell::Scratch1,			  
-			  scaledIndexSlot, MacroCell::Payload0
-			  ));
+	   Temps<3>::select(scaledIndexSlot, MacroCell::Scratch0,
+			    scaledIndexSlot, MacroCell::Scratch1,			  
+			    scaledIndexSlot, MacroCell::Payload0
+			    ));
   
   // Plant a seek marker at the start of the array
   moveTo(arrSlot, MacroCell::Value0);
@@ -476,11 +553,11 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
     // Copy the contents into the payload cells
     moveTo(srcSlot + i, MacroCell::Value0);
     copyField(Cell{arrSlot + i, MacroCell::Payload0},
-	      Temps<1>::pack(arrSlot + i, MacroCell::Scratch0));
+	      Temps<1>::select(arrSlot + i, MacroCell::Scratch0));
     if (elementType->usesValue1()) {
       moveTo(srcSlot + i, MacroCell::Value1);
       copyField(Cell{arrSlot + i, MacroCell::Payload1},
-		Temps<1>::pack(arrSlot + i, MacroCell::Scratch0));
+		Temps<1>::select(arrSlot + i, MacroCell::Scratch0));
     }
   }
 
@@ -524,11 +601,11 @@ void Compiler::assignSlot(Slot const &dest, Slot const &src) {
   for (int i = 0; i != dest.size(); ++i) {
     moveTo(src + i, MacroCell::Value0);
     copyField(Cell{dest + i, MacroCell::Value0},
-	      Temps<1>::pack(dest + i, MacroCell::Scratch0));
+	      Temps<1>::select(dest + i, MacroCell::Scratch0));
     moveTo(src + i, MacroCell::Value1);
     if (dest.type->usesValue1()) {
       copyField(Cell{dest + i, MacroCell::Value1},
-		Temps<1>::pack(dest + i, MacroCell::Scratch0));
+		Temps<1>::select(dest + i, MacroCell::Scratch0));
     }
     else {
       setToValue(0);
@@ -584,7 +661,7 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
 	
 	offset = globalSlot.offset + pointeeType->size() * pointerVal->offset();
 	localPointer = false;
-	_addressTakenGlobals.insert(globalName);
+	_aliasedGlobals.insert(globalName);
       }
       else {
 	offset = localSlot.offset + pointeeType->size() * pointerVal->offset();
@@ -605,7 +682,7 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
     } else {
       moveTo(0, MacroCell::FrameMarker);
       copyField(Cell{slot + RuntimePointer::FrameDepth, MacroCell::Value0},
-		Temps<1>::pack(slot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
+		Temps<1>::select(slot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
 
     }
 
@@ -622,12 +699,10 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
 }
 
 
-void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) {
-  error_if(_currentFunction == nullptr, "called 'assign(", lhs.str(), ", ", rhs.str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'assign(",  lhs.str(), ", ", rhs.str(), ")' outside code-block.");
-  error_if(not lhs.type()->isConstructibleFrom(rhs.type()),
-	   "type mismatch in 'assign(", lhs.str(), ", ", rhs.str(), ")': '",
-	   lhs.str(), "' is of type '", lhs.type()->str(), "' while '", rhs.str(), "' is of type '", rhs.type()->str(), "'.");
+void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_ASSIGNABLE(lhs.type(), rhs.type());
 
   rhs.hasSlot()
     ? lhs.slot()->write(*this, rhs.slot())
@@ -636,9 +711,123 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs) 
 
 
 
-void Compiler::writeOutImpl(values::RValue const &rhs) {
-  error_if(_currentFunction == nullptr, "called 'writeOut(", rhs.str(), ")' outside function-block.");
-  error_if(_currentBlock == nullptr, "called 'writeOut(",  rhs.str(), ")' outside code-block.");
+void Compiler::addToImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
+
+  pushPtr();
+  Slot const lhsSlot = lhs.slot()->materialize(*this);
+  if (rhs.hasSlot()) {
+    Slot const rhsSlot = getTemp(rhs.type());
+    assign(rhsSlot, rhs);
+    moveTo(lhsSlot, MacroCell::Value0);
+    (lhsSlot.type->usesValue1())
+      ? add16Destructive(Cell{lhsSlot, MacroCell::Value1},
+			 Cell{rhsSlot, MacroCell::Value0},
+			 Cell{rhsSlot, MacroCell::Value1},
+			 Temps<3>::select(lhsSlot, MacroCell::Scratch0,
+					  lhsSlot, MacroCell::Scratch1,
+					  rhsSlot, MacroCell::Payload0))
+      : addDestructive(Cell{rhsSlot, MacroCell::Value0});
+  }
+  else {
+    int const delta = values::cast<types::IntegerType>(rhs.value())->value();
+    moveTo(lhsSlot, MacroCell::Value0);    
+    (lhsSlot.type->usesValue1())
+      ? add16Const(delta, Cell{lhsSlot, MacroCell::Value1},
+		   Temps<4>::select(lhsSlot, MacroCell::Scratch0,
+				    lhsSlot, MacroCell::Scratch1,
+				    lhsSlot, MacroCell::Payload0,
+				    lhsSlot, MacroCell::Payload1))
+      : addConst(delta);
+  }
+
+  if (not lhs.slot()->direct()) {
+    lhs.slot()->write(*this, lhsSlot);
+  }
+  
+  popPtr();  
+}
+
+SlotProxy Compiler::addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
+
+  auto addResult = types::rules::binOpResult(BinOp::Add, lhs.type(), rhs.type());
+  assert(addResult);
+  
+  Slot const result = getTemp(addResult.type);
+  assign(result, lhs);
+  addTo(result, rhs);
+  return result;
+}
+
+
+void Compiler::multiplyByImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
+  assert(false && "multiplyBy not implemented");
+
+  // pushPtr();
+  // Slot const lhsSlot = lhs.slot()->materialize(*this);
+  // if (rhs.hasSlot()) {
+  //   Slot const rhsSlot = getTemp(rhs.type());
+  //   assign(rhsSlot, rhs);
+  //   moveTo(lhsSlot, MacroCell::Value0);
+  //   (lhsSlot.type->usesValue1())
+  //     ? mul16Destructive(Cell{lhsSlot, MacroCell::Value1},
+  // 			 Cell{rhsSlot, MacroCell::Value0},
+  // 			 Cell{rhsSlot, MacroCell::Value1},
+  // 			 Temps<3>::select(lhsSlot, MacroCell::Scratch0,
+  // 					  lhsSlot, MacroCell::Scratch1,
+  // 					  rhsSlot, MacroCell::Payload0))
+  //     : mulDestructive(Cell{rhsSlot, MacroCell::Value0});
+  // }
+  // else {
+  //   Slot const tmpSrc = getTemp(TypeSystem::i16());
+  //   int const delta = values::cast<types::IntegerType>(rhs.value())->value();
+  //   moveTo(lhsSlot, MacroCell::Value0);    
+  //   (lhsSlot.type->usesValue1())
+  //     ? mul16Const(delta, Cell{lhsSlot, MacroCell::Value1},
+  // 		   Temps<7>::select(lhsSlot, MacroCell::Scratch0,
+  // 				    lhsSlot, MacroCell::Scratch1,
+  // 				    lhsSlot, MacroCell::Payload0,
+  // 				    lhsSlot, MacroCell::Payload1,
+  // 				    tmpSrc,  MacroCell::Scratch0,
+  // 				    tmpSrc,  MacroCell::Scratch1,
+  // 				    tmpSrc,  MacroCell::Value0))
+  //     : mulConst(delta, Temps<3>::select(lhsSlot, MacroCell::Scratch0,
+  // 					 lhsSlot, MacroCell::Scratch1,
+  // 					 lhsSlot, MacroCell::Payload0));
+  // }
+
+  // if (not lhs.slot()->direct()) {
+  //   lhs.slot()->write(*this, lhsSlot);
+  // }
+  
+  // popPtr();  
+}
+
+SlotProxy Compiler::multiplyImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
+  assert(false && "multiplyBy not implemented");
+
+  // Slot const result = getTemp(lhs.type());
+  // assign(result, lhs);
+  // multiplyBy(result, rhs);
+  // return result;
+}
+
+
+
+void Compiler::writeOutImpl(values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
 
   pushPtr();
 
@@ -684,7 +873,6 @@ void Compiler::writeOutImpl(values::RValue const &rhs) {
   popPtr();
 }
 
-
 // TODO: factor common code out from these deref functions
 
 void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
@@ -706,13 +894,13 @@ void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot con
   
   // Copy pointer (frameDepth and offset) to the payload-cells of cell 0 and 1
   moveTo(frameDepth);
-  copyField(frameDepthPayload, Temps<1>::pack(frameDepthPayload, MacroCell::Scratch0));
+  copyField(frameDepthPayload, Temps<1>::select(frameDepthPayload, MacroCell::Scratch0));
 
   moveTo(offsetLow);
-  copyField(offsetLowPayload,  Temps<1>::pack(offsetLowPayload, MacroCell::Scratch0));
+  copyField(offsetLowPayload,  Temps<1>::select(offsetLowPayload, MacroCell::Scratch0));
 
   moveTo(offsetHigh);
-  copyField(offsetHighPayload, Temps<1>::pack(offsetHighPayload, MacroCell::Scratch0));
+  copyField(offsetHighPayload, Temps<1>::select(offsetHighPayload, MacroCell::Scratch0));
 
   // Leave a marker at the sourceSlot
   moveTo(srcSlot);
@@ -745,11 +933,11 @@ void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot con
   for (int i = 0; i != srcSlot.size(); ++i) {
     moveTo(srcSlot + i, MacroCell::Value0);
     copyField(Cell{srcSlot + i, MacroCell::Payload0},
-	      Temps<1>::pack(srcSlot + i, MacroCell::Scratch0));
+	      Temps<1>::select(srcSlot + i, MacroCell::Scratch0));
     if (srcSlot.type->usesValue1()) {
-    moveTo(srcSlot + i, MacroCell::Value1);
-    copyField(Cell{srcSlot + i, MacroCell::Payload1},
-	      Temps<1>::pack(srcSlot + i, MacroCell::Scratch0));
+      moveTo(srcSlot + i, MacroCell::Value1);
+      copyField(Cell{srcSlot + i, MacroCell::Payload1},
+		Temps<1>::select(srcSlot + i, MacroCell::Scratch0));
     }
   }
 
@@ -784,12 +972,12 @@ void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot con
   syncGlobalToLocal(true);
 }
 
+// TODO: factor common code with write
 void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
   assert(types::isPointer(ptrSlot.type));
   assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
 
   syncLocalToGlobal(true);
-
   
   pushPtr();
 
@@ -806,13 +994,13 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
 
   // Copy both values (frameDepth and offset) to the payload-cells of cell 0 and 1
   moveTo(frameDepth);
-  copyField(frameDepthPayload, Temps<1>::pack(frameDepthPayload, MacroCell::Scratch0));
+  copyField(frameDepthPayload, Temps<1>::select(frameDepthPayload, MacroCell::Scratch0));
 
   moveTo(offsetLow);
-  copyField(offsetLowPayload,  Temps<1>::pack(offsetLowPayload, MacroCell::Scratch0));
+  copyField(offsetLowPayload,  Temps<1>::select(offsetLowPayload, MacroCell::Scratch0));
 
   moveTo(offsetHigh);
-  copyField(offsetHighPayload, Temps<1>::pack(offsetHighPayload, MacroCell::Scratch0));
+  copyField(offsetHighPayload, Temps<1>::select(offsetHighPayload, MacroCell::Scratch0));
 
   // Leave a marker at the destination
   moveTo(derefSlot);
@@ -841,10 +1029,10 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
   pushPtr();
   for (int i = 0; i != derefSlot.size(); ++i) {
     moveTo(i, MacroCell::Value0);
-    copyField(Cell{i, MacroCell::Payload0}, Temps<1>::pack(i, MacroCell::Scratch0));
+    copyField(Cell{i, MacroCell::Payload0}, Temps<1>::select(i, MacroCell::Scratch0));
     if (derefSlot.type->usesValue1()) {
       moveTo(i, MacroCell::Value1);    
-      copyField(Cell{i, MacroCell::Payload1}, Temps<1>::pack(i, MacroCell::Scratch0));
+      copyField(Cell{i, MacroCell::Payload1}, Temps<1>::select(i, MacroCell::Scratch0));
     }
   }
   popPtr();
@@ -881,58 +1069,4 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
   popPtr();
 }  
 
-// assert(ptr.type()->tag() == types::POINTER);
-  
-// // Go to the frame/offset stored in the pointer. We need the data to
-// // be runtime, so if the RHS is a value, store it in a temp slot first.
-// Slot const ptrSlot = ptr.hasSlot() ? ptr.slot() : getTemp(ptr.value());
-
-// Cell const frameDepth { ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0 };
-// Cell const offsetLow  { ptrSlot + RuntimePointer::Offset, MacroCell::Value0 };
-// Cell const offsetHigh { ptrSlot + RuntimePointer::Offset, MacroCell::Value1 };
-
-// Cell const frameDepthPayload { 0 + RuntimePointer::FrameDepth, MacroCell::Payload0 };
-// Cell const offsetLowPayload  { 0 + RuntimePointer::Offset, MacroCell::Payload0 };
-// Cell const offsetHighPayload { 0 + RuntimePointer::Offset, MacroCell::Payload1 };
-    
-// // Copy both values (frameDepth and offset) to the payload-cells of cell 0 and 1
-// moveTo(frameDepth);
-// copyField(frameDepthPayload, Temps<1>::pack(0 + RuntimePointer::FrameDepth, MacroCell::Scratch0));
-
-// moveTo(offsetLow);
-// copyField(offsetLowPayload,  Temps<1>::pack(0 + RuntimePointer::Offset, MacroCell::Scratch0));
-
-// moveTo(offsetHigh);
-// copyField(offsetHighPayload, Temps<1>::pack(0 + RuntimePointer::Offset, MacroCell::Scratch0));
-
-// // Payload is now stored in cells 0 and 1 of the frame
-// // If the framedepth is nonzero, set the seek marker
-// Cell const frameDepthFlag { 0 + RuntimePointer::FrameDepth, MacroCell::Flag };
-// moveTo(frameDepthPayload);
-// copyField(frameDepthFlag);
-// moveTo(frameDepthFlag);
-// loopOpen(); {
-//   zeroCell();
-//   moveToOrigin();
-//   setSeekMarker();
-//   moveTo(0 + RuntimePointer::FrameDepth, MacroCell::Flag);
-// } loopClose();
-
-// // If frameDepth is nonzero, we need to keep moving to the 
-// // previous frame start until the depth-counter becomes 0.
-// moveTo(frameDepthPayload);
-// loopOpen(); {
-
-//   // TODO: need to drag multiple payload cells. However we're not even sure
-//   // that in the other frame, there are two payload cells available. Is this ok?
-//   // Frames might contain only one logical cell. Is it ok when the payload overlaps?
-//   // Probably...
-//   moveToPreviousFrame(/* ????? */);
-    
-//   // We're now at the start of the previous frame -> exit if depth == 0 after subtracting 1
-//   moveTo(frameDepthPayload);
-//   subConst(1);
-// } loopClose();
-
-// // We're at the target frame -> now move dynamically to the indicated offset
 

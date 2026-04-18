@@ -3,10 +3,11 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo",
-		   values::i8('A'),
-		   values::i8('B'),
-		   values::i8('C'));
+    auto args = c.constructFunctionArguments(values::i8('A'),
+					     values::i8('B'),
+					     values::i8('C'));
+
+    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -14,17 +15,18 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(),
-		"x", TypeSystem::i8(),
-		"y", TypeSystem::i8(),
-		"z", TypeSystem::i8()); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
+					   "x", TypeSystem::i8(),
+					   "y", TypeSystem::i8(),
+					   "z", TypeSystem::i8());
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
     c.writeOut("x");
     c.writeOut("y");
     c.writeOut("z");
 
-    c.callFunction("foo", "after_recurse", "x",
-		   "y", "z");
+    auto args = c.constructFunctionArguments("x", "y", "z");
+    c.callFunction("foo", "after_recurse", args);
   } c.endBlock();
 
   c.beginBlock("after_recurse"); {

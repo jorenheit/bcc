@@ -20,7 +20,8 @@ c.beginFunction("main"); {
     c.assign(c.arrayElement("p", 0), values::pointer(i8, "a"));
     c.assign(c.arrayElement("p", 1), values::pointer(i8, "b"));
 
-    c.callFunction("foo", "after", "p");
+    auto args = c.constructFunctionArguments("p");
+    c.callFunction("foo", "after", args);
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -30,7 +31,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::voidT(), "p", i8pa); {
+auto sig = c.constructFunctionSignature(TypeSystem::voidT(), "p", i8pa);
+c.beginFunction("foo", sig); {
   c.beginBlock("entry"); {
     auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
     auto p1Deref = c.dereferencePointer(c.arrayElement("p", 1));

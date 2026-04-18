@@ -9,7 +9,7 @@ c.beginFunction("main"); {
   c.declareLocal("x", array4);
       
   c.beginBlock("entry"); {
-    c.callFunctionReturn("foo", "after_foo", "x");
+    c.callFunction("foo", "after_foo", {}, "x");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -18,7 +18,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", array4); {
+auto fooSig = c.constructFunctionSignature(array4);
+c.beginFunction("foo", fooSig); {
   c.declareLocal("x", array4);
     
   c.beginBlock("entry"); {

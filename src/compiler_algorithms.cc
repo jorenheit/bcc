@@ -99,15 +99,44 @@ void Compiler::mulConst(int factor, Temps<3> tmp) {
   copyField(copy2, tmp.select<2>());
   
   for (int i = 0; i != factor - 1; ++i) {
+    moveTo(current);    
     addDestructive(copy1);
     moveTo(copy2);
     copyField(copy1, tmp.select<2>());
-    moveTo(current);
   }
   popPtr();
 }
 
-//void Compiler::mul16Const(int factor, Cell high, Temps<?> tmp);
+void Compiler::mul16Const(int factor, Cell high, Temps<7> tmp) {
+  if (factor == 1) return;
+
+  pushPtr();
+  Cell const currentLow  { _dp.current(), MacroCell::Value0};
+  Cell const currentHigh { _dp.current(), MacroCell::Value1};
+  Cell const copy1low  = tmp.get<0>();
+  Cell const copy1high = tmp.get<1>();
+  Cell const copy2low  = tmp.get<2>();
+  Cell const copy2high = tmp.get<3>();
+  
+  switchField(MacroCell::Value0);
+  copyField(copy1low,  tmp.select<4>());
+  copyField(copy1high, tmp.select<4>());
+
+  switchField(MacroCell::Value1);
+  copyField(copy2low,  tmp.select<4>());
+  copyField(copy2high, tmp.select<4>());
+
+  for (int i = 0; i != factor - 1; ++i) {
+    moveTo(currentLow);
+    add16Destructive(currentHigh, copy1low, copy1high, tmp.select<4, 5, 6>());
+    moveTo(copy2low);
+    copyField(copy1low, tmp.select<4>());
+    moveTo(copy2high);
+    copyField(copy1high, tmp.select<4>());      
+  }
+  
+  popPtr();
+}
 
 
 void Compiler::subConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
@@ -323,6 +352,12 @@ void Compiler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cel
 }
 
 
+
+// void Compiler::mulDestructive(Cell other);
+// void Compiler::mulConstructive(Cell result, Cell other, Temps<2> tmp);
+// void Compiler::mul16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
+// void Compiler::mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
+
 void Compiler::moveField(Cell dest) {
   auto [src, dst] = getFieldIndices(_dp.current(), dest);
   if (src == dst) return;
@@ -504,16 +539,16 @@ void Compiler::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
   // Copy offset (16-bit) into payload cells of the current cell  
   int const base = _dp.current().offset;
   moveTo(offsetLow);
-  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::pack(base, MacroCell::Scratch0));
+  copyField(Cell{base, MacroCell::Payload0}, Temps<1>::select(base, MacroCell::Scratch0));
   moveTo(offsetHigh);
-  copyField(Cell{base, MacroCell::Payload1}, Temps<1>::pack(base, MacroCell::Scratch0));
+  copyField(Cell{base, MacroCell::Payload1}, Temps<1>::select(base, MacroCell::Scratch0));
   
   // Starting at the current offset, move right while decrementing offset until
   // both bytes have become zero. Then move the value back to the seek-marker
   moveTo(base, MacroCell::Payload0);
   orConstructive(Cell{base, MacroCell::Flag},
 		 Cell{base, MacroCell::Payload1},
-		 Temps<2>::pack(base, MacroCell::Scratch0,
+		 Temps<2>::select(base, MacroCell::Scratch0,
 				base, MacroCell::Scratch1));
   moveTo(base, MacroCell::Flag);
   loopOpen(); {
@@ -522,7 +557,7 @@ void Compiler::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
     // Decrement the offset
     switchField(MacroCell::Payload0);
     dec16(Cell{base, MacroCell::Payload1},
-	  Temps<2>::pack(base, MacroCell::Scratch0,
+	  Temps<2>::select(base, MacroCell::Scratch0,
 			 base, MacroCell::Scratch1));
     
     // move payload forward by 1
@@ -537,7 +572,7 @@ void Compiler::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
     // Flag <- (payload == 0)
     orConstructive(Cell{base, MacroCell::Flag},
 		   Cell{base, MacroCell::Payload1},
-		   Temps<2>::pack(base, MacroCell::Scratch0,
+		   Temps<2>::select(base, MacroCell::Scratch0,
 				  base, MacroCell::Scratch1));
     switchField(MacroCell::Flag);
   } loopClose();
@@ -555,10 +590,10 @@ void Compiler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload c
   // Load values into payload
   for (int i = 0; i != payload.size(); ++i) {
     moveTo(base + i, MacroCell::Value0);
-    copyField(Cell{base + i, MacroCell::Payload0}, Temps<1>::pack(base + i, MacroCell::Scratch0));
+    copyField(Cell{base + i, MacroCell::Payload0}, Temps<1>::select(base + i, MacroCell::Scratch0));
     if (payload.width(i) == Payload::Width::Double) {
       moveTo(base + i, MacroCell::Value1);
-      copyField(Cell{base + i, MacroCell::Payload1}, Temps<1>::pack(base + i, MacroCell::Scratch0));
+      copyField(Cell{base + i, MacroCell::Payload1}, Temps<1>::select(base + i, MacroCell::Scratch0));
     }
   }
   

@@ -8,9 +8,8 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("x", values::i16(CAT('C', 'D')));
-    c.callFunctionReturn("foo", "after_foo", "y",
-			 values::i16(CAT('A', 'B')),
-			 "x");
+    auto args = c.constructFunctionArguments("x", values::i16(CAT('A', 'B')));
+    c.callFunction("foo", "after_foo", args, "y");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -19,9 +18,12 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo", TypeSystem::i16(), "arg1", TypeSystem::i16(), "arg2", TypeSystem::i16()); {
+auto fooSig = c.constructFunctionSignature(TypeSystem::i16(),
+					   "arg1", TypeSystem::i16(),
+					   "arg2", TypeSystem::i16());
+c.beginFunction("foo", fooSig); {
   c.beginBlock("entry"); {
-    c.returnFromFunction("arg1");
+    c.returnFromFunction("arg2");
   } c.endBlock();
 } c.endFunction();
 
