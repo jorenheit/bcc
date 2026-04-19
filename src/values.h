@@ -264,7 +264,6 @@ namespace values {
     return std::make_shared<impl::structT>(structType, std::forward<Values>(values)...);
   }
 
-  
   template <typename ... Elements>
   inline Literal array(types::TypeHandle elementType, Elements&& ... elems) {
     return std::make_shared<impl::array>(elementType, std::forward<Elements>(elems)...);

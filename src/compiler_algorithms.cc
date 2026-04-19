@@ -134,10 +134,10 @@ void Compiler::mul16Const(int factor, Cell high, Temps<8> tmp) {
   
   switchField(MacroCell::Value0);
   copyField(copy1low,  tmp.select<4>());
-  copyField(copy1high, tmp.select<4>());
+  copyField(copy2low,  tmp.select<4>());
 
   switchField(MacroCell::Value1);
-  copyField(copy2low,  tmp.select<4>());
+  copyField(copy1high, tmp.select<4>());
   copyField(copy2high, tmp.select<4>());
 
   for (int i = 0; i != factor - 1; ++i) {

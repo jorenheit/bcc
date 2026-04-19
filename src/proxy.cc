@@ -83,6 +83,7 @@ namespace proxy {
 
   Slot Impl::ArrayElement::addressOf(Compiler &c) const {
     Slot ptr = _arr->addressOf(c);
+    ptr.type = TypeSystem::pointer(this->type());
     if (std::holds_alternative<int>(_index)) {
       c.addAssign(ptr, values::i16(std::get<int>(_index)));
     } else {
@@ -138,7 +139,8 @@ namespace proxy {
   }
 
   Slot Impl::StructField::addressOf(Compiler &c) const {
-    Slot const ptr = _obj->addressOf(c);
+    Slot ptr = _obj->addressOf(c);
+    ptr.type = TypeSystem::pointer(this->type());
     c.addAssign(ptr, values::i16(_fieldOffset));
     return ptr;
   }

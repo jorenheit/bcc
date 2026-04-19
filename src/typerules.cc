@@ -14,6 +14,23 @@ namespace {
     return types::isInteger(a) && types::isInteger(b);
   }
 
+  bool pointerCanDecayInto(TypeHandle target, TypeHandle t) {
+    assert(types::isPointer(t) && types::isPointer(target));
+
+    if (t == target) return true;
+    TypeHandle pointeeType = types::cast<types::PointerType>(t)->pointeeType();
+
+    if (types::isArrayLike(pointeeType)) {
+      auto arrayType = types::cast<types::ArrayLike>(pointeeType);
+      return pointerCanDecayInto(TypeSystem::pointer(arrayType->elementType()), target);
+    }
+    if (types::isStruct(pointeeType)) {
+      auto structType = types::cast<types::StructType>(pointeeType);
+      return pointerCanDecayInto(TypeSystem::pointer(structType->fieldType(0)), target);
+    }
+    return false;
+  }
+  
   TypeHandle promotedInteger(TypeHandle a, TypeHandle b) {
     if (!bothIntegers(a, b)) return types::null;
     if (a->tag() == types::I16 || b->tag() == types::I16) {
@@ -97,10 +114,10 @@ OpResult types::rules::assignResult(TypeHandle dest, TypeHandle src) {
 		"': structs are only assignable when their types match exactly.");
   }
   case POINTER: {
-    if (sameType(dest, src) || isInteger(src)) return ok(dest);
+    if (pointerCanDecayInto(dest, src) || isI16(src)) return ok(dest);
     return fail("cannot assign value of type '" + src->str() +
 		"' to destination of type '" + dest->str() +
-		"': expected an integer or matching pointer type.");
+		"': expected an i16 or compatible pointer type.");
   }
 
   default: std::unreachable();

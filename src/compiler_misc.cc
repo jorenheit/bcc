@@ -72,15 +72,8 @@ void Compiler::functionCallTypeChecks() {
     API_REQUIRE(params.size() == args.size(),
 		"invalid number of arguments in function-call to '", callee, "': "
 		"expected ", params.size(), ", got ", args.size(), ".");
-
-    // error::throw_if(params.size() != args.size(),
-    // 		    "invalid number of arguments in call to '", callee, "' (in funcion '", caller, "'): ",
-    // 		    "expected ", params.size(), ", got ", args.size(), ".");
     for (size_t i = 0; i != args.size(); ++i) {
       API_REQUIRE_ASSIGNABLE(params[i].type, args[i]);
-      // error_if(not params[i].type->isConstructibleFrom(args[i]),
-      // 	       "type mismatch in argument ", (i+1), " of call to '", callee, "' (in function '", caller, "'): ",
-      // 	       "expected '", params[i].type->str(), "', got '", args[i]->str(), "'.");
     }
   }
 

@@ -449,17 +449,8 @@ SlotProxy Compiler::addressOfImpl(values::LValue const &obj, API_CTX) {
 Slot Compiler::addressOfSlot(Slot const &slot) {
   assert(slot.kind != Slot::Temp && "taking address of temp");
 
-  // Decay the pointer-type if necessary (ptr<array<i8, N>> --> ptr<i8>)
-  auto decay = [](auto &&self, types::TypeHandle t) -> types::TypeHandle {
-    if (types::isArrayLike(t)) {
-      auto arrayType = types::cast<types::ArrayLike>(t);
-      return self(self, arrayType->elementType());
-    }
-    return t;
-  };
-  
-  auto pointeeType = decay(decay, slot.type);
-  auto pointerType = TypeSystem::pointer(pointeeType);
+  types::TypeHandle const pointeeType = slot.type;
+  types::TypeHandle const pointerType = TypeSystem::pointer(pointeeType);
 
   int offset = slot.offset;
   bool localPointer = true;
@@ -681,6 +672,7 @@ void Compiler::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs, MacroCell::Value0);
   if (lhs.type->usesValue1()) {
+    std::cerr << lhs.type->str() << ", " << rhs.type->str() << '\n';
     add16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{rhsCopy, MacroCell::Value0},
 		     Cell{rhsCopy, MacroCell::Value1},
@@ -776,6 +768,76 @@ void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rh
 
   pushPtr();
   
+  auto const [lhsBase, targetSlot, stride] = [&]() -> std::tuple<Slot, Slot, int> {
+    Slot const lhsBase = lhs.slot()->materialize(*this);
+    if (not types::isPointer(lhs.type())) {
+      return {lhsBase, lhsBase, 1};
+    }
+    auto ptrType = types::cast<types::PointerType>(lhs.type());      
+    return {
+      lhsBase,
+      lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset),
+      ptrType->pointeeType()->size()
+    };
+  }();
+
+  if (rhs.hasSlot()) {
+
+    auto [operandSlot, freeOperand] = [&]() -> std::pair<Slot, bool> {
+      Slot const rhsSlot = rhs.slot()->materialize(*this);
+      if (stride == 1) return {rhsSlot, false};
+
+      // Need to scale the operand
+      Slot const opSlot = [&]() {
+	if (not rhs.slot()->direct()) return rhsSlot;
+	Slot const copy = getTemp(rhs.type());
+	assignSlot(copy, rhsSlot);
+	return copy;
+      }();
+            
+      mulSlotByConst(opSlot, stride);
+      return {opSlot, true};
+    }();
+    
+    addSlotToSlot(targetSlot, operandSlot);
+    if (freeOperand) {
+      // TODO: change freeSlot somehow to not accept references, or make getTemp return a ref
+    }
+  }
+  else {
+    int const delta = values::cast<types::IntegerType>(rhs.value())->value();
+    addConstToSlot(targetSlot, stride * delta);
+  }
+
+  if (not lhs.slot()->direct()) {
+    lhs.slot()->write(*this, lhsBase);
+  }
+  
+  popPtr();  
+}
+
+SlotProxy Compiler::addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
+
+  auto addResult = types::rules::binOpResult(BinOp::Add, lhs.type(), rhs.type());
+  assert(addResult);
+  
+  Slot const result = getTemp(addResult.type);
+  assign(result, lhs);
+  addAssign(result, rhs);
+  return result;
+}
+
+// TODO: refactor common parts with addAssign
+void Compiler::subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Sub, lhs.type(), rhs.type());
+
+  pushPtr();
+  
   auto const [lhsBase, targetSlot, factor] = [&]() -> std::tuple<Slot, Slot, int> {
     Slot const lhsBase = lhs.slot()->materialize(*this);
     if (not types::isPointer(lhs.type())) {
@@ -789,14 +851,6 @@ void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rh
     };
   }();
 
-  // pushPtr();
-  // moveTo(lhsBase, MacroCell::Value0);
-  // emit<primitive::Out>();
-  // moveTo(targetSlot, MacroCell::Value0);
-  // emit<primitive::Out>();  
-  // popPtr();
-
-  
   if (rhs.hasSlot()) {
 
     auto [operandSlot, freeOperand] = [&]() -> std::pair<Slot, bool> {
@@ -816,70 +870,18 @@ void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rh
     }();
 
     
-    addSlotToSlot(targetSlot, operandSlot);
+    subSlotFromSlot(targetSlot, operandSlot);
     if (freeOperand) {
       // TODO: change freeSlot somehow to not accept references, or make getTemp return a ref
     }
   }
   else {
     int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-    addConstToSlot(targetSlot, factor * delta);
+    subConstFromSlot(targetSlot, factor * delta);
   }
-
-  // pushPtr();
-  // moveTo(lhsBase, MacroCell::Value0);
-  // emit<primitive::Out>();
-  // moveTo(targetSlot, MacroCell::Value0);
-  // emit<primitive::Out>();  
-  // popPtr();
 
   if (not lhs.slot()->direct()) {
     lhs.slot()->write(*this, lhsBase);
-  }
-
-
-  // Slot const refreshed = lhs.slot()->materialize(*this);
-  // pushPtr();
-  // moveTo(refreshed, MacroCell::Value0);
-  // emit<primitive::Out>();
-  // moveTo(refreshed.sub(TypeSystem::i16(), RuntimePointer::Offset), MacroCell::Value0);
-  // emit<primitive::Out>();  
-  // popPtr();
-  
-  popPtr();  
-}
-
-SlotProxy Compiler::addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
-
-  auto addResult = types::rules::binOpResult(BinOp::Add, lhs.type(), rhs.type());
-  assert(addResult);
-  
-  Slot const result = getTemp(addResult.type);
-  assign(result, lhs);
-  addAssign(result, rhs);
-  return result;
-}
-
-void Compiler::subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Sub, lhs.type(), rhs.type());
-
-  pushPtr();
-  Slot const lhsSlot = lhs.slot()->materialize(*this);
-  if (rhs.hasSlot()) {
-    subSlotFromSlot(lhsSlot, rhs.slot()->materialize(*this));
-  }
-  else {
-    int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-    subConstFromSlot(lhsSlot, delta);
-  }
-
-  if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsSlot);
   }
   
   popPtr();  

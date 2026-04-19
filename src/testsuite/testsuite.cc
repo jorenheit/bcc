@@ -867,7 +867,95 @@ tests.push_back(expectOutput("Integer Subtraction: 16 bit borrow",
                              "ACBCCC", []() {
 #include "tests/integer_addition_i16_spurious_carry_full.cc"
                              }));
- 
+tests.push_back(expectOutput("Address Of Struct Field",
+                             "BAX", []() {
+#include "tests/address_of_struct_field.cc"
+                             }));
+
+tests.push_back(expectOutput("Address Of Struct Field In Array",
+                             "baXc", []() {
+#include "tests/address_of_array_struct_field.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer To Pointer: Local",
+                             "AZZ", []() {
+#include "tests/pointer_to_pointer_local.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: i8 Array",
+                             "ACBB", []() {
+#include "tests/pointer_arithmetic_i8_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: i16 Array",
+                             "AaCcBb", []() {
+#include "tests/pointer_arithmetic_i16_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: i16 Array Variable Offset",
+                             "AaCcBb", []() {
+#include "tests/pointer_arithmetic_i16_array_variable.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: Struct Array",
+                             "ACB", []() {
+#include "tests/pointer_arithmetic_struct_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: Nested Array",
+                             "ACB", []() {
+#include "tests/pointer_arithmetic_nested_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Write After Arithmetic: i8 Array",
+                             "ABXD", []() {
+#include "tests/pointer_write_after_arithmetic_i8_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Write After Arithmetic: i16 Array",
+                             "AaXxCc", []() {
+#include "tests/pointer_write_after_arithmetic_i16_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Write After Arithmetic: Struct Array",
+                             "AXC", []() {
+#include "tests/pointer_write_after_arithmetic_struct_array.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Aliasing: Same Target",
+                             "XX", []() {
+#include "tests/pointer_aliasing_same_target.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Copy Independence After Arithmetic",
+                             "AB", []() {
+#include "tests/pointer_copy_independence_after_arithmetic.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: Zero And Roundtrip i8",
+                             "AAA", []() {
+#include "tests/pointer_arithmetic_zero_roundtrip_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: Zero And Roundtrip i16",
+                             "AaAaAa", []() {
+#include "tests/pointer_arithmetic_zero_roundtrip_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: Struct Array Variable Offset",
+                             "ACB", []() {
+#include "tests/pointer_arithmetic_struct_array_variable.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer Arithmetic: Nested Array Variable Offset",
+                             "ACB", []() {
+#include "tests/pointer_arithmetic_nested_array_variable.cc"
+                             }));
+
+tests.push_back(expectOutput("Pointer To Pointer Arithmetic: Array Of Pointers",
+                             "ACB", []() {
+#include "tests/pointer_to_pointer_array_arithmetic.cc"
+                             })); 
  return tests;
 }
 
