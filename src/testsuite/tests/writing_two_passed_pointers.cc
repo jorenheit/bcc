@@ -16,8 +16,8 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     c.assign("a", values::i8('A'));
     c.assign("b", values::i8('B'));
-    c.assign("pa", values::pointer(i8, "a"));
-    c.assign("pb", values::pointer(i8, "b"));
+    c.assign("pa", c.addressOf("a"));
+    c.assign("pb", c.addressOf("b"));
 
     auto args = c.constructFunctionArguments("pa", "pb");
     c.callFunction("foo", "after", args);

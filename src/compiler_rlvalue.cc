@@ -15,8 +15,8 @@ values::RValue Compiler::rValue(SlotProxy const &slot, API_CTX) const {
   return values::RValue{slot};
 }
 
-values::RValue Compiler::rValue(values::Anonymous const &val, API_CTX) const {
-  return (val->isRef() ? rValue(val->varName(), API_FWD) : values::RValue{val});
+values::RValue Compiler::rValue(values::Literal const &val, API_CTX) const {
+  return values::RValue{val};
 }
 
 values::LValue Compiler::lValue(values::LValue const &val, API_CTX) const {

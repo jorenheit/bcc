@@ -88,6 +88,11 @@ void Compiler::subConst(int delta) {
 void Compiler::mulConst(int factor, Temps<3> tmp) {
   // TODO: optimize for powers of 2
   // TODO: big factors should have runtime implementation
+
+  if (factor == 0) {
+    zeroCell();
+    return;
+  }
   if (factor == 1) return;
 
   pushPtr();
@@ -108,6 +113,15 @@ void Compiler::mulConst(int factor, Temps<3> tmp) {
 }
 
 void Compiler::mul16Const(int factor, Cell high, Temps<8> tmp) {
+  if (factor == 0) {
+    pushPtr();
+    zeroCell();
+    moveTo(high);
+    zeroCell();
+    popPtr();
+    return;
+  }
+
   if (factor == 1) return;
 
   pushPtr();
@@ -176,7 +190,10 @@ void Compiler::dec16(Cell high, Temps<2> tmp) {
 
 void Compiler::add16Const(int delta, Cell high, Temps<4> tmp) {
   if (delta == 0) return;
-  if (delta < 0) sub16Const(-delta, high, tmp);
+  if (delta < 0) {
+    sub16Const(-delta, high, tmp);
+    return;
+  }
   
   int const lowDelta  = delta & 0xff;
   int const highDelta = (delta >> 8) & 0xff;
@@ -193,7 +210,10 @@ void Compiler::add16Const(int delta, Cell high, Temps<4> tmp) {
 
 void Compiler::sub16Const(int delta, Cell high, Temps<4> tmp) {
   if (delta == 0) return;
-  if (delta < 0) add16Const(-delta, high, tmp);
+  if (delta < 0) {
+    add16Const(-delta, high, tmp);
+    return;
+  }
   
   int const lowDelta  = delta & 0xff;
   int const highDelta = (delta >> 8) & 0xff;

@@ -16,7 +16,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("x", values::i8('A'));
-    c.assign(c.structField("s", "p"), values::pointer(i8, "x"));
+    c.assign(c.structField("s", "p"), c.addressOf("x"));
 
     auto args = c.constructFunctionArguments("s");
     c.callFunction("foo", "after", args);

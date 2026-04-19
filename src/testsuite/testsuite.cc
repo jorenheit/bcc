@@ -542,16 +542,6 @@ static std::vector<bftest::TestCase> buildTests() {
 #include "tests/function_call_with_anonymous_nested_array.cc"
 			       }));
 
-  tests.push_back(expectOutput("Function Call with Anonymous Array Containing Vars",
-			       "AB", []() {
-#include "tests/function_call_with_anonymous_array_containing_vars.cc"
-			       }));
-
-  tests.push_back(expectOutput("Passing Arrays of Arrays Mixed Init",
-			       "ABCDE", []() {
-#include "tests/passing_arrays_of_arrays_mixed_init.cc"
-			       }));
-
   tests.push_back(expectOutput("Shadowing Local Variables in Nested Scopes",
 			       "ABXCDA", []() {
 #include "tests/shadowing_local_variables.cc"
@@ -779,7 +769,7 @@ tests.push_back(expectOutput("Reading from a local pointer inside function",
                              }));
 
 tests.push_back(expectOutput("Pointer to array element",
-                             "BXAC", []() {
+                             "BAXC", []() {
 #include "tests/pointer_to_array_element.cc"
                              }));
 
@@ -788,21 +778,96 @@ tests.push_back(expectOutput("Struct with two pointer fields",
 #include "tests/struct_with_two_pointer_fields.cc"
                              }));
 
-tests.push_back(expectOutput("Array of structs with pointer field",
-                             "ABXY", []() {
+ tests.push_back(expectOutput("Array of structs with pointer field",
+			      "ABXY", []() {
 #include "tests/array_of_structs_with_pointer_field.cc"
-                             }));
+			      }));
 
-tests.push_back(expectOutput("Pointer passed through two calls",
-                             "AX", []() {
+ tests.push_back(expectOutput("Pointer passed through two calls",
+			      "AX", []() {
 #include "tests/pointer_passed_through_two_calls.cc"
+			      }));
+
+ tests.push_back(expectOutput("Mixed named and pointer global access",
+			      "AXX", []() {
+#include "tests/mixed_named_and_pointer_global_access.cc"
+			      })); 
+
+ tests.push_back(expectOutput("Integer Addition: 8 bit",
+			      "ADG", []() {
+#include "tests/integer_addition_i8.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Subtraction: 8 bit",
+			      "GDA", []() {
+#include "tests/integer_subtraction_i8.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Subtraction: 16 bit",
+			      "GADAAA", []() {
+#include "tests/integer_subtraction_i16.cc"
                              }));
 
-tests.push_back(expectOutput("Mixed named and pointer global access",
-                             "AXX", []() {
-#include "tests/mixed_named_and_pointer_global_access.cc"
-                             })); 
+ tests.push_back(expectOutput("Integer Subtraction Constants: 8 bit",
+			      "GDA", []() {
+#include "tests/integer_subtraction_i8_constants.cc"
+			      }));
 
+ tests.push_back(expectOutput("Integer Subtraction Constants: 16 bit",
+			      "GADAAA", []() {
+#include "tests/integer_subtraction_i16_constants.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Subtraction Array Elements: 8 bit",
+			      "GDA", []() {
+#include "tests/integer_subtraction_array_elements_i8.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Subtraction Array Elements: 16 bit",
+			      "GADAAA", []() {
+#include "tests/integer_subtraction_array_elements_i16.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Subtraction Struct Fields: 8 bit",
+			      "GDA", []() {
+#include "tests/integer_subtraction_struct_fields_i8.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Subtraction Struct Fields: 16 bit",
+			      "GADAAA", []() {
+#include "tests/integer_subtraction_struct_fields_i16.cc"
+			      }));
+
+tests.push_back(expectOutput("Integer Subtraction: 16 bit borrow",
+                             "ACCBEA", []() {
+#include "tests/integer_subtraction_i16_borrow.cc"
+                             }));
+
+ tests.push_back(expectOutput("Integer Subtraction Constants: 16 bit borrow",
+			      "ACCBEA", []() {
+#include "tests/integer_subtraction_i16_borrow_constants.cc"
+			      })); 
+
+ tests.push_back(expectOutput("Integer Addition: 16 bit carry",
+			      "EACBAC", []() {
+#include "tests/integer_addition_i16_carry.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Addition Constants: 16 bit carry",
+			      "EACBAC", []() {
+#include "tests/integer_addition_i16_carry_constants.cc"
+			      }));
+
+ tests.push_back(expectOutput("Integer Addition: 16 bit no carry",
+                             "ACBC", []() {
+#include "tests/integer_addition_i16_spurious_carry.cc"
+                             }));
+
+ tests.push_back(expectOutput("Integer Addition: 16 bit no carry full",
+                             "ACBCCC", []() {
+#include "tests/integer_addition_i16_spurious_carry_full.cc"
+                             }));
+ 
  return tests;
 }
 

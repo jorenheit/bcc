@@ -373,14 +373,14 @@ namespace Algorithm {
 	<<   movePtr(current, other)
 	<<   setToValue(1)
 	<<   movePtr(tmp1, current)
-	<<   zero()
+	<<   setToValue(0)
 	<<   movePtr(other, tmp1)
 	<< "]"
 	<< movePtr(tmp1, other)
 	<< "["
 	<<   zero()
 	<<   movePtr(current, tmp1)
-	<<   setToValue(1)
+	<<   setToValue(0)
 	<<   movePtr(tmp1, current)
 	<< "]"
 	<< movePtr(current, tmp1);

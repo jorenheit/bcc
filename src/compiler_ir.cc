@@ -304,6 +304,16 @@ Slot Compiler::local(std::string const& varName, bool globalReference) const {
   return Slot::invalid();
 }
 
+types::TypeHandle Compiler::defineStruct(std::string const& name, StructFields const &fields, API_FUNC) {
+  API_FUNC_BEGIN("defineStruct");
+  API_REQUIRE_INSIDE_PROGRAM_BLOCK();
+  API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+    
+  types::TypeHandle sType = TypeSystem::defineStruct(name, std::move(fields));
+  API_REQUIRE(sType != nullptr, "conficting struct declaration: '", name, "' previously defined.");
+  return sType;
+}
+
 SlotProxy Compiler::structFieldImpl(values::LValue const &obj, int fieldIndex, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -403,7 +413,6 @@ void Compiler::abortProgram(API_FUNC) {
   API_EXPECT_NEXT("endBlock");
 }
 
-
 void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -429,46 +438,59 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, 
   API_EXPECT_NEXT("endBlock");
 }
 
-// SlotProxy Compiler::addressOfImpl(LValue const &obj, API_CTX) {
-//   assert(false && "Compiler::addressOf not implemented yet");
-// }
+SlotProxy Compiler::addressOfImpl(values::LValue const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+
+  return obj.slot()->addressOf(*this);
+}
 
 
-SlotProxy Compiler::addressOfSlot(Slot const &slot) {
-  assert(false && "Compiler::addressOf not implemented yet");
-  // auto pointeeType = slot.type;
-  // auto pointerType = TypeSystem::pointer(pointeeType);
+Slot Compiler::addressOfSlot(Slot const &slot) {
+  assert(slot.kind != Slot::Temp && "taking address of temp");
 
-  // int offset = slot.offset;
-  // bool localPointer = true;
-  // if (slot.kind == Slot::Kind::GlobalReference) {
-  //   std::string const globalName = slot.name.substr(std::string("__g_").size());
-  //   assert(_program.isGlobal(globalName));
-  //   Slot const globalSlot = _program.globalSlot(globalName);
-  //   assert(globalSlot.type == pointeeType);
-  //   offset = globalSlot.offset;
-  //   localPointer = false;
-  //   _aliasedGlobals.insert(globalName);
-  // }
+  // Decay the pointer-type if necessary (ptr<array<i8, N>> --> ptr<i8>)
+  auto decay = [](auto &&self, types::TypeHandle t) -> types::TypeHandle {
+    if (types::isArrayLike(t)) {
+      auto arrayType = types::cast<types::ArrayLike>(t);
+      return self(self, arrayType->elementType());
+    }
+    return t;
+  };
+  
+  auto pointeeType = decay(decay, slot.type);
+  auto pointerType = TypeSystem::pointer(pointeeType);
 
-  // // Set frame-depth to 0 for a local pointer, FrameID for a global pointer
-  // Slot const ptrSlot = getTemp(pointerType);
-  // if (localPointer) {
-  //   moveTo(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0);
-  //   zeroCell();
-  // } else {
-  //   moveTo(0, MacroCell::FrameMarker);
-  //   copyField(Cell{ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0},
-  // 	      Temps<1>::select(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
-  // }
+  int offset = slot.offset;
+  bool localPointer = true;
+  if (slot.kind == Slot::Kind::GlobalReference) {
+    std::string const globalName = slot.name.substr(std::string("__g_").size());
+    assert(_program.isGlobal(globalName));
+    Slot const globalSlot = _program.globalSlot(globalName);
+    assert(globalSlot.type == pointeeType);
+    offset = globalSlot.offset;
+    localPointer = false;
+    _aliasedGlobals.insert(globalName);
+  }
 
-  // // Construct offset in second cell
-  // moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value0);
-  // setToValue(offset & 0xff);
-  // moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value1);
-  // setToValue((offset >> 8) & 0xff);
+  // Set frame-depth to 0 for a local pointer, FrameID for a global pointer
+  Slot const ptrSlot = getTemp(pointerType);
+  if (localPointer) {
+    moveTo(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0);
+    zeroCell();
+  } else {
+    moveTo(0, MacroCell::FrameMarker);
+    copyField(Cell{ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0},
+	      Temps<1>::select(ptrSlot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
+  }
 
-  // return ptrSlot;
+  // Construct offset in second cell
+  moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value0);
+  setToValue(offset & 0xff);
+  moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value1);
+  setToValue((offset >> 8) & 0xff);
+
+  return ptrSlot;
 }
 
 void Compiler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
@@ -592,10 +614,8 @@ void Compiler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slo
 }
 
 void Compiler::assignSlot(Slot const &dest, Slot const &src) {
-  assert(dest.size() == src.size());
+  assert(dest.size() >= src.size());
 
-  // TODO: if src is a tmp we can claim ownership of the tmp and make the original slot available for allocation
-  
   pushPtr();
   // Copy src into slot
   for (int i = 0; i != dest.size(); ++i) {
@@ -614,9 +634,7 @@ void Compiler::assignSlot(Slot const &dest, Slot const &src) {
   popPtr();
 }
 
-void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
-  assert(slot.type->isConstructibleFrom(val->type()));
-
+void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
   pushPtr();
   if (types::isInteger(slot.type)) {
     int const x = values::cast<types::IntegerType>(val)->value();
@@ -638,59 +656,6 @@ void Compiler::assignSlot(Slot const &slot, values::Anonymous const &val) {
     for (int i = 0; i != types::cast<types::StructType>(val->type())->fieldCount(); ++i) {
       structField(slot, i)->write(*this, values::cast<types::StructType>(val)->field(i));
     }
-  }
-  else if (types::isPointer(slot.type)) {
-    // first macrocell contains the frameDepth, second the offset
-    // The framedepth is initialized to 0 for new pointers.
-
-    bool localPointer = true;
-    int offset;	  
-    if (types::isPointer(val->type())) {
-      // If the pointer is initialized with pointer-value,
-      // set its offset to the slot-offset of the variable pointed to.
-      auto pointerType = types::cast<types::PointerType>(val->type());
-      auto pointeeType = pointerType->pointeeType();
-      auto pointerVal = values::cast<types::PointerType>(val);
-      
-      Slot const localSlot = local(pointerVal->pointee()->varName());
-      if (localSlot.name.starts_with("__g_")) {
-	std::string const globalName = localSlot.name.substr(std::string("__g_").size());
-	assert(_program.isGlobal(globalName));
-	Slot const globalSlot = _program.globalSlot(globalName);
-	assert(globalSlot.type == pointeeType);
-	
-	offset = globalSlot.offset + pointeeType->size() * pointerVal->offset();
-	localPointer = false;
-	_aliasedGlobals.insert(globalName);
-      }
-      else {
-	offset = localSlot.offset + pointeeType->size() * pointerVal->offset();
-      }
-    }
-    else {
-      // If the pointer is initialized with an integer,
-      // we can call value() on it to obtain the int value. This will be
-      // interpreted as an address.
-      assert(types::isInteger(val->type()));
-      offset = values::cast<types::IntegerType>(val)->value();
-    }
-
-    // Set frame-depth to 0 for a local pointer, FrameID for a global pointer
-    if (localPointer) {
-      moveTo(slot + RuntimePointer::FrameDepth, MacroCell::Value0);
-      zeroCell();
-    } else {
-      moveTo(0, MacroCell::FrameMarker);
-      copyField(Cell{slot + RuntimePointer::FrameDepth, MacroCell::Value0},
-		Temps<1>::select(slot + RuntimePointer::FrameDepth, MacroCell::Scratch0));
-
-    }
-
-    // Construct offset in second cell
-    moveTo(slot + RuntimePointer::Offset, MacroCell::Value0);
-    setToValue(offset & 0xff);
-    moveTo(slot + RuntimePointer::Offset, MacroCell::Value1);
-    setToValue((offset >> 8) & 0xff);
   }
   else {
     assert(false && "not implemented");
@@ -777,6 +742,32 @@ void Compiler::subConstFromSlot(Slot const &lhs, int delta) {
   popPtr();
 }
 
+void Compiler::mulSlotByConst(Slot const &lhs, int factor) {
+  
+  pushPtr();
+  moveTo(lhs, MacroCell::Value0);    
+  if (lhs.type->usesValue1()) {
+    Slot const tmp = getTemp(TypeSystem::raw(1));
+    mul16Const(factor, Cell{lhs, MacroCell::Value1},
+	       Temps<8>::select(lhs, MacroCell::Scratch0,
+				lhs, MacroCell::Scratch1,
+				lhs, MacroCell::Payload0,
+				lhs, MacroCell::Payload1,
+				tmp, MacroCell::Scratch0,
+				tmp, MacroCell::Scratch1,
+				tmp, MacroCell::Payload0,
+				tmp, MacroCell::Payload1));
+    // TODO: free tmp
+  } else {
+    mulConst(factor,
+	     Temps<3>::select(lhs, MacroCell::Scratch0,
+			      lhs, MacroCell::Scratch1,
+			      lhs, MacroCell::Payload0));
+  }
+  
+  popPtr();
+}
+
 
 void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
@@ -784,18 +775,76 @@ void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rh
   API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
 
   pushPtr();
-  Slot const lhsSlot = lhs.slot()->materialize(*this);
+  
+  auto const [lhsBase, targetSlot, factor] = [&]() -> std::tuple<Slot, Slot, int> {
+    Slot const lhsBase = lhs.slot()->materialize(*this);
+    if (not types::isPointer(lhs.type())) {
+      return {lhsBase, lhsBase, 1};
+    }
+    auto ptrType = types::cast<types::PointerType>(lhs.type());      
+    return {
+      lhsBase,
+      lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset),
+      ptrType->pointeeType()->size()
+    };
+  }();
+
+  // pushPtr();
+  // moveTo(lhsBase, MacroCell::Value0);
+  // emit<primitive::Out>();
+  // moveTo(targetSlot, MacroCell::Value0);
+  // emit<primitive::Out>();  
+  // popPtr();
+
+  
   if (rhs.hasSlot()) {
-    addSlotToSlot(lhsSlot, rhs.slot()->materialize(*this));
+
+    auto [operandSlot, freeOperand] = [&]() -> std::pair<Slot, bool> {
+      Slot const rhsSlot = rhs.slot()->materialize(*this);
+      if (factor == 1) return {rhsSlot, false};
+
+      // Need to scale the operand
+      Slot const opSlot = [&]() {
+	if (not rhs.slot()->direct()) return rhsSlot;
+	Slot const copy = getTemp(rhs.type());
+	assignSlot(copy, rhsSlot);
+	return copy;
+      }();
+      
+      mulSlotByConst(opSlot, factor);
+      return {opSlot, true};
+    }();
+
+    
+    addSlotToSlot(targetSlot, operandSlot);
+    if (freeOperand) {
+      // TODO: change freeSlot somehow to not accept references, or make getTemp return a ref
+    }
   }
   else {
     int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-    addConstToSlot(lhsSlot, delta);
+    addConstToSlot(targetSlot, factor * delta);
   }
 
+  // pushPtr();
+  // moveTo(lhsBase, MacroCell::Value0);
+  // emit<primitive::Out>();
+  // moveTo(targetSlot, MacroCell::Value0);
+  // emit<primitive::Out>();  
+  // popPtr();
+
   if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsSlot);
+    lhs.slot()->write(*this, lhsBase);
   }
+
+
+  // Slot const refreshed = lhs.slot()->materialize(*this);
+  // pushPtr();
+  // moveTo(refreshed, MacroCell::Value0);
+  // emit<primitive::Out>();
+  // moveTo(refreshed.sub(TypeSystem::i16(), RuntimePointer::Offset), MacroCell::Value0);
+  // emit<primitive::Out>();  
+  // popPtr();
   
   popPtr();  
 }

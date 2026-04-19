@@ -15,7 +15,7 @@ c.beginFunction("main"); {
   c.declareLocal("x", i8);
    
   c.beginBlock("entry"); {
-    c.assign("pg", values::pointer(i8, "g"));
+    c.assign("pg", c.addressOf("g")); 
     c.assign("g", values::i8('G'));
     c.assign("x", values::i8('X'));
     auto args = c.constructFunctionArguments("pg");

@@ -8,8 +8,8 @@ auto array22 = TypeSystem::array(array2, 2);
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    auto ab = values::array(TypeSystem::i8(), 'A', 'B');
-    auto cd = values::array(TypeSystem::i8(), 'C', 'D');
+    auto ab = values::array(TypeSystem::i8(), values::i8('A'), values::i8('B'));
+    auto cd = values::array(TypeSystem::i8(), values::i8('C'), values::i8('D'));
     auto args = c.constructFunctionArguments(values::array(array2, ab, cd));
     c.callFunction("foo", "after_foo", args);
   } c.endBlock();

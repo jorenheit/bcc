@@ -6,17 +6,17 @@ namespace values {
 
   class RValue {
     // Need to extend the variant to be able to hold an AccessProxy
-    std::variant<SlotProxy, values::Anonymous> val;
+    std::variant<SlotProxy, values::Literal> val;
 
   public:
     explicit RValue(Slot const &s): val(s) {}
     explicit RValue(SlotProxy const &s): val(s) {}
-    explicit RValue(values::Anonymous const &v): val(v) { assert(not v->isRef()); }
+    explicit RValue(values::Literal const &v): val(v) { assert(not v->isRef()); }
     RValue(RValue const &) = default;
 
     bool hasSlot() const { return std::holds_alternative<SlotProxy>(val); }
     SlotProxy const &slot() const { assert(hasSlot()); return std::get<SlotProxy>(val); }
-    values::Anonymous value() const { assert(not hasSlot()); return std::get<values::Anonymous>(val); }
+    values::Literal value() const { assert(not hasSlot()); return std::get<values::Literal>(val); }
     types::TypeHandle type() const { return hasSlot() ? slot()->type() : value()->type(); }
     std::string str() const { return hasSlot() ? slot()->name() : value()->str(); }
   };

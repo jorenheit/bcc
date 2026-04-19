@@ -8,33 +8,25 @@
 // 4. writing return value to field
 // 5. passing entire structs to functions
 // 6. returning structs from functions
+#define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
 int main() try {
   Compiler c;
   c.setEntryPoint("main");
   c.begin(); {
 
+    
+    auto i8  = TypeSystem::i8();
+    auto arr = TypeSystem::array(i8, 3);
+
     c.beginFunction("main"); {
-      c.declareLocal("x", TypeSystem::i16());
-      c.declareLocal("y", TypeSystem::i16());
-      c.declareLocal("z", TypeSystem::i16());
+      c.declareLocal("arr", arr);
 
       c.beginBlock("entry"); {
-	c.assign("x", values::i16(257));
-	c.assign("y", values::i8(1));
-
-	c.writeOut("x");
-	c.subAssign("x", "y");
-	c.writeOut("x");
-	c.subAssign("x", "y");
-	c.writeOut("x");
-	c.subAssign("x", "y");
-	c.writeOut("x");
-	c.subAssign("x", "y");
-	c.writeOut("x");
-	c.subAssign("x", "y");
-
-	
+	c.assign("arr", values::array(i8,
+				      values::i8('A'),
+				      values::i8('B'),
+				      values::i16('C')));
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

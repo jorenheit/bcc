@@ -14,7 +14,9 @@ c.beginFunction("main"); {
   c.beginScope(); {
     c.declareLocal("x", TypeSystem::array(TypeSystem::i8(), 2));
     c.beginBlock("next"); {
-      c.assign("x", values::array(TypeSystem::i8(), 'B', 'X'));
+      c.assign("x", values::array(TypeSystem::i8(),
+				  values::i8('B'),
+				  values::i8('X')));
       c.writeOut("x");
       c.setNextBlock("main", "next2");
     } c.endBlock();

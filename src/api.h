@@ -39,6 +39,9 @@ namespace api {
 #define API_FUNC_BEGIN(name)				\
   api::Context API_CTX_NAME{*this, name, API_LOC};
 
+#define API_FUNC_BEGIN_FREE(name)				\
+  api::Context API_CTX_NAME{nullptr, name, API_LOC};
+
 #define API_EXPECT_NEXT(name) api::expectNext((name));			
 
 #define API_CHECK_EXPECTED_IMPL(strict) do {				\
@@ -200,5 +203,10 @@ namespace api {
 		      result.errorMsg);					\
   } while (false);
 
+#define API_EXPECT_TYPE(t, expectedT) do {				\
+    error::throw_if(t != expectedT,					\
+		    (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
+		    "expected type '" + (expectedT)->str() + "', got '" + (t)->str() + "'"); \
+  } while (false);
 
 #endif // API_H

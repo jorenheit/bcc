@@ -31,7 +31,7 @@ namespace proxy {
       virtual std::string name() const = 0;
       virtual Slot materialize(Compiler &c) const = 0;
       virtual void write(Compiler &c, SlotProxy src) const = 0;
-      virtual void write(Compiler &c, values::Anonymous src) const = 0;
+      virtual void write(Compiler &c, values::Literal src) const = 0;
       virtual Slot addressOf(Compiler &c) const = 0;
       virtual bool direct() const = 0;
     };
@@ -44,7 +44,7 @@ namespace proxy {
       Direct(Slot const &slot): Base(slot.type), _slot(slot) {}
       virtual Slot materialize(Compiler&) const override;
       virtual void write(Compiler &c, SlotProxy src) const override;
-      virtual void write(Compiler &c, values::Anonymous src) const override;      
+      virtual void write(Compiler &c, values::Literal src) const override;      
       virtual bool direct() const override { return true; }
       virtual Slot addressOf(Compiler &c) const override;
 
@@ -94,7 +94,7 @@ namespace proxy {
 	  : writeImpl(c, std::get<SlotProxy>(_index), src);
       }
 
-      virtual void write(Compiler &c, values::Anonymous src) const override {
+      virtual void write(Compiler &c, values::Literal src) const override {
 	return std::holds_alternative<int>(_index)
 	  ? writeImpl(c, std::get<int>(_index), src)
 	  : writeImpl(c, std::get<SlotProxy>(_index), src);
@@ -108,9 +108,9 @@ namespace proxy {
       Slot materializeImpl(Compiler &c, SlotProxy index) const;
 
       void writeImpl(Compiler &c, int index, SlotProxy src) const;
-      void writeImpl(Compiler &c, int index, values::Anonymous) const;
+      void writeImpl(Compiler &c, int index, values::Literal) const;
       void writeImpl(Compiler &c, SlotProxy index, SlotProxy src) const;
-      void writeImpl(Compiler &c, SlotProxy index, values::Anonymous) const;
+      void writeImpl(Compiler &c, SlotProxy index, values::Literal) const;
 
       Slot getElementSlot(Slot const &arrSlot, int index) const;
     }; // ArrayElement
@@ -134,7 +134,7 @@ namespace proxy {
 
       virtual Slot materialize(Compiler &c) const override;
       virtual void write(Compiler &c, SlotProxy src) const override;
-      virtual void write(Compiler &c, values::Anonymous src) const override;
+      virtual void write(Compiler &c, values::Literal src) const override;
       virtual Slot addressOf(Compiler &c) const override;
 
     private:
@@ -157,7 +157,7 @@ namespace proxy {
       
       virtual Slot materialize(Compiler &c) const;
       virtual void write(Compiler &c, SlotProxy src) const;;
-      virtual void write(Compiler &c, values::Anonymous src) const;
+      virtual void write(Compiler &c, values::Literal src) const;
       virtual Slot addressOf(Compiler &c) const override;      
       virtual bool direct() const { return false; }
     };

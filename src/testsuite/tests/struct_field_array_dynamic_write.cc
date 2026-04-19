@@ -13,7 +13,11 @@ c.beginFunction("main"); {
   c.declareLocal("idx", TypeSystem::i8());
 
   c.beginBlock("entry"); {
-    auto data = values::array(TypeSystem::i8(), 'B', 'C', 'D');
+    auto data = values::array(TypeSystem::i8(),
+			      values::i8('B'),
+			      values::i8('C'),
+			      values::i8('D'));
+    
     c.assign("h", values::structT(holder, values::i8('A'), data));
     c.assign("idx", values::i8(0));
 

@@ -20,14 +20,12 @@ namespace types {
     virtual ~Type() = default;
     virtual TypeTag tag() const = 0;
     virtual std::string str() const = 0;
-    virtual bool isConstructibleFrom(Type const *other) const = 0;
     virtual int size() const = 0;
     virtual bool usesValue1() const = 0;    
   };
 
   using TypeHandle = Type const *;
-  static constexpr TypeHandle null = nullptr; // TODO: am i using this?
-
+  static constexpr TypeHandle null = nullptr;
 
   template <typename T> requires std::derived_from<T, Type>
   T const *cast(TypeHandle t) {
@@ -44,10 +42,6 @@ namespace types {
     virtual int size() const { return _size; }
     virtual bool usesValue1() const { return true; }
     virtual std::string str() const { return std::string("raw<") + std::to_string(_size) + ">"; }
-    virtual bool isConstructibleFrom(Type const *other) const override {
-      return other->size() <= _size;
-    }
-    
   }; // struct RawType
   
   struct VoidType: Type {
@@ -56,7 +50,6 @@ namespace types {
     virtual int length() const { return 0; }
     virtual bool usesValue1() const { return false; }    
     virtual std::string str() const { return "void"; }
-    virtual bool isConstructibleFrom(Type const *) const override { return false; }
   }; // struct VoidType
 
   struct IntegerType : Type {
@@ -66,9 +59,6 @@ namespace types {
     virtual int size() const override { return 1; }
     virtual bool usesValue1() const override { return bits > 8; }
     virtual std::string str() const override { return tag() == I8 ? "i8" : "i16"; }
-    virtual bool isConstructibleFrom(Type const *other) const override {
-      return (this->tag() == I16) ? true : (this->tag() == I8 && other->tag() == I8);
-    }
   }; // struct IntegerType
 
   struct ArrayLike: Type {
@@ -88,14 +78,6 @@ namespace types {
     virtual std::string str() const override {
       return std::string("array<") + _elementType->str() + ", " + std::to_string(_length) + ">";
     }    
-    virtual bool isConstructibleFrom(TypeHandle other) const override  {
-      if (size() < other->size()) return false;
-      if (other->tag() == ARRAY)  {
-	return _elementType->isConstructibleFrom(cast<ArrayType>(other)->elementType());
-      }
-      if (other->tag() == STRING) return _elementType->tag() == I8 || _elementType->tag() == I16;
-      return false;
-    }
   }; // struct ArrayType
 
   struct StringType: ArrayLike {
@@ -103,12 +85,6 @@ namespace types {
     virtual TypeTag tag() const override { return STRING; }
     virtual bool usesValue1() const override { return false; }
     virtual std::string str() const { return std::string("string<") + std::to_string(length() - 1) + ">"; }
-    virtual bool isConstructibleFrom(Type const *other) const override {
-      if (size() < other->size()) return false;
-      if (other->tag() == ARRAY)  return cast<ArrayType>(other)->elementType()->tag() == I8;
-      if (other->tag() == STRING) return true;
-      return false;
-    }
   }; // struct StringType
 
   struct StructType: Type {
@@ -134,9 +110,6 @@ namespace types {
     }
 
     virtual std::string str() const { return _name; }
-    virtual bool isConstructibleFrom(Type const *other) const override {
-      return other == this;
-    }
 
     int fieldCount() const { return _fields.size(); }
 
@@ -173,18 +146,6 @@ namespace types {
       assert(index < _fields.size() && "index out of bounds");
       return _fields[index].name;
     }
-
-  // private:
-  //   void addFields() {}
-
-  //   template <typename Name, typename... Rest>
-  //   void addFields(Name&& name, Type const* type, Rest&&... rest) {
-  //     _fields.push_back(Field{
-  // 	  std::string(std::forward<Name>(name)),
-  // 	  type
-  // 	});
-  //     addFields(std::forward<Rest>(rest)...);
-  //   }    
   }; // struct StructType
 
 
@@ -196,10 +157,6 @@ namespace types {
     virtual int size() const override { return RuntimePointer::Size; }
     virtual bool usesValue1() const override { return true; }
     virtual std::string str() const override { return std::string("ptr<") + _pointeeType->str() + ">"; }
-    virtual bool isConstructibleFrom(Type const *other) const override {
-      if (other->tag() == POINTER) return static_cast<PointerType const *>(other)->_pointeeType == this->_pointeeType;
-      return (other->tag() == I8 || other->tag() == I16);
-    }
 
     TypeHandle pointeeType() const { return _pointeeType; }    
   }; // struct PointerType
@@ -211,6 +168,7 @@ namespace types {
   inline bool isInteger(TypeHandle t) { return isI8(t) || isI16(t); }
   inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
+  inline bool isArrayLike(TypeHandle t) { return isArray(t) || isString(t); }
   inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
   inline bool isPointer(TypeHandle t)   { return t->tag() == POINTER; }
 

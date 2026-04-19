@@ -14,7 +14,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("g", values::i8('G'));
-    c.assign("p", values::pointer(i8, "g"));
+    c.assign("p", c.addressOf("g"));
 
     auto pDeref = c.dereferencePointer("p");
     c.writeOut("g");

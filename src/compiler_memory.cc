@@ -89,7 +89,7 @@ Slot Compiler::getTemp(types::TypeHandle type) {
   return allocSlot("__tmp", type, Slot::Temp);
 }
 
-Slot Compiler::getTemp(values::Anonymous const &value) {
+Slot Compiler::getTemp(values::Literal const &value) {
   Slot tmp = getTemp(value->type());
   assign(values::LValue(tmp), values::RValue(value));
   return tmp;

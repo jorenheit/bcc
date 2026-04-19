@@ -94,17 +94,7 @@ public:
     return fields;
   }    
 
-  // Todo: move to compiler_ir.cc
-  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC) {
-    API_FUNC_BEGIN("defineStruct");
-    API_REQUIRE_INSIDE_PROGRAM_BLOCK();
-    API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
-    
-    types::TypeHandle sType = TypeSystem::defineStruct(name, std::move(fields));
-    API_REQUIRE(sType != nullptr, "conficting struct declaration: '", name, "' previously defined.");
-    return sType;
-  }
-
+  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
 
   using ArgList = std::vector<values::RValue>;
 
@@ -240,7 +230,7 @@ private:
   values::RValue rValue(values::RValue const &val, API_CTX) const;
   values::RValue rValue(std::string const &var, API_CTX) const;
   values::RValue rValue(SlotProxy const &slot, API_CTX) const;
-  values::RValue rValue(values::Anonymous const &val, API_CTX) const;
+  values::RValue rValue(values::Literal const &val, API_CTX) const;
   values::LValue lValue(values::LValue const &val, API_CTX) const;
   values::LValue lValue(std::string const &var, API_CTX) const;  
   values::LValue lValue(SlotProxy const &slot, API_CTX) const;
@@ -257,12 +247,12 @@ private:
   SlotProxy arrayElementImpl(values::LValue const &arr, int index, API_CTX);
   SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX);
   SlotProxy dereferencePointerImpl(values::RValue const &ptr, API_CTX);
-  void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void writeOutImpl(values::RValue const &rhs, API_CTX); 
@@ -270,16 +260,18 @@ private:
   
   // Slot operations
   void assignSlot(Slot const &dest, Slot const &src);
-  void assignSlot(Slot const &slot, values::Anonymous const &val);
+  void assignSlot(Slot const &slot, values::Literal const &val);
   void addSlotToSlot(Slot const &lhs, Slot const &rhs);
   void addConstToSlot(Slot const &lhs, int delta);
   void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
   void subConstFromSlot(Slot const &lhs, int delta);
+  void mulSlotByConst(Slot const &lhs, int factor);
+  
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
   void dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot);
   void writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot);
-  SlotProxy addressOfSlot(Slot const &slot);
+  Slot addressOfSlot(Slot const &slot);
   
   // Algorithms: all applied to the current DP (compiler_algorithms.cc)
   void moveTo(Cell cell);
@@ -385,7 +377,8 @@ private:
   void freeScope(Function::Scope const *scope);
   Slot allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind);
   Slot getTemp(types::TypeHandle type);
-  Slot getTemp(values::Anonymous const &val);
+  Slot getTemp(values::Literal const &val);
+  void swapLocalWithTemp(Slot const &local, Slot const &tmp);
   
   // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);

@@ -12,8 +12,12 @@ c.beginFunction("main"); {
   c.declareLocal("col", TypeSystem::i8());
 
   c.beginBlock("entry"); {
-    auto ab = values::array(TypeSystem::i8(), 'A', 'B');
-    auto cd = values::array(TypeSystem::i8(), 'C', 'D');
+    auto ab = values::array(TypeSystem::i8(),
+			    values::i8('A'),
+			    values::i8('B'));
+    auto cd = values::array(TypeSystem::i8(),
+			    values::i8('C'),
+			    values::i8('D'));
     c.assign("m", values::array(array2, ab, cd));
 
     c.assign("row", values::i8(1));

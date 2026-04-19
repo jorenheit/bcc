@@ -8,6 +8,7 @@
 #include <concepts>
 #include <sstream>
 #include "types.h"
+#include "error.h"
 
 namespace values {
   
@@ -24,17 +25,6 @@ namespace values {
       virtual std::string varName() const { assert(false); std::unreachable(); }
     };
 
-    struct Ref: Base {
-      std::string _varName;
-      Ref(Ref const &other) = default;
-      Ref(std::string const &var): Base(nullptr), _varName(std::string(var)) {}
-      
-      virtual std::string varName() const override { return _varName; }
-      virtual std::string str() const override { return _varName; }
-      virtual bool isRef() const override { return true; }
-      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<Ref>(*this); }      
-    };
-
     struct Integer: Base {
       int _value;
       Integer(types::TypeHandle t, int v): Base(t), _value(v) {}
@@ -46,16 +36,12 @@ namespace values {
     struct i8: Integer {
       i8(i8 const &other) = default;
       i8(int v): Integer(TypeSystem::i8(), v & 0xff) {}
-      i8(...): Integer(nullptr, 0) { assert(false); }
-
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i8>(*this); }
     };
 
     struct i16: Integer {
       i16(i16 const& other) = default;
       i16(int v): Integer(TypeSystem::i16(), v & 0xffff) {}
-      i16(...): Integer(nullptr, 0) { assert(false); }
-      
       virtual std::shared_ptr<Base> clone() const override { return std::make_shared<i16>(*this); }      
     };      
 
@@ -77,7 +63,7 @@ namespace values {
 
       template <typename StringType> requires std::constructible_from<std::string, StringType>    
       string(StringType const &s):
-	ArrayLike(TypeSystem::string(s.length())),
+	ArrayLike(TypeSystem::string(std::string(s).length())),
 	_str(s)
       {
 	for (char c: _str)  (ArrayLike::arr).emplace_back(std::make_shared<i8>(c));
@@ -93,10 +79,13 @@ namespace values {
 	}
       }
 
-      string(...): ArrayLike(nullptr) { assert(false); }
+      virtual std::string str() const override {
+	return std::string("\"") + _str + "\"";
+      }
       
-      virtual std::string str() const override { return std::string("\"") + _str + "\""; }
-      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<string>(*this); }
+      virtual std::shared_ptr<Base> clone() const override {
+	return std::make_shared<string>(*this);
+      }
 
       std::shared_ptr<Base> element(size_t idx) const {
 	assert(idx < _str.size() + 1);
@@ -132,7 +121,11 @@ namespace values {
 
 	// Assert that all types match
 	for (size_t i = 0; i != _fields.size(); ++i) {
-	  assert(structType->fieldType(i) == _fields[i].value->type());
+	  types::TypeHandle fieldType = _fields[i].value->type();
+	  types::TypeHandle expectedType = structType->fieldType(i);
+	  error::throw_if(fieldType != expectedType,
+			  "unknown file", 0, 0, // TODO: can I fix this?
+			  "expected type '" + expectedType->str() + "', got '" + fieldType->str() + "' in literal struct constructor.");
 	}
       }
 
@@ -146,7 +139,6 @@ namespace values {
 	    });
 	}
       }
-      structT(...): Base(nullptr) { assert(false); }
       
       std::shared_ptr<Base> field(std::string const &name) const {
 	for (Field const &f: _fields) if (f.name == name) return f.value;
@@ -159,71 +151,54 @@ namespace values {
 	return _fields[idx].value;
       }      
       
-      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<structT>(*this); }
+      virtual std::shared_ptr<Base> clone() const override {
+	return std::make_shared<structT>(*this);
+      }
 
       virtual std::string str() const override {
 	std::ostringstream oss;
-	oss << "{\n";
+	oss << "{";
 	for (auto const &f: _fields) {
-	  oss << "  " << f.name << ": " << f.value->str() << '\n';
+	  oss << f.name << ": " << f.value->str() << ",";
 	}
 	oss << "}";
 	return oss.str();
       }
     }; // structT
 
-    struct pointer: Base {
-      std::shared_ptr<Ref> _ref;
-      int const _offset;
-      
-      pointer(types::TypeHandle pointee, std::string const &ref, int const offset):
-        Base(TypeSystem::pointer(pointee)),
-	_ref(std::make_shared<Ref>(ref)),
-	_offset(offset)
-      {}
-      
-      pointer(pointer const &) = default;
-      pointer(...): Base(nullptr), _offset(0) { assert(false); }
-      
-      virtual std::shared_ptr<Base> clone() const override {
-	return std::make_shared<pointer>(*this);
-      }      
-	    
-      virtual std::string str() const override {
-	return std::string("ptr<") + _ref->str() + ">";
-      }
-
-      std::shared_ptr<Ref> pointee() const { return _ref; }
-      int offset() const { return _offset; }
-      
-    }; // pointer
-    
     struct array: ArrayLike {
       types::TypeHandle elementType;
 
-      template <typename... Values>
-      array(types::TypeHandle elementType, Values&&... values):
-	ArrayLike(TypeSystem::array(elementType, sizeof...(Values))),
+      template <typename... Elements>
+      explicit array(types::TypeHandle elementType, Elements&&... elements):
+	ArrayLike(TypeSystem::array(elementType, sizeof...(Elements))),
 	elementType(elementType)
       {
-	ArrayLike::arr.reserve(sizeof...(Values));
-	(ArrayLike::arr.emplace_back(make_array_item(std::forward<Values>(values))), ...);
+	static_assert((std::is_convertible_v<std::remove_cvref_t<Elements>, std::shared_ptr<Base>> && ...),
+		      "values::array expects all elements to be Literal values");
 
-	// assert that all elements of of the correct type (variable references are not type-checked here)
-	// TODO: this should not be an assert but actual error
-	for (auto const &elem: arr) assert(elem->isRef() || elem->type() == elementType);
+	ArrayLike::arr.reserve(sizeof...(Elements));
+
+	auto push = [&](std::shared_ptr<Base> const &value) {
+	  error::throw_if(value->type() != elementType,
+			  "unknown file", 0, 0, // TODO: can I fix this?
+			  "expected type '" + elementType->str() + "', got '" + value->type()->str() + "' in literal array constructor.");
+	  ArrayLike::arr.push_back(value);
+	};
+	
+	(push(std::forward<Elements>(elements)), ...);
       }
       
       array(array const &other): ArrayLike(other.type()), elementType(other.elementType) {
 	ArrayLike::arr.reserve(other.arr.size());
 	for (auto const& elem: other.arr) {
-	  ArrayLike::arr.emplace_back(make_array_item(elem));
+	  ArrayLike::arr.emplace_back(elem->clone());
 	}
       }
 
-      array(...): ArrayLike(nullptr) { assert(false); }
-    
-      virtual std::shared_ptr<Base> clone() const override { return std::make_shared<array>(*this); }      
+      virtual std::shared_ptr<Base> clone() const override {
+	return std::make_shared<array>(*this);
+      }      
 
       virtual std::string str() const override {
 	std::ostringstream oss;
@@ -234,26 +209,6 @@ namespace values {
 	}
 	oss << "}";
 	return oss.str();
-      }
-
-      
-    private:
-      template <typename Arg>
-      std::shared_ptr<Base> make_array_item(Arg&& arg) {
-	if constexpr (std::same_as<std::remove_cvref_t<Arg>, std::shared_ptr<Base>>) {
-	  return arg->clone();
-	} else if constexpr (std::constructible_from<std::string, Arg>) {
-	  return std::make_shared<Ref>(std::string(std::forward<Arg>(arg)));
-	} else {
-	  switch (elementType->tag()) {
-	  case types::I8: return std::make_shared<i8>(std::forward<Arg>(arg));
-	  case types::I16: return std::make_shared<i16>(std::forward<Arg>(arg));
-	  case types::ARRAY: return std::make_shared<array>(std::forward<Arg>(arg));
-	  case types::STRING: return std::make_shared<string>(std::forward<Arg>(arg));
-	  case types::POINTER: return std::make_shared<pointer>(std::forward<Arg>(arg));
-	  default: assert(false);
-	  }
-	}
       }
     }; // array
 
@@ -266,11 +221,11 @@ namespace values {
 
   } // namespace impl
   
-  using Anonymous = std::shared_ptr<impl::Base>;
+  using Literal = std::shared_ptr<impl::Base>;
 
   
   template <typename T> requires std::derived_from<T, types::Type>
-  auto cast(Anonymous const &v) {
+  auto cast(Literal const &v) {
     if constexpr (std::is_same_v<T, types::IntegerType>) {
       return impl::cast<impl::Integer>(v);
     }
@@ -286,38 +241,32 @@ namespace values {
     else if constexpr (std::is_same_v<T, types::StructType>) {
       return impl::cast<impl::structT>(v);
     }
-    else if constexpr (std::is_same_v<T, types::PointerType>) {
-      return impl::cast<impl::pointer>(v);
-    }
     else {
       static_assert(false, "invalid cast type");
     }
   }
   
   // Factories for each of the values
-  inline Anonymous i8(int val) {
+  inline Literal i8(int val) {
     return std::make_shared<impl::i8>(val);
   }
 
-  inline Anonymous i16(int val) {
+  inline Literal i16(int val) {
     return std::make_shared<impl::i16>(val);
   }
 
-  inline Anonymous string(std::string const &str) {
+  inline Literal string(std::string const &str) {
     return std::make_shared<impl::string>(str);
   }
 
   template <typename ... Values>
-  inline Anonymous structT(types::TypeHandle structType, Values&& ... values) {
+  inline Literal structT(types::TypeHandle structType, Values&& ... values) {
     return std::make_shared<impl::structT>(structType, std::forward<Values>(values)...);
   }
 
-  inline Anonymous pointer(types::TypeHandle pointee, std::string const &var, int const offset = 0) {
-    return std::make_shared<impl::pointer>(pointee, var, offset);
-  }
   
   template <typename ... Elements>
-  inline Anonymous array(types::TypeHandle elementType, Elements&& ... elems) {
+  inline Literal array(types::TypeHandle elementType, Elements&& ... elems) {
     return std::make_shared<impl::array>(elementType, std::forward<Elements>(elems)...);
   }
 

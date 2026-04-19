@@ -13,7 +13,7 @@ c.beginFunction("main"); {
   c.declareLocal("y", i8);
 
   c.beginBlock("entry"); {
-    c.assign("p", values::pointer(i8, "x"));
+    c.assign("p", c.addressOf("x")); //values::pointer(i8, "x"));
     c.assign("x", values::i8('X'));
 
     auto pDeref = c.dereferencePointer("p");

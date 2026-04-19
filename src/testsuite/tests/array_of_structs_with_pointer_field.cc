@@ -20,8 +20,8 @@ c.beginFunction("main"); {
     c.assign("a", values::i8('A'));
     c.assign("b", values::i8('B'));
 
-    c.assign(c.structField(c.arrayElement("arr", 0), "p"), values::pointer(i8, "a"));
-    c.assign(c.structField(c.arrayElement("arr", 1), "p"), values::pointer(i8, "b"));
+    c.assign(c.structField(c.arrayElement("arr", 0), "p"), c.addressOf("a"));
+    c.assign(c.structField(c.arrayElement("arr", 1), "p"), c.addressOf("b"));
 
     auto args = c.constructFunctionArguments("arr");
     c.callFunction("foo", "after", args);

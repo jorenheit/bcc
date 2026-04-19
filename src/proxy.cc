@@ -15,22 +15,16 @@ namespace proxy {
     c.assignSlot(_slot, src->materialize(c));
   }
 
-  void Impl::Direct::write(Compiler &c, values::Anonymous src) const {
+  void Impl::Direct::write(Compiler &c, values::Literal src) const {
     c.assignSlot(_slot, src);
   }
 
   Slot Impl::Direct::addressOf(Compiler &c) const {
-    assert(false && "Direct::addressOf not implemented yet");
-    // return c.addressOf(_slot);
+    return c.addressOfSlot(_slot);
   }
   
   Slot Impl::ArrayElement::getElementSlot(Slot const &arrSlot, int index) const {
-    return Slot {
-      .name = std::string("__element::") + arrSlot.name + "[" + std::to_string(index) + "]",
-      .type = this->type(),
-      .kind = Slot::Dummy,
-      .offset = arrSlot.offset + (index * this->type()->size())
-    };
+    return arrSlot.sub(this->type(), index * this->type()->size());
   }
 
   // Materialize a slot at known offset
@@ -49,7 +43,7 @@ namespace proxy {
   }
 
   // Write an anonymous value to a slot at known offset
-  void Impl::ArrayElement::writeImpl(Compiler &c, int index, values::Anonymous src) const {
+  void Impl::ArrayElement::writeImpl(Compiler &c, int index, values::Literal src) const {
     Slot const arrSlot = _arr->materialize(c);
     Slot const elementSlot = getElementSlot(arrSlot, index);
 
@@ -72,7 +66,7 @@ namespace proxy {
   }
 
   // Write an anonymous value to a dynamic offset
-  void Impl::ArrayElement::writeImpl(Compiler &c, SlotProxy index, values::Anonymous src) const {
+  void Impl::ArrayElement::writeImpl(Compiler &c, SlotProxy index, values::Literal src) const {
     writeImpl(c, index, c.getTemp(src));
   }
 
@@ -88,19 +82,13 @@ namespace proxy {
   }
 
   Slot Impl::ArrayElement::addressOf(Compiler &c) const {
-    assert(false && "ArrayElement::addressOf not implemented yet.");
-    // Slot const ptr = _arr->addressOf(c);
-    // if (std::holds_alternative<int>(_index)) {
-    //   int const offset = std::get<int>(_index) * this->type()->size();
-    //   c.addTo(ptr.sub(TypeSystem::i16(), RuntimePointer::Offset),
-    // 	      values::i16(offset));
-    // }
-    // else {
-    //   auto const offset = c.multiply(std::get<SlotProxy>(_index),
-    // 				     values::i16(this->type()->size()));
-    //   c.addTo(ptr.sub(TypeSystem::i16(), RuntimePointer::Offset), offset);
-    // }
-    // return ptr;
+    Slot ptr = _arr->addressOf(c);
+    if (std::holds_alternative<int>(_index)) {
+      c.addAssign(ptr, values::i16(std::get<int>(_index)));
+    } else {
+      c.addAssign(ptr, std::get<SlotProxy>(_index));
+    }
+    return ptr;
   }
   
   Impl::StructField::StructField(SlotProxy obj, std::string fieldName):
@@ -127,7 +115,7 @@ namespace proxy {
   }
 
   // Write an anonymous value to a slot at known offset
-  void Impl::StructField::write(Compiler &c, values::Anonymous src) const {
+  void Impl::StructField::write(Compiler &c, values::Literal src) const {
     Slot const objSlot = _obj->materialize(c);
     Slot const fieldSlot = getFieldSlot(objSlot);
 
@@ -150,10 +138,9 @@ namespace proxy {
   }
 
   Slot Impl::StructField::addressOf(Compiler &c) const {
-    assert(false && "StructField::addressOf not implemented yet");
-    // Slot const ptr = _obj->addressOf(c);
-    // c.addTo(ptr.sub(TypeSystem::i16(), RuntimePointer::Offset), values::i16(_fieldOffset));
-    // return ptr;
+    Slot const ptr = _obj->addressOf(c);
+    c.addAssign(ptr, values::i16(_fieldOffset));
+    return ptr;
   }
   
   Slot Impl::DereferencedPointer::materialize(Compiler &c) const {
@@ -169,15 +156,14 @@ namespace proxy {
     c.writeSlotThroughDereferencedPointer(ptrSlot, srcSlot);
   }
 
-  void Impl::DereferencedPointer::write(Compiler &c, values::Anonymous src) const {
+  void Impl::DereferencedPointer::write(Compiler &c, values::Literal src) const {
     Slot const ptrSlot = _ptr->materialize(c);
     Slot const srcSlot = c.getTemp(src);
     c.writeSlotThroughDereferencedPointer(ptrSlot, srcSlot);
   }
 
   Slot Impl::DereferencedPointer::addressOf(Compiler &c) const {
-    assert(false && "DereferencedPointer::addressOf not implemented yet");
-    // return _ptr->materialize(c);
+    return _ptr->materialize(c);
   }
   
 } // namespace proxy
