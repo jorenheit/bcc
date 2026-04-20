@@ -74,6 +74,7 @@ public:
   void beginBlock(std::string name, API_FUNC);
   void endBlock(API_FUNC);
   void setNextBlock(int index, API_FUNC);
+  void setNextBlock(std::string const &b, API_FUNC);
   void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
   void abortProgram(API_FUNC);
   void referGlobals(std::vector<std::string> const &names, API_FUNC);
@@ -196,6 +197,13 @@ public:
     return addressOfImpl(lValue(obj, API_FWD), API_FWD);
   }
 
+  template <typename Condition>
+  void branchIf(Condition const &condition, std::string const &trueLabel,
+		std::string const &falseLabel, API_FUNC) { API_FUNC_BEGIN("conditionalJump");
+    return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
+  }
+
+  
   Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobalReference(Slot const &globalSlot);
@@ -253,7 +261,9 @@ private:
   void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  
+
+  void branchIfImpl(values::RValue const &condition, std::string const &trueLabel,
+			   std::string const &falseLabel, API_CTX);
   void assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void writeOutImpl(values::RValue const &rhs, API_CTX); 
   SlotProxy addressOfImpl(values::LValue const &obj, API_CTX);
@@ -266,7 +276,8 @@ private:
   void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
   void subConstFromSlot(Slot const &lhs, int delta);
   void mulSlotByConst(Slot const &lhs, int factor);
-  
+
+  void branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel);
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
   void dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot);

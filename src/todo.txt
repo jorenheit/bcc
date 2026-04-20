@@ -1,9 +1,4 @@
-[/] error messages
-[ ] compiler state to determine if begin/end are legal -> force structure
 [ ] binary operators
-[ ] structs
-[x] strings
-[ ] pointers
 [ ] large value constuctor algorithms to reduce code size. Enable with compiler option for size optimization
 [ ] design alg to reduce amount of >>> and <<< sequences. Insert the relative amount in one of the payload cells
     and use that as a counter. Slower runtime but less code. Have a compiler option to optimize for size.
@@ -12,8 +7,5 @@
 [ ] assignMove -> reduce code size when returning non-globals by moving them into return-slot instead of copy/
 [ ] seperate Error from Warning -> issue warning for certain type conversions (I8 <-> I16, arrays of, etc).
     make sure that these warnings can be disabled by the frontend
-[ ] put DP in dynamic mode where appropriate. Especially with seek it makes sense to be explicit about this.
 [ ] when copying large objects (either locally or into a call-frame (as argument, global, whatever)), have a runtime
     iteration to loop over its elements rather than a compile-time loop to reduce code (compiler option Os).
-[ ] make type members const
-[ ] TypeSystem static interface -> no ts object necessary to get types

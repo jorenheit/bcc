@@ -103,6 +103,7 @@ void Compiler::constructMetaBlocks() {
 	popFrame(); // This leaves us at the Scratch1 cell in another frame: guaranteed 0
       } loopClose();
       switchField(MacroCell::Value0);
+
       API_EXPECT_NEXT("endBlock");
     } endBlock();
   }

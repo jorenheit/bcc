@@ -196,6 +196,7 @@ namespace api {
 		      result.errorMsg);					\
   } while (false);
 
+
 #define API_REQUIRE_BINOP(op, lhs, rhs) do {				\
     auto result = types::rules::binOpResult((op), (lhs), (rhs));		\
       error::throw_if(not result,					\

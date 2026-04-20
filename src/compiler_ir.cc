@@ -145,7 +145,6 @@ void Compiler::endBlock(API_FUNC) {
   _currentBlock = nullptr;
 }
 
-// TODO: setNextBlock is not at API interface
 void Compiler::setNextBlock(int index, API_FUNC) {
   API_FUNC_BEGIN("setNextBlock");
   API_CHECK_EXPECTED();
@@ -155,6 +154,7 @@ void Compiler::setNextBlock(int index, API_FUNC) {
 
   API_EXPECT_NEXT("endBlock");
 }
+
 
 void Compiler::setNextBlockImpl(int index) {
   pushPtr();
@@ -174,6 +174,16 @@ void Compiler::setNextBlock(std::string const &f, std::string const &b, API_FUNC
   API_EXPECT_NEXT("endBlock");  
 }
 
+void Compiler::setNextBlock(std::string const &b, API_FUNC) {
+  API_FUNC_BEGIN("setNextBlock");
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+
+  setNextBlockImpl(_currentFunction->name, b);
+
+  API_EXPECT_NEXT("endBlock");  
+}
+
 void Compiler::setNextBlockImpl(std::string const &f, std::string const &b) {
   // It is possible that the function or block name has not been
   // defined yet. So we need to check for this first.
@@ -186,7 +196,9 @@ void Compiler::setNextBlockImpl(std::string const &f, std::string const &b) {
   }
 
   pushPtr();
-
+  
+  // TODO: proper error for undefined block names
+  
   // Could not determine block index yet -> postpone until actual code generation
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   zeroCell();
@@ -437,6 +449,64 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, 
   _nextBlockIsSet = true;
   API_EXPECT_NEXT("endBlock");
 }
+
+
+void Compiler::branchIfImpl(values::RValue const &obj, std::string const &trueLabel,
+					std::string const &falseLabel, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_INTEGER(obj);
+
+  if (obj.hasSlot()) branchIfSlot(obj.slot()->materialize(*this),
+					   trueLabel, falseLabel);
+  else {  
+    bool const value = values::cast<types::IntegerType>(obj.value())->value();
+    setNextBlockImpl(_currentFunction->name, value ? trueLabel : falseLabel);
+  }
+  
+  API_EXPECT_NEXT("endBlock");
+}
+
+void Compiler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel) {
+
+  pushPtr();
+
+  Slot const tmp = getTemp(TypeSystem::i8());
+    
+  moveTo(slot);
+  if (slot.type->usesValue1()) {
+    orConstructive(Cell{tmp, MacroCell::Value0},
+		   Cell{slot, MacroCell::Value1},
+		   Temps<2>::select(tmp, MacroCell::Scratch0,
+				    tmp, MacroCell::Scratch1));
+  }
+  else {
+    copyField(Cell{tmp, MacroCell::Value0},
+	      Temps<1>::select(tmp, MacroCell::Scratch0));
+  }
+
+  moveTo(tmp);
+  switchField(MacroCell::Flag);
+  setToValue(1);
+  switchField(MacroCell::Value0);
+  loopOpen(); {
+    zeroCell();
+    setNextBlockImpl(_currentFunction->name, trueLabel);
+    switchField(MacroCell::Flag);
+    setToValue(0);
+    switchField(MacroCell::Value0);	
+  }; loopClose();
+
+  switchField(MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();
+    setNextBlockImpl(_currentFunction->name, falseLabel);
+  } loopClose();
+
+  popPtr();
+}
+
+
 
 SlotProxy Compiler::addressOfImpl(values::LValue const &obj, API_CTX) {
   API_CHECK_EXPECTED();
