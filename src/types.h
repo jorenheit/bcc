@@ -13,7 +13,7 @@
 namespace types {
 
   enum TypeTag {
-    VOID, RAW, I8, I16, ARRAY, STRING, STRUCT, POINTER
+    VOID, RAW, I8, I16, ARRAY, STRING, STRUCT, POINTER, FUNCTION
   };
   
   struct Type {
@@ -150,8 +150,8 @@ namespace types {
 
 
   struct PointerType: Type {
-    Type const *_pointeeType;
-    PointerType(Type const *pointee): _pointeeType(pointee) {}
+    TypeHandle _pointeeType;
+    PointerType(TypeHandle pointee): _pointeeType(pointee) {}
     
     virtual TypeTag tag() const override { return POINTER; }
     virtual int size() const override { return RuntimePointer::Size; }
@@ -161,7 +161,36 @@ namespace types {
     TypeHandle pointeeType() const { return _pointeeType; }    
   }; // struct PointerType
 
+  struct FunctionType: Type {
+    TypeHandle _returnType;
+    std::vector<TypeHandle> _paramTypes;
 
+    template <typename ... ParamTypes>
+    FunctionType(TypeHandle ret, ParamTypes ... params):
+      _returnType(ret),
+      _paramTypes({params ...})
+    {}
+
+    TypeHandle returnType() const { return _returnType; }
+    std::vector<TypeHandle> const &paramTypes() const { return _paramTypes; }
+    
+    virtual TypeTag tag() const override { return FUNCTION; }
+    virtual int size() const override { assert(false); std::unreachable(); }
+    virtual bool usesValue1() const override { assert(false); std::unreachable(); }
+    virtual std::string str() const override {
+      std::string ret = _returnType->str() + "(";
+      for (size_t i = 0; i != _paramTypes.size(); ++i) {
+	ret += _paramTypes[i]->str();
+	if (i < _paramTypes.size() - 1)
+	  ret += ", ";
+      }
+      ret += ")";
+      return ret;
+    }
+    
+  };
+
+  
   // Convenience functions to check type categories
   inline bool isI8(types::TypeHandle t) { return t->tag() == types::I8; }
   inline bool isI16(types::TypeHandle t) { return t->tag() == types::I16; }
@@ -171,6 +200,7 @@ namespace types {
   inline bool isArrayLike(TypeHandle t) { return isArray(t) || isString(t); }
   inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
   inline bool isPointer(TypeHandle t)   { return t->tag() == POINTER; }
+  inline bool isFunction(TypeHandle t)   { return t->tag() == FUNCTION; }
 
 } // namespace types
  
@@ -185,6 +215,7 @@ class TypeSystem {
   static std::vector<std::unique_ptr<types::StringType>> _stringTypes;
   static std::vector<std::unique_ptr<types::StructType>> _structTypes;
   static std::vector<std::unique_ptr<types::PointerType>> _pointerTypes;
+  static std::vector<std::unique_ptr<types::FunctionType>> _functionTypes;
 
 public:
   static void init();
@@ -243,5 +274,26 @@ public:
     }
     _pointerTypes.emplace_back(std::make_unique<types::PointerType>(pointee));
     return _pointerTypes.back().get();
+  }
+
+  template <typename ... ParamTypes>
+  static types::TypeHandle function(types::TypeHandle ret, ParamTypes ... params) {
+    for (auto const &ptr: _functionTypes) {
+      if (ret == ptr->returnType()) {
+	if (ptr->paramTypes().size() != sizeof ... (ParamTypes)) continue;
+
+	bool match = true;
+	types::TypeHandle theseTypes[] = {params ...};
+	for (size_t i = 0; i != ptr->paramTypes().size(); ++i) {
+	  if (theseTypes[i] != ptr->paramTypes()[i]) {
+	    match = false;
+	    break;
+	  }
+	}
+	if (match) return ptr.get();
+      }
+    }
+    _functionTypes.emplace_back(std::make_unique<types::FunctionType>(ret, params ...));
+    return _functionTypes.back().get();
   }
 };  

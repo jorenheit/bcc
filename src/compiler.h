@@ -80,6 +80,7 @@ public:
   void referGlobals(std::vector<std::string> const &names, API_FUNC);
 
 
+  // TODO: there must be a cleaner way to define a struct
   template <typename ... Args>
   StructFields constructFields(Args&& ... args) {
     static_assert(sizeof ... (Args) % 2 == 0);
@@ -97,6 +98,7 @@ public:
 
   types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
 
+  // TODO: there must be a cleaner way to pass args
   using ArgList = std::vector<values::RValue>;
 
   template <typename... Args>
@@ -148,7 +150,7 @@ public:
   }
 
   template <typename Array>
-  SlotProxy arrayElement(Array const &arr, int index, API_FUNC) { API_FUNC_BEGIN("structField");
+  SlotProxy arrayElement(Array const &arr, int index, API_FUNC) { API_FUNC_BEGIN("arrayElement");
     return arrayElementImpl(lValue(arr, API_FWD), index, API_FWD);
   }
   
@@ -163,7 +165,7 @@ public:
   }
 
   template <typename L, typename R>
-  void addAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addTo");
+  void addAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addAssign");
     addAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
@@ -173,25 +175,57 @@ public:
   }
 
   template <typename L, typename R>
-  void subAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addTo");
+  void subAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("subAssign");
     subAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L, typename R>
-  SlotProxy sub(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("add");
+  SlotProxy sub(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("sub");
     return subImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
   
   template <typename L, typename R>
-  void mulAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiplyBy");
-    multiplyAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  void mulAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("mulAssign");
+    mulAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
   template <typename L, typename R>
-  SlotProxy mul(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("multiply");
-    return multiplyImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  SlotProxy mul(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("mul");
+    return mulImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
+  template <typename L, typename R>
+  SlotProxy eq(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("eq");
+    return eqImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy neq(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("neq");
+    return neqImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+  
+  template <typename L, typename R>
+  SlotProxy lt(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("lt");
+    return ltImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy le(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("le");
+    return leImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy gt(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("gt");
+    return gtImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  SlotProxy ge(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("ge");
+    return geImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+  
+  
+  
   template <typename L>
   SlotProxy addressOf(L const &obj, API_FUNC) { API_FUNC_BEGIN("addressOf");
     return addressOfImpl(lValue(obj, API_FWD), API_FWD);
@@ -199,7 +233,7 @@ public:
 
   template <typename Condition>
   void branchIf(Condition const &condition, std::string const &trueLabel,
-		std::string const &falseLabel, API_FUNC) { API_FUNC_BEGIN("conditionalJump");
+		std::string const &falseLabel, API_FUNC) { API_FUNC_BEGIN("branchIf");
     return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
   }
 
@@ -211,6 +245,9 @@ public:
   // TODO: rename to resolveVar(...)
   Slot local(std::string const& name, bool globalReference = false) const;
 
+
+  // TODO: replace FunctionSignature with types::FunctionType and accept a vector of strings that
+  //       bind variables to the param-types.
 
   template <typename ... Args>
   FunctionSignature constructFunctionSignature(Args&& ... args) {
@@ -255,9 +292,21 @@ private:
   SlotProxy arrayElementImpl(values::LValue const &arr, int index, API_CTX);
   SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX);
   SlotProxy dereferencePointerImpl(values::RValue const &ptr, API_CTX);
+
+  // Arithmetic operators
   SlotProxy addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+
+  // Comparison operators
+  SlotProxy eqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy neqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy ltImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy leImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy gtImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy geImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+
+
   void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
@@ -275,6 +324,7 @@ private:
   void addConstToSlot(Slot const &lhs, int delta);
   void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
   void subConstFromSlot(Slot const &lhs, int delta);
+  void mulSlotBySlot(Slot const &lhs, Slot const &rhs);
   void mulSlotByConst(Slot const &lhs, int factor);
 
   void branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel);
@@ -298,77 +348,78 @@ private:
   void fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload const &payload, primitive::Direction seekDir);
   
   void moveField(Cell dest);
-  void copyField(Cell dest, Temps<1> tmp);
+  void copyField(Cell dest, Temps<1>);
   
   void setToValue(int value);
   void setToValue16(int value, Cell high);
 
   void inc();
   void dec();
-  void inc16(Cell high, Temps<2> tmp);
-  void dec16(Cell high, Temps<2> tmp);
+  void inc16(Cell high, Temps<2>);
+  void dec16(Cell high, Temps<2>);
   
   void addConst(int delta);
-  void addConstAndCarry(int delta, Cell carry, Temps<3> tmp);
-  void add16Const(int delta, Cell high, Temps<4> tmp);
+  void addConstAndCarry(int delta, Cell carry, Temps<3>);
+  void add16Const(int delta, Cell high, Temps<4>);
 
   void subConst(int delta);
-  void subConstAndCarry(int delta, Cell carry, Temps<3> tmp);
-  void sub16Const(int delta, Cell high, Temps<4> tmp);
+  void subConstAndCarry(int delta, Cell carry, Temps<3>);
+  void sub16Const(int delta, Cell high, Temps<4>);
 
-  void mulConst(int factor, Temps<3> tmp);
-  void mul16Const(int factor, Cell high, Temps<8> tmp);
+
+  void mulConst(int factor, Temps<3>);
+  void mul16Const(int factor, Cell high, Temps<8>);
 
   
   // TODO: constructive versions should accept "other" before result and carry
   void addDestructive(Cell other);
-  void addConstructive(Cell result, Cell other, Temps<2> tmp);
-  void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp);
-  void add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp);
-  void addAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp);
-  void addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp);
+  void addConstructive(Cell result, Cell other, Temps<2>);
+  void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
+  void add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6>);
+  void addAndCarryDestructive(Cell carry, Cell other, Temps<3>);
+  void addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4>);
 
   void subDestructive(Cell other);
-  void subConstructive(Cell result, Cell other, Temps<2> tmp);
-  void sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp);
-  void sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp);
-  void subAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp);
-  void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp);
+  void subConstructive(Cell result, Cell other, Temps<2>);
+  void sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
+  void sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6>);
+  void subAndCarryDestructive(Cell carry, Cell other, Temps<3>);
+  void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4>);
 
-  void mulDestructive(Cell other);
-  void mulConstructive(Cell result, Cell other, Temps<2> tmp);
-  void mul16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
-  void mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
+  void mulDestructive(Cell other, Temps<3>);
+  void mulConstructive(Cell result, Cell factor, Temps<4>);
+  void mul16Destructive(Cell high, Cell factorLow, Cell factorHigh, Temps<9>);
+  void mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell factorLow, Cell factorHigh, Temps<11>);
   
-  void notDestructive(Temps<1> tmp);
-  void notConstructive(Cell result, Temps<1> tmp);
+  void notDestructive(Temps<1>);
+  void notConstructive(Cell result, Temps<1>);
 
-  void orDestructive(Cell other, Temps<1> tmp);
-  void orConstructive(Cell result, Cell other, Temps<2> tmp);
+  void orDestructive(Cell other, Temps<1>);
+  void orConstructive(Cell result, Cell other, Temps<2>);
 
-  void andDestructive(Cell other, Temps<1> tmp);
-  void andConstructive(Cell result, Cell other, Temps<2> tmp);
+  void andDestructive(Cell other, Temps<1>);
+  void andConstructive(Cell result, Cell other, Temps<2>);
 
-  void compareToConstDestructive(int value, Temps<1> tmp);
-  void compareToConstConstructive(int value, Cell result, Temps<1> tmp);    
+  void compareToConstDestructive(int value, Temps<1>);
+  void compareToConstConstructive(int value, Cell result, Temps<1>);    
 
-  void compare16ToConstDestructive(int value, Cell high, Temps<1> tmp);
-  void compare16ToConstConstructive(int value, Cell high, Cell result, Temps<2> tmp);    
+  void compare16ToConstDestructive(int value, Cell high, Temps<1>);
+  void compare16ToConstConstructive(int value, Cell high, Cell result, Temps<2>);    
   
-  void lessDestructive(Cell other, Temps<2> tmp);
-  void lessConstructive(Cell result, Cell other, Temps<3> tmp);
+  void lessDestructive(Cell other, Temps<2>);
+  void lessConstructive(Cell result, Cell other, Temps<3>);
 
-  void lessOrEqualDestructive(Cell other, Temps<2> tmp);
-  void lessOrEqualConstructive(Cell result, Cell other, Temps<3> tmp);
+  void lessOrEqualDestructive(Cell other, Temps<2>);
+  void lessOrEqualConstructive(Cell result, Cell other, Temps<3>);
 
-  void greaterDestructive(Cell other, Temps<2> tmp);
-  void greaterConstructive(Cell result, Cell other, Temps<3> tmp);
+  void greaterDestructive(Cell other, Temps<2>);
+  void greaterConstructive(Cell result, Cell other, Temps<3>);
 
-  void greaterOrEqualDestructive(Cell other, Temps<2> tmp);
-  void greaterOrEqualConstructive(Cell result, Cell other, Temps<3> tmp);
+  void greaterOrEqualDestructive(Cell other, Temps<2>);
+  void greaterOrEqualConstructive(Cell result, Cell other, Temps<3>);
 
-  void equalDestructive(Cell other, Temps<2> tmp);
-  void equalConstructive(Cell result, Cell other, Temps<3> tmp);
+  void equalDestructive(Cell other, Temps<2>);
+  void equalConstructive(Cell result, Cell other, Temps<3>);
   
   // Frame Navigation (compiler_framenav.cc)
   

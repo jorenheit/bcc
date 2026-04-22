@@ -125,24 +125,23 @@ void Compiler::mul16Const(int factor, Cell high, Temps<8> tmp) {
   if (factor == 1) return;
 
   pushPtr();
-  Cell const currentLow  { _dp.current(), MacroCell::Value0};
-  Cell const currentHigh { _dp.current(), MacroCell::Value1};
+  Cell const current     = _dp.current();
   Cell const copy1low  = tmp.get<0>();
   Cell const copy1high = tmp.get<1>();
   Cell const copy2low  = tmp.get<2>();
   Cell const copy2high = tmp.get<3>();
-  
-  switchField(MacroCell::Value0);
+
+  moveTo(current);
   copyField(copy1low,  tmp.select<4>());
   copyField(copy2low,  tmp.select<4>());
 
-  switchField(MacroCell::Value1);
+  moveTo(high);
   copyField(copy1high, tmp.select<4>());
   copyField(copy2high, tmp.select<4>());
 
   for (int i = 0; i != factor - 1; ++i) {
-    moveTo(currentLow);
-    add16Destructive(currentHigh, copy1low, copy1high, tmp.select<4, 5, 6, 7>());
+    moveTo(current);
+    add16Destructive(high, copy1low, copy1high, tmp.select<4, 5, 6, 7>());
     moveTo(copy2low);
     copyField(copy1low, tmp.select<4>());
     moveTo(copy2high);
@@ -152,6 +151,118 @@ void Compiler::mul16Const(int factor, Cell high, Temps<8> tmp) {
   popPtr();
 }
 
+
+void Compiler::mulDestructive(Cell factor, Temps<3> tmp) {
+  pushPtr();
+  
+  Cell const current = _dp.current();
+  Cell const copy1 = tmp.get<0>();
+  Cell const copy2 = tmp.get<1>();
+  
+  copyField(copy1, tmp.select<2>());
+  copyField(copy2, tmp.select<2>());
+  zeroCell();
+  
+  moveTo(factor);
+  loopOpen(); {
+    dec();
+    moveTo(current);
+    addDestructive(copy1);
+    moveTo(copy2);
+    copyField(copy1, tmp.select<2>());
+    moveTo(factor);
+  } loopClose();
+
+  moveTo(copy1); zeroCell();
+  moveTo(copy2); zeroCell();
+  
+  popPtr();
+}
+
+// TODO: make a 16-bit version that uses the 8-bit version of mul rather than brute force repeat the addition.
+void Compiler::mul16Destructive(Cell high, Cell factorLow, Cell factorHigh, Temps<9> tmp) {
+
+  pushPtr();
+  
+  Cell const current   = _dp.current();
+  Cell const copy1low  = tmp.get<0>();
+  Cell const copy2low  = tmp.get<1>();
+  Cell const copy1high = tmp.get<2>();
+  Cell const copy2high = tmp.get<3>();
+  Cell const factorNonzero = tmp.get<4>();
+
+  moveTo(current);
+  copyField(copy1low, tmp.select<5>());
+  copyField(copy2low, tmp.select<5>());
+  zeroCell();
+
+  moveTo(high);
+  copyField(copy1high, tmp.select<5>());
+  copyField(copy2high, tmp.select<5>());
+  zeroCell();
+
+  auto computeFactorNonzero = [&]() {
+    moveTo(factorNonzero);
+    zeroCell(); // TODO: this is superfluous right?
+    moveTo(factorLow);
+    orConstructive(factorNonzero, factorHigh, tmp.select<5, 6>());
+    moveTo(factorNonzero);
+  };
+  
+  computeFactorNonzero();  
+  loopOpen(); {
+    moveTo(factorLow);
+    dec16(factorHigh, tmp.select<5, 6>());
+
+    moveTo(current);
+    add16Destructive(high, copy1low, copy1high, tmp.select<5, 6, 7, 8>());
+
+    moveTo(copy2low);
+    copyField(copy1low, tmp.select<5>());
+    moveTo(copy2high);
+    copyField(copy1high, tmp.select<5>());
+
+    computeFactorNonzero();
+  } loopClose();
+
+
+  moveTo(copy1low);  zeroCell();
+  moveTo(copy1high); zeroCell();
+  moveTo(copy2low);  zeroCell();
+  moveTo(copy2high); zeroCell();
+  
+  popPtr();
+}
+
+void Compiler::mulConstructive(Cell result, Cell factor, Temps<4> tmp) {
+  Cell const factorCopy = tmp.get<0>();
+
+  pushPtr();
+  copyField(result, tmp.get<1>());
+  moveTo(factor);
+  copyField(factorCopy, tmp.get<1>());
+  moveTo(result);
+  mulDestructive(factorCopy, tmp.select<1, 2, 3>());
+  popPtr();
+}
+
+
+void Compiler::mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell factorLow, Cell factorHigh, Temps<11> tmp) {
+
+  Cell const & low      = _dp.current();
+  Cell const & factorLowCopy  = tmp.get<0>();
+  Cell const & factorHighCopy = tmp.get<1>();
+  
+  pushPtr();
+  moveTo(low);       copyField(resultLow, tmp.select<2>());
+  moveTo(high);      copyField(resultHigh, tmp.select<2>());
+  moveTo(factorLow);  copyField(factorLowCopy, tmp.select<2>());
+  moveTo(factorHigh); copyField(factorHighCopy, tmp.select<2>());
+
+  moveTo(resultLow);
+  mul16Destructive(resultHigh, factorLowCopy, factorHighCopy, tmp.select<2, 3, 4, 5, 6, 7, 8, 9, 10>());
+  popPtr();
+}
 
 void Compiler::subConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
   addConstAndCarry(-delta, carry, tmp);
@@ -391,12 +502,6 @@ void Compiler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cel
   popPtr();
 }
 
-
-
-// void Compiler::mulDestructive(Cell other);
-// void Compiler::mulConstructive(Cell result, Cell other, Temps<2> tmp);
-// void Compiler::mul16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<3> tmp);
-// void Compiler::mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<5> tmp);
 
 void Compiler::moveField(Cell dest) {
   auto [src, dst] = getFieldIndices(_dp.current(), dest);

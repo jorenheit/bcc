@@ -805,7 +805,7 @@ void Compiler::subConstFromSlot(Slot const &lhs, int delta) {
 }
 
 void Compiler::mulSlotByConst(Slot const &lhs, int factor) {
-  
+
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   if (lhs.type->usesValue1()) {
@@ -827,6 +827,34 @@ void Compiler::mulSlotByConst(Slot const &lhs, int factor) {
 			      lhs, MacroCell::Payload0));
   }
   
+  popPtr();
+}
+
+void Compiler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
+  pushPtr();
+
+  Slot const tmp = getTemp(rhs.type);
+  assignSlot(tmp, rhs);  
+  moveTo(lhs, MacroCell::Value0);
+  if (lhs.type->usesValue1()) {
+    mul16Destructive(Cell{lhs, MacroCell::Value1},
+		     Cell{tmp, MacroCell::Value0},
+		     Cell{tmp, MacroCell::Value1},
+		     Temps<9>::select(lhs, MacroCell::Scratch0,
+				      lhs, MacroCell::Scratch1,
+				      lhs, MacroCell::Payload0,
+				      lhs, MacroCell::Payload1,				      
+				      tmp, MacroCell::Scratch0,
+				      tmp, MacroCell::Scratch1,
+				      tmp, MacroCell::Payload0,
+				      tmp, MacroCell::Payload1,
+				      rhs, MacroCell::Scratch0));
+  } else {
+    mulDestructive(Cell{tmp, MacroCell::Value0},
+		   Temps<3>::select(lhs, MacroCell::Scratch0,
+				    lhs, MacroCell::Scratch1,
+				    tmp, MacroCell::Scratch0));
+  }
   popPtr();
 }
 
@@ -975,59 +1003,42 @@ void Compiler::mulAssignImpl(values::LValue const &lhs, values::RValue const &rh
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
-  assert(false && "multiplyBy not implemented");
 
-  // pushPtr();
-  // Slot const lhsSlot = lhs.slot()->materialize(*this);
-  // if (rhs.hasSlot()) {
-  //   Slot const rhsSlot = getTemp(rhs.type());
-  //   assign(rhsSlot, rhs);
-  //   moveTo(lhsSlot, MacroCell::Value0);
-  //   (lhsSlot.type->usesValue1())
-  //     ? mul16Destructive(Cell{lhsSlot, MacroCell::Value1},
-  // 			 Cell{rhsSlot, MacroCell::Value0},
-  // 			 Cell{rhsSlot, MacroCell::Value1},
-  // 			 Temps<3>::select(lhsSlot, MacroCell::Scratch0,
-  // 					  lhsSlot, MacroCell::Scratch1,
-  // 					  rhsSlot, MacroCell::Payload0))
-  //     : mulDestructive(Cell{rhsSlot, MacroCell::Value0});
-  // }
-  // else {
-  //   Slot const tmpSrc = getTemp(TypeSystem::i16());
-  //   int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-  //   moveTo(lhsSlot, MacroCell::Value0);    
-  //   (lhsSlot.type->usesValue1())
-  //     ? mul16Const(delta, Cell{lhsSlot, MacroCell::Value1},
-  // 		   Temps<7>::select(lhsSlot, MacroCell::Scratch0,
-  // 				    lhsSlot, MacroCell::Scratch1,
-  // 				    lhsSlot, MacroCell::Payload0,
-  // 				    lhsSlot, MacroCell::Payload1,
-  // 				    tmpSrc,  MacroCell::Scratch0,
-  // 				    tmpSrc,  MacroCell::Scratch1,
-  // 				    tmpSrc,  MacroCell::Value0))
-  //     : mulConst(delta, Temps<3>::select(lhsSlot, MacroCell::Scratch0,
-  // 					 lhsSlot, MacroCell::Scratch1,
-  // 					 lhsSlot, MacroCell::Payload0));
-  // }
+  pushPtr();
 
-  // if (not lhs.slot()->direct()) {
-  //   lhs.slot()->write(*this, lhsSlot);
-  // }
+  Slot const lhsSlot = lhs.slot()->materialize(*this);
+  if (rhs.hasSlot()) {
+    mulSlotBySlot(lhsSlot, rhs.slot()->materialize(*this));
+  } else {
+    API_REQUIRE_IS_INTEGER(rhs);
+    int const factor = values::cast<types::IntegerType>(rhs.value())->value();
+    mulSlotByConst(lhsSlot, factor);
+  }
+
+  if (not lhs.slot()->direct()) {
+    lhs.slot()->write(*this, lhsSlot);
+  }
   
-  // popPtr();  
+  popPtr();  
 }
 
 SlotProxy Compiler::mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
-  assert(false && "multiplyBy not implemented");
 
-  // Slot const result = getTemp(lhs.type());
-  // assign(result, lhs);
-  // multiplyBy(result, rhs);
-  // return result;
+  Slot const result = getTemp(lhs.type());
+  assign(result, lhs);
+  mulAssign(result, rhs);
+  return result;
 }
+
+// SlotProxy eqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+//   SlotProxy neqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+//   SlotProxy ltImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+//   SlotProxy leImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+//   SlotProxy gtImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
+//   SlotProxy geImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
 
 
 

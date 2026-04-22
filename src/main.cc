@@ -9,39 +9,21 @@ int main() try {
 
   c.begin(); {
     auto i8 = TypeSystem::i8();
-    c.declareGlobal("x", i8);
+    auto i16 = TypeSystem::i16();
       
     c.beginFunction("main"); {
-      c.referGlobals({"x"});
+      c.declareLocal("x", i16);
+      c.declareLocal("y", i8);
       
       c.beginBlock("entry"); {
-	c.assign("x", values::i8(0));
-	c.setNextBlock("loop");
-      } c.endBlock();
-
-      c.beginBlock("loop"); {
-	auto args = c.constructFunctionArguments("x");
-	c.callFunction("incAndPrint", "loopEnd", args, "x");
-      } c.endBlock();
-
-      c.beginBlock("loopEnd"); {
-	c.branchIf("x", "loop", "end");	
-      } c.endBlock();
-
-      c.beginBlock("end"); {
+	c.assign("x", values::i16(10));
+	c.assign("y", values::i8(100));
+	c.writeOut(c.mul("x", "y"));
 	c.returnFromFunction();
       } c.endBlock();
       
     } c.endFunction();
 
-    auto sig = c.constructFunctionSignature(i8, "x", i8);
-    c.beginFunction("incAndPrint", sig); {
-      c.beginBlock("entry"); {
-      	c.addAssign("x", values::i8(1));
-	c.writeOut("x");
-	c.returnFromFunction("x");
-      } c.endBlock();
-    } c.endFunction();
     
   } c.end();
 
