@@ -8,29 +8,30 @@ int main() try {
   c.setEntryPoint("main");
 
   c.begin(); {
+    // compare variable rhs vs literal rhs for the same modulo
+    auto i16 = TypeSystem::i16();
 
     c.beginFunction("main"); {
-      c.declareLocal("x", TypeSystem::i16());
-      c.declareLocal("y", TypeSystem::i8());
-      c.declareLocal("z", TypeSystem::i16());
+      c.declareLocal("x", i16);
+      c.declareLocal("y", i16);
 
       c.beginBlock("entry"); {
-	c.assign("x", values::i16(100));
-	c.assign("y", values::i8(34));
+	// c.assign("x", values::i16(0x7171));
+	// c.assign("y", values::i16(0x5050));
+	// c.writeOut(c.add(c.mod("x", "y"), values::i16(0x2424)));              // should be EE
 
-	c.modAssign("x", "y"); // 100 % 34 = 0x0020
-	// c.writeOut("x");
-	// c.writeOut(values::i16(CAT('A', '!')));
-	c.writeOut(c.add("x", values::i16(CAT('!', 'A')))); // 0x0020 + 0x4121 = 0x4141 -> AA
-
-	c.assign("x", values::i16(101));
-	c.assign("z", c.add(c.mod("x", "y"), values::i16(CAT('!', 'B')))); // 0x0021 + 0x4221 = 0x4242 -> BB
-	c.writeOut("z"); // BB
+	c.assign("x", values::i16(0x7171));
+	// c.assign("y", values::i16(0x5050));
+	//	c.writeOut("x");
+	//	c.writeOut("y");
+	c.writeOut(c.mod("x", values::i16(0x5050)));
+	// c.writeOut(c.mod("x", "y"));
+	
+	//	c.writeOut(c.add(c.mod("x", values::i16(0x5050)), values::i16(0x2424))); // should also be EE
 
 	c.returnFromFunction();
       } c.endBlock();
-    } c.endFunction();
-    
+    } c.endFunction();    
   } c.end();
 
   std::cout << c.dumpBrainfuck() << '\n';

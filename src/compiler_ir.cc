@@ -742,7 +742,6 @@ void Compiler::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs, MacroCell::Value0);
   if (lhs.type->usesValue1()) {
-    std::cerr << lhs.type->str() << ", " << rhs.type->str() << '\n';
     add16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{rhsCopy, MacroCell::Value0},
 		     Cell{rhsCopy, MacroCell::Value1},
@@ -915,7 +914,6 @@ void Compiler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
 
 void Compiler::modSlotByConst(Slot const &lhs, int denom) {
 
-
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   if (lhs.type->usesValue1()) {
@@ -935,17 +933,17 @@ void Compiler::modSlotByConst(Slot const &lhs, int denom) {
     moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
     moveTo(lhs, MacroCell::Payload1);
-    moveField(Cell{lhs, MacroCell::Value0});
+    moveField(Cell{lhs, MacroCell::Value1});
   } else {
     Slot const tmp = getTemp(TypeSystem::raw(1));
-    divModConst(denom, Cell{lhs, MacroCell::Scratch0},
-		Temps<5>::select(lhs, MacroCell::Scratch1,
-				 lhs, MacroCell::Payload0,
-				 lhs, MacroCell::Payload1,
+    divModConst(denom, Cell{lhs, MacroCell::Payload0},
+		Temps<5>::select(lhs, MacroCell::Scratch0,
+				 lhs, MacroCell::Scratch1,
 				 tmp, MacroCell::Scratch0,
-				 tmp, MacroCell::Scratch1));
+				 tmp, MacroCell::Scratch1,
+				 tmp, MacroCell::Payload0));
 
-    moveTo(lhs, MacroCell::Scratch0);
+    moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
   }
   
@@ -1271,7 +1269,7 @@ SlotProxy Compiler::modImpl(values::LValue const &lhs, values::RValue const &rhs
 
   auto modResult = types::rules::binOpResult(BinOp::Mod, lhs.type(), rhs.type());
   assert(modResult);
-
+  
   Slot const result = getTemp(modResult.type);
   assign(result, lhs);
   modAssign(result, rhs);

@@ -1002,6 +1002,46 @@ tests.push_back(expectOutput("Integer Modulo Mixed i16/i8",
 #include "tests/integer_modulo_mixed_i16_i8.cc"
                              }));
 
+tests.push_back(expectOutput("Integer Division Edge Cases i8",
+                             "ABCD", []() {
+#include "tests/integer_division_edgecases_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Division Edge Cases i16",
+                             "AABBCCDD", []() {
+#include "tests/integer_division_edgecases_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Modulo Edge Cases i8",
+                             "ABCDE", []() {
+#include "tests/integer_modulo_edgecases_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Modulo Edge Cases i16",
+                             "AABBCCDDEE", []() {
+#include "tests/integer_modulo_edgecases_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Multiplication Edge Cases i8",
+                             "ABCD", []() {
+#include "tests/integer_multiplication_edgecases_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Multiplication Edge Cases i16",
+                             "AABBCCDD", []() {
+#include "tests/integer_multiplication_edgecases_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Literal RHS i8",
+                             "ABCDEABCDE", []() {
+#include "tests/integer_literals_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Literal RHS i16",
+                             "AABBCCDDEEAABBCCDDEE", []() {
+#include "tests/integer_literals_i16.cc"
+                             }));
+ 
  return tests;
 }
 
