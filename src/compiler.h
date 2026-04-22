@@ -61,6 +61,9 @@ class Compiler {
 public:
   inline Compiler() { TypeSystem::init(); }
 
+  // TODO: there must be a cleaner way to pass args
+  using ArgList = std::vector<values::RValue>;
+  
   // TODO: API_FUNC 
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
@@ -75,214 +78,73 @@ public:
   void endScope(API_FUNC);
   void beginBlock(std::string name, API_FUNC);
   void endBlock(API_FUNC);
+  void beginFunction(std::string const &name, API_FUNC);
+  void beginFunction(std::string const &name, FunctionSignature const &sig, API_FUNC);   
   void setNextBlock(int index, API_FUNC);
   void setNextBlock(std::string const &b, API_FUNC);
   void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
   void abortProgram(API_FUNC);
   void referGlobals(std::vector<std::string> const &names, API_FUNC);
-
-
-  // TODO: there must be a cleaner way to define a struct
-  template <typename ... Args>
-  StructFields constructFields(Args&& ... args) {
-    static_assert(sizeof ... (Args) % 2 == 0);
-    StructFields fields; fields.reserve(sizeof...(args) / 2);
-
-    auto addField = [&]<typename ... Rest>(auto&& self, std::string const &name, types::TypeHandle type, Rest&& ... rest) -> void {
-      fields.push_back(StructField{name, type});
-      if constexpr (sizeof ... (Rest) == 0) return;
-      else self(self, std::forward<Rest>(rest)...);
-    };
-
-    addField(addField, std::forward<Args>(args)...);
-    return fields;
-  }    
-
-  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
-
-  // TODO: there must be a cleaner way to pass args
-  using ArgList = std::vector<values::RValue>;
-
-  template <typename... Args>
-  ArgList constructFunctionArguments_(API_FUNC_SOURCE, Args&&... args) {
-    API_FUNC_BEGIN("constructFunctionArguments");
-    ArgList result;
-    result.reserve(sizeof...(args));
-    (result.emplace_back(rValue(std::forward<Args>(args), API_FWD)), ...);
-    return result;
-  }
-#define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
-  
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC);
-  
-  template <typename L>
-  void callFunction(std::string const& functionName, std::string const& nextBlockName,
-		    ArgList const &args, L&& returnSlot, API_FUNC) {
-    API_FUNC_BEGIN("callFunction");
-    callFunctionImpl(functionName, nextBlockName, lValue(std::forward<L>(returnSlot), API_FWD), args, API_FWD);
-  }
-
-  void returnFromFunction(API_FUNC) { API_FUNC_BEGIN("returnFromFunction"); returnFromFunctionImpl({}, API_FWD); }
-
-  // TODO: seperate template declarations from implementations in tpp file
-  template <typename R>
-  void returnFromFunction(R const &rhs, API_FUNC) { API_FUNC_BEGIN("returnFromFunction");
-    returnFromFunctionImpl(rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  void assign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("assign");
-    assignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename R>
-  void writeOut(R const &rhs, API_FUNC) { API_FUNC_BEGIN("writeOut");
-    writeOutImpl(rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L>
-  SlotProxy structField(L const &obj, std::string const &field, API_FUNC) { API_FUNC_BEGIN("structField");
-    return structFieldImpl(lValue(obj, API_FWD), field, API_FWD);
-  }
-
-  template <typename L>
-  SlotProxy structField(L const &obj, int fieldIndex, API_FUNC) { API_FUNC_BEGIN("structField");
-    return structFieldImpl(lValue(obj, API_FWD), fieldIndex, API_FWD);
-  }
-
-  template <typename Array>
-  SlotProxy arrayElement(Array const &arr, int index, API_FUNC) { API_FUNC_BEGIN("arrayElement");
-    return arrayElementImpl(lValue(arr, API_FWD), index, API_FWD);
-  }
-  
-  template <typename Array, typename Index>
-  SlotProxy arrayElement(Array const &arr, Index const &index, API_FUNC) { API_FUNC_BEGIN("arrayElement");
-    return arrayElementImpl(lValue(arr, API_FWD), rValue(index, API_FWD), API_FWD);
-  }
-
-  template <typename Pointer>
-  SlotProxy dereferencePointer(Pointer const &ptr, API_FUNC) { API_FUNC_BEGIN("dereferencePointer");
-    return dereferencePointerImpl(rValue(ptr, API_FWD), API_FWD);
-  }
-
-  // TODO: xxxAssign should take LValue, but xxx can take an RValue
-  template <typename L, typename R>
-  void addAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addAssign");
-    addAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy add(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("add");
-    return addImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  void subAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("subAssign");
-    subAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy sub(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("sub");
-    return subImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-  
-  template <typename L, typename R>
-  void mulAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("mulAssign");
-    mulAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy mul(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("mul");
-    return mulImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-
-  template <typename L, typename R>
-  void divAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("divAssign");
-    divAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-  
-  template <typename L, typename R>
-  SlotProxy div(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("div");
-    return divImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  void modAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("divAssign");
-    modAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-  
-  template <typename L, typename R>
-  SlotProxy mod(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("mod");
-    return modImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-  
-  template <typename L, typename R>
-  SlotProxy eq(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("eq");
-    return eqImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy neq(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("neq");
-    return neqImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-  
-  template <typename L, typename R>
-  SlotProxy lt(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("lt");
-    return ltImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy le(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("le");
-    return leImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy gt(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("gt");
-    return gtImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-
-  template <typename L, typename R>
-  SlotProxy ge(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("ge");
-    return geImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
-  }
-  
-  
-  
-  template <typename L>
-  SlotProxy addressOf(L const &obj, API_FUNC) { API_FUNC_BEGIN("addressOf");
-    return addressOfImpl(lValue(obj, API_FWD), API_FWD);
-  }
-
-  template <typename Condition>
-  void branchIf(Condition const &condition, std::string const &trueLabel,
-		std::string const &falseLabel, API_FUNC) { API_FUNC_BEGIN("branchIf");
-    return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
-  }
-
-  
+  Slot local(std::string const& name, bool globalReference = false) const;  
   Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobalReference(Slot const &globalSlot);
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC);
+  void returnFromFunction(API_FUNC);
 
-  // TODO: rename to resolveVar(...)
-  Slot local(std::string const& name, bool globalReference = false) const;
 
+  // TODO: there must be a cleaner way to define a struct
+  template <typename ... Args> StructFields constructFields(Args&& ... args);
+  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
+
+
+  template <typename... Args> ArgList constructFunctionArguments_(API_FUNC_SOURCE, Args&&... args);  
+  #define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
 
   // TODO: replace FunctionSignature with types::FunctionType and accept a vector of strings that
-  //       bind variables to the param-types.
-
-  template <typename ... Args>
-  FunctionSignature constructFunctionSignature(Args&& ... args) {
-    return FunctionSignature{std::forward<Args>(args)...};
-  }
+  //       bind variables to the param-types.  
+  template <typename ... Args> FunctionSignature constructFunctionSignature(Args&& ... args);
   
-  void beginFunction(std::string const &name, FunctionSignature const &sig, API_FUNC); 
-  inline void beginFunction(std::string const &name) {
-    beginFunction(name, constructFunctionSignature(TypeSystem::voidT()));
-  }
+  template <typename Ret> void callFunction(std::string const& functionName, std::string const& nextBlockName,
+					    ArgList const &args, Ret const &returnSlot, API_FUNC);
 
+  // TODO: seperate template declarations from implementations in tpp file
+  // TODO: xxxAssign should take LValue, but xxx can take an RValue
+  template <typename Ret> void returnFromFunction(Ret const &ret, API_FUNC);
+  template <typename Val> void writeOut(Val const &val, API_FUNC);
+  template <typename Obj> SlotProxy structField(Obj const &obj, std::string const &field, API_FUNC);
+  template <typename Obj> SlotProxy structField(Obj const &obj, int fieldIndex, API_FUNC);
+  template <typename Ptr> SlotProxy dereferencePointer(Ptr const &ptr, API_FUNC);
+  template <typename Arr> SlotProxy arrayElement(Arr const &arr, int index, API_FUNC);  
+  template <typename Arr,
+	    typename Idx> SlotProxy arrayElement(Arr const &arr, Idx const &index, API_FUNC);
+
+  template <typename L, typename R> void assign(L const &lhs, R const &rhs, API_FUNC);
+
+  template <typename L, typename R> void addAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> void subAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> void mulAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> void divAssign(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> void modAssign(L const &lhs, R const &rhs, API_FUNC);  
+
+  template <typename L, typename R> SlotProxy add(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy sub(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> SlotProxy mul(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy div(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy mod(L const &lhs, R const &rhs, API_FUNC);  
+
+  template <typename L, typename R> SlotProxy eq(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy neq(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> SlotProxy lt(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy le(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy gt(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> SlotProxy ge(L const &lhs, R const &rhs, API_FUNC);  
+  
+  
+  template <typename Obj> SlotProxy addressOf(Obj const &obj, API_FUNC);
+  template <typename Con> void branchIf(Con const &condition, std::string const &trueLabel,
+					std::string const &falseLabel, API_FUNC);
   
 private:
   // Diagnostics (compiler_diag.cc)
@@ -307,7 +169,7 @@ private:
   // Implementation functions for public interface
   void setNextBlockImpl(int index);
   void setNextBlockImpl(std::string const &f, std::string const &b);
-  
+
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
 			std::optional<values::LValue> const &returnSlot, ArgList const &args, API_CTX);
   void returnFromFunctionImpl(std::optional<values::RValue> const &ret, API_CTX);
@@ -566,57 +428,6 @@ private:
   auto getFieldIndices(Args... args) {
     return std::make_tuple(getFieldIndex(static_cast<Cell>(args))...);
   }
-
-  // // Helper for creating argument vector
-  // template <typename ... Args> 
-  // std::vector<values::RValue> constructArgumentList(Args&& ... args) {
-  //   std::vector<values::RValue> result; result.reserve(sizeof...(args));
-  //   (result.emplace_back(rValue(std::forward<Args>(args))), ...);
-  //   return result;
-  // }
-  
-  
-  // // Error Handling
-  // struct Error: std::exception {
-
-  //   std::string msg;
-  //   Error(std::string const &msgHead): msg(msgHead) {}
-    
-  //   template <typename T>
-  //   Error &operator<<(T const &val) {
-  //     std::ostringstream oss;
-  //     oss << val;
-  //     msg += oss.str();
-  //     return *this;
-  //   }
-
-  //   virtual char const *what() const noexcept override {
-  //     return msg.c_str();
-  //   }
-  // };
-
-  // template <typename ... Args> requires (sizeof...(Args) > 0)
-  // void error(Args&& ... args) const {
-  //   Error err("Backend error: "); (err << ... << args);
-  //   throw err;
-  // }
-
-  // template <typename ... Args> requires (sizeof...(Args) > 0)
-  // void warning(Args&& ... args) const {
-  //   Error err("Backend warning: "); (err << ... << args);
-  //   throw err;
-  // }
-  
-  // template <typename ... Args> requires (sizeof...(Args) > 0)
-  // void error_if(bool const condition, Args&& ... args) const {
-  //   if (condition) error(std::forward<Args>(args)...);
-  // }
-
-  // template <typename ... Args> requires (sizeof...(Args) > 0)
-  // void warning_if(bool const condition, Args&& ... args) const {
-  //   if (condition) warning(std::forward<Args>(args)...);
-  // }
-
-  
-  
 };
+
+#include "compiler_public.tpp"
