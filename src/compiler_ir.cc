@@ -959,35 +959,34 @@ void Compiler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
   
   pushPtr();
   if (lhs.type->usesValue1()) {
-    assert(false && "not implemented");
-    // Slot const tmp = getTemp(TypeSystem::raw(2));
-    // moveTo(lhs, MacroCell::Value0);    
-    // divMod16Const(denom, Cell{lhs, MacroCell::Value1},
-    // 		  Cell{lhs, MacroCell::Payload0},
-    // 		  Cell{lhs, MacroCell::Payload1},
-    // 		  Temps<8>::select(lhs, MacroCell::Scratch0,
-    // 				   lhs, MacroCell::Scratch1,
-    // 				   tmp, MacroCell::Scratch0,
-    // 				   tmp, MacroCell::Scratch1,
-    // 				   tmp + 1, MacroCell::Scratch0,
-    // 				   tmp + 1, MacroCell::Scratch1,
-    // 				   tmp + 1, MacroCell::Payload0,
-    // 				   tmp + 1, MacroCell::Payload1));
-    // moveTo(lhs, MacroCell::Payload0);
-    // zeroCell();
-    // moveTo(lhs, MacroCell::Payload1);
-    // zeroCell();
+    moveTo(lhs, MacroCell::Value0);    
+    divMod16Destructive(Cell{lhs, MacroCell::Value1},
+			Cell{rhsCopy, MacroCell::Value0},
+			Cell{rhsCopy, MacroCell::Value1},
+			Cell{lhs, MacroCell::Payload0},
+			Cell{lhs, MacroCell::Payload1},
+			Temps<8>::select(lhs, MacroCell::Scratch0,
+					 lhs, MacroCell::Scratch1,
+					 rhs, MacroCell::Scratch0,
+					 rhs, MacroCell::Scratch1,
+					 rhsCopy, MacroCell::Scratch0,
+					 rhsCopy, MacroCell::Scratch1,
+					 rhsCopy, MacroCell::Payload0,
+					 rhsCopy, MacroCell::Payload1));
+    moveTo(lhs, MacroCell::Payload0);
+    moveField(Cell{lhs, MacroCell::Value0});
+    moveTo(lhs, MacroCell::Payload1);
+    moveField(Cell{lhs, MacroCell::Value1});
     
   } else {
-    Slot const tmp = getTemp(TypeSystem::raw(1)); // tmp donor
     moveTo(lhs, MacroCell::Value0);    
     divModDestructive(Cell{rhsCopy, MacroCell::Value0},
 		      Cell{lhs, MacroCell::Scratch0},
 		      Temps<5>::select(lhs, MacroCell::Scratch1,
 				       lhs, MacroCell::Payload0,
 				       lhs, MacroCell::Payload1,
-				       tmp, MacroCell::Scratch0,
-				       tmp, MacroCell::Scratch1));
+				       rhsCopy, MacroCell::Scratch0,
+				       rhsCopy, MacroCell::Scratch1));
 
     moveTo(lhs, MacroCell::Scratch0);
     moveField(Cell{lhs, MacroCell::Value0});

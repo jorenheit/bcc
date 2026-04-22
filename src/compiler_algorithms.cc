@@ -1,6 +1,6 @@
 #include "compiler.ih"
 
-// TODO: group binops in files: compiler_mul.cc, etc
+// TODO: group binops in files: compiler_mul.cc, ...
 
 void Compiler::loopOpen(std::string const &tag) {
   emit<primitive::LoopOpen>(tag);
@@ -448,7 +448,7 @@ void Compiler::divModDestructive(Cell denom, Cell modResult, Temps<5> tmp) {
 
   moveTo(modResult); setToValue(0);
   moveTo(divResult); moveField(numCopy);
-  moveTo(denom);     copyField(denomCopy);
+  moveTo(denom);     copyField(denomCopy, tmp.select<4>());
   moveTo(loopFlag);  setToValue(1);
 
   // Division by 0

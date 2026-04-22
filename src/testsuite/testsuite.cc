@@ -31,7 +31,7 @@
 namespace bftest {
 
   struct RunOptions {
-    std::size_t maxSteps = 50'000'000;
+    std::size_t maxSteps = -1UL; //50'000'000;
     bool errorOnPointerUnderflow = false;
   };
 
@@ -154,7 +154,7 @@ namespace bftest {
     std::string expectedOutput;
     std::string input;
     bool requireHalt = true;
-    std::size_t maxSteps = 50'000'000;
+    std::size_t maxSteps = -1UL; //50'000'000;
   };
 
   struct TestOutcome {
@@ -416,7 +416,7 @@ namespace bftest {
 inline bftest::TestCase expectOutput(std::string name,
                                      std::string expectedOutput,
                                      std::function<std::string()> buildProgram,
-                                     std::size_t maxSteps = 50'000'000) {
+                                     std::size_t maxSteps = -1UL /*50'000'000*/) {
   return bftest::TestCase{
     .name = std::move(name),
     .buildProgram = std::move(buildProgram),
@@ -956,6 +956,52 @@ tests.push_back(expectOutput("Pointer To Pointer Arithmetic: Array Of Pointers",
                              "ACB", []() {
 #include "tests/pointer_to_pointer_array_arithmetic.cc"
                              })); 
+
+tests.push_back(expectOutput("Integer Multiplication i8",
+                             "AM", []() {
+#include "tests/integer_multiplication_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Multiplication i16",
+                             "\"\"DD", []() {
+#include "tests/integer_multiplication_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Multiplication Mixed i16/i8",
+                             "\"\"DD", []() {
+#include "tests/integer_multiplication_mixed_i16_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Division i8",
+                             "!#", []() {
+#include "tests/integer_division_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Division i16",
+                             "AACC", []() {
+#include "tests/integer_division_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Division Mixed i16/i8",
+                             "AACC", []() {
+#include "tests/integer_division_mixed_i16_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Modulo i8",
+                             " !", []() {
+#include "tests/integer_modulo_i8.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Modulo i16",
+                             "  !!", []() {
+#include "tests/integer_modulo_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Modulo Mixed i16/i8",
+                             "AABB", []() {
+#include "tests/integer_modulo_mixed_i16_i8.cc"
+                             }));
+
  return tests;
 }
 

@@ -8,22 +8,28 @@ int main() try {
   c.setEntryPoint("main");
 
   c.begin(); {
-    auto i8 = TypeSystem::i8();
-    auto i16 = TypeSystem::i16();
-      
+
     c.beginFunction("main"); {
-      c.declareLocal("x", i16);
-      c.declareLocal("y", i16);
-      
+      c.declareLocal("x", TypeSystem::i16());
+      c.declareLocal("y", TypeSystem::i8());
+      c.declareLocal("z", TypeSystem::i16());
+
       c.beginBlock("entry"); {
-	c.assign("x", values::i16(2100));
-	c.assign("y", values::i16(300));
-	c.writeOut(c.div("x", "y"));
+	c.assign("x", values::i16(100));
+	c.assign("y", values::i8(34));
+
+	c.modAssign("x", "y"); // 100 % 34 = 0x0020
+	// c.writeOut("x");
+	// c.writeOut(values::i16(CAT('A', '!')));
+	c.writeOut(c.add("x", values::i16(CAT('!', 'A')))); // 0x0020 + 0x4121 = 0x4141 -> AA
+
+	c.assign("x", values::i16(101));
+	c.assign("z", c.add(c.mod("x", "y"), values::i16(CAT('!', 'B')))); // 0x0021 + 0x4221 = 0x4242 -> BB
+	c.writeOut("z"); // BB
+
 	c.returnFromFunction();
       } c.endBlock();
-      
     } c.endFunction();
-
     
   } c.end();
 
