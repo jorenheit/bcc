@@ -830,6 +830,172 @@ void Compiler::mulSlotByConst(Slot const &lhs, int factor) {
   popPtr();
 }
 
+void Compiler::divSlotByConst(Slot const &lhs, int denom) {
+
+  pushPtr();
+  if (lhs.type->usesValue1()) {
+    Slot const tmp = getTemp(TypeSystem::raw(2));
+    moveTo(lhs, MacroCell::Value0);    
+    divMod16Const(denom, Cell{lhs, MacroCell::Value1},
+		  Cell{lhs, MacroCell::Payload0},
+		  Cell{lhs, MacroCell::Payload1},
+		  Temps<8>::select(lhs, MacroCell::Scratch0,
+				   lhs, MacroCell::Scratch1,
+				   tmp, MacroCell::Scratch0,
+				   tmp, MacroCell::Scratch1,
+				   tmp + 1, MacroCell::Scratch0,
+				   tmp + 1, MacroCell::Scratch1,
+				   tmp + 1, MacroCell::Payload0,
+				   tmp + 1, MacroCell::Payload1));
+    moveTo(lhs, MacroCell::Payload0);
+    zeroCell();
+    moveTo(lhs, MacroCell::Payload1);
+    zeroCell();
+    
+  } else {
+    Slot const tmp = getTemp(TypeSystem::raw(1));
+    moveTo(lhs, MacroCell::Value0);    
+    divModConst(denom, Cell{lhs, MacroCell::Scratch0},
+		Temps<5>::select(lhs, MacroCell::Scratch1,
+				 lhs, MacroCell::Payload0,
+				 lhs, MacroCell::Payload1,
+				 tmp, MacroCell::Scratch0,
+				 tmp, MacroCell::Scratch1));
+
+    moveTo(lhs, MacroCell::Scratch0);
+    zeroCell();
+  }
+  
+  popPtr();
+}
+
+void Compiler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
+
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+
+  
+  pushPtr();
+  if (lhs.type->usesValue1()) {
+    moveTo(lhs, MacroCell::Value0);    
+    divMod16Destructive(Cell{lhs, MacroCell::Value1},
+			Cell{rhsCopy, MacroCell::Value0},
+			Cell{rhsCopy, MacroCell::Value1},
+			Cell{lhs, MacroCell::Payload0},
+			Cell{lhs, MacroCell::Payload1},
+			Temps<8>::select(lhs, MacroCell::Scratch0,
+					 lhs, MacroCell::Scratch1,
+					 rhs, MacroCell::Scratch0,
+					 rhs, MacroCell::Scratch1,
+					 rhsCopy, MacroCell::Scratch0,
+					 rhsCopy, MacroCell::Scratch1,
+					 rhsCopy, MacroCell::Payload0,
+					 rhsCopy, MacroCell::Payload1));
+    moveTo(lhs, MacroCell::Payload0);
+    zeroCell();
+    moveTo(lhs, MacroCell::Payload1);
+    zeroCell();
+    
+  } else {
+    moveTo(lhs, MacroCell::Value0);    
+    divModDestructive(Cell{rhsCopy, MacroCell::Value0},
+		      Cell{lhs, MacroCell::Scratch0},
+		      Temps<5>::select(lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1,
+				       rhsCopy, MacroCell::Scratch0,
+				       rhsCopy, MacroCell::Scratch1));
+
+    moveTo(lhs, MacroCell::Scratch0);
+    zeroCell();
+  }
+  
+  popPtr();
+}
+
+void Compiler::modSlotByConst(Slot const &lhs, int denom) {
+
+
+  pushPtr();
+  moveTo(lhs, MacroCell::Value0);    
+  if (lhs.type->usesValue1()) {
+    Slot const tmp = getTemp(TypeSystem::raw(2));
+    divMod16Const(denom, Cell{lhs, MacroCell::Value1},
+		  Cell{lhs, MacroCell::Payload0},
+		  Cell{lhs, MacroCell::Payload1},
+		  Temps<8>::select(lhs, MacroCell::Scratch0,
+				   lhs, MacroCell::Scratch1,
+				   tmp, MacroCell::Scratch0,
+				   tmp, MacroCell::Scratch1,
+				   tmp + 1, MacroCell::Scratch0,
+				   tmp + 1, MacroCell::Scratch1,
+				   tmp + 1, MacroCell::Payload0,
+				   tmp + 1, MacroCell::Payload1));
+
+    moveTo(lhs, MacroCell::Payload0);
+    moveField(Cell{lhs, MacroCell::Value0});
+    moveTo(lhs, MacroCell::Payload1);
+    moveField(Cell{lhs, MacroCell::Value0});
+  } else {
+    Slot const tmp = getTemp(TypeSystem::raw(1));
+    divModConst(denom, Cell{lhs, MacroCell::Scratch0},
+		Temps<5>::select(lhs, MacroCell::Scratch1,
+				 lhs, MacroCell::Payload0,
+				 lhs, MacroCell::Payload1,
+				 tmp, MacroCell::Scratch0,
+				 tmp, MacroCell::Scratch1));
+
+    moveTo(lhs, MacroCell::Scratch0);
+    moveField(Cell{lhs, MacroCell::Value0});
+  }
+  
+  popPtr();
+}
+
+void Compiler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
+
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  
+  pushPtr();
+  if (lhs.type->usesValue1()) {
+    assert(false && "not implemented");
+    // Slot const tmp = getTemp(TypeSystem::raw(2));
+    // moveTo(lhs, MacroCell::Value0);    
+    // divMod16Const(denom, Cell{lhs, MacroCell::Value1},
+    // 		  Cell{lhs, MacroCell::Payload0},
+    // 		  Cell{lhs, MacroCell::Payload1},
+    // 		  Temps<8>::select(lhs, MacroCell::Scratch0,
+    // 				   lhs, MacroCell::Scratch1,
+    // 				   tmp, MacroCell::Scratch0,
+    // 				   tmp, MacroCell::Scratch1,
+    // 				   tmp + 1, MacroCell::Scratch0,
+    // 				   tmp + 1, MacroCell::Scratch1,
+    // 				   tmp + 1, MacroCell::Payload0,
+    // 				   tmp + 1, MacroCell::Payload1));
+    // moveTo(lhs, MacroCell::Payload0);
+    // zeroCell();
+    // moveTo(lhs, MacroCell::Payload1);
+    // zeroCell();
+    
+  } else {
+    Slot const tmp = getTemp(TypeSystem::raw(1)); // tmp donor
+    moveTo(lhs, MacroCell::Value0);    
+    divModDestructive(Cell{rhsCopy, MacroCell::Value0},
+		      Cell{lhs, MacroCell::Scratch0},
+		      Temps<5>::select(lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1,
+				       tmp, MacroCell::Scratch0,
+				       tmp, MacroCell::Scratch1));
+
+    moveTo(lhs, MacroCell::Scratch0);
+    moveField(Cell{lhs, MacroCell::Value0});
+  }
+  
+  popPtr();
+}
+
 void Compiler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
@@ -1022,16 +1188,98 @@ void Compiler::mulAssignImpl(values::LValue const &lhs, values::RValue const &rh
   popPtr();  
 }
 
+void Compiler::divAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Div, lhs.type(), rhs.type());
+
+  pushPtr();
+  
+  Slot const lhsSlot = lhs.slot()->materialize(*this);
+  if (rhs.hasSlot()) {
+    divSlotBySlot(lhsSlot, rhs.slot()->materialize(*this));
+  } else {
+    API_REQUIRE_IS_INTEGER(rhs);
+    int const denom = values::cast<types::IntegerType>(rhs.value())->value();
+    divSlotByConst(lhsSlot, denom);
+  }
+
+  if (not lhs.slot()->direct()) {
+    lhs.slot()->write(*this, lhsSlot);
+  }
+
+  
+  popPtr();
+}
+
+
+void Compiler::modAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Mod, lhs.type(), rhs.type());
+
+  pushPtr();
+  
+  Slot const lhsSlot = lhs.slot()->materialize(*this);
+  if (rhs.hasSlot()) {
+    modSlotBySlot(lhsSlot, rhs.slot()->materialize(*this));
+  } else {
+    API_REQUIRE_IS_INTEGER(rhs);
+    int const denom = values::cast<types::IntegerType>(rhs.value())->value();
+    modSlotByConst(lhsSlot, denom);
+  }
+
+  if (not lhs.slot()->direct()) {
+    lhs.slot()->write(*this, lhsSlot);
+  }
+
+  
+  popPtr();
+}
+
 SlotProxy Compiler::mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
 
-  Slot const result = getTemp(lhs.type());
+  auto mulResult = types::rules::binOpResult(BinOp::Mul, lhs.type(), rhs.type());
+  assert(mulResult);
+  
+  Slot const result = getTemp(mulResult.type);
   assign(result, lhs);
   mulAssign(result, rhs);
   return result;
 }
+
+SlotProxy Compiler::divImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Div, lhs.type(), rhs.type());
+
+  auto divResult = types::rules::binOpResult(BinOp::Div, lhs.type(), rhs.type());
+  assert(divResult);
+
+  Slot const result = getTemp(divResult.type);
+  assign(result, lhs);
+  divAssign(result, rhs);
+  return result;
+}
+
+SlotProxy Compiler::modImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_BINOP(BinOp::Mod, lhs.type(), rhs.type());
+
+  auto modResult = types::rules::binOpResult(BinOp::Mod, lhs.type(), rhs.type());
+  assert(modResult);
+
+  Slot const result = getTemp(modResult.type);
+  assign(result, lhs);
+  modAssign(result, rhs);
+  return result;
+}
+
+
 
 // SlotProxy eqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
 //   SlotProxy neqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);

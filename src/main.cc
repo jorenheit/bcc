@@ -13,12 +13,12 @@ int main() try {
       
     c.beginFunction("main"); {
       c.declareLocal("x", i16);
-      c.declareLocal("y", i8);
+      c.declareLocal("y", i16);
       
       c.beginBlock("entry"); {
-	c.assign("x", values::i16(10));
-	c.assign("y", values::i8(100));
-	c.writeOut(c.mul("x", "y"));
+	c.assign("x", values::i16(2100));
+	c.assign("y", values::i16(300));
+	c.writeOut(c.div("x", "y"));
 	c.returnFromFunction();
       } c.endBlock();
       

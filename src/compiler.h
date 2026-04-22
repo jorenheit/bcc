@@ -60,11 +60,13 @@ class Compiler {
   
 public:
   inline Compiler() { TypeSystem::init(); }
-  
+
+  // TODO: API_FUNC 
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
 
   // IR Directives
+  // TODO: move implementation to compiler_public.cc and compiler_public.tpp
   void setEntryPoint(std::string functionName, API_FUNC);
   void begin(API_FUNC);
   void end(API_FUNC);
@@ -164,6 +166,7 @@ public:
     return dereferencePointerImpl(rValue(ptr, API_FWD), API_FWD);
   }
 
+  // TODO: xxxAssign should take LValue, but xxx can take an RValue
   template <typename L, typename R>
   void addAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("addAssign");
     addAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
@@ -194,6 +197,27 @@ public:
     return mulImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
   }
 
+
+  template <typename L, typename R>
+  void divAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("divAssign");
+    divAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+  
+  template <typename L, typename R>
+  SlotProxy div(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("div");
+    return divImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+
+  template <typename L, typename R>
+  void modAssign(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("divAssign");
+    modAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+  
+  template <typename L, typename R>
+  SlotProxy mod(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("mod");
+    return modImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
+  }
+  
   template <typename L, typename R>
   SlotProxy eq(L const &lhs, R const &rhs, API_FUNC) { API_FUNC_BEGIN("eq");
     return eqImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
@@ -297,6 +321,8 @@ private:
   SlotProxy addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   SlotProxy mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy divImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  SlotProxy modImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
 
   // Comparison operators
   SlotProxy eqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
@@ -310,6 +336,8 @@ private:
   void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
   void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void divAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  void modAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
 
   void branchIfImpl(values::RValue const &condition, std::string const &trueLabel,
 			   std::string const &falseLabel, API_CTX);
@@ -326,6 +354,10 @@ private:
   void subConstFromSlot(Slot const &lhs, int delta);
   void mulSlotBySlot(Slot const &lhs, Slot const &rhs);
   void mulSlotByConst(Slot const &lhs, int factor);
+  void divSlotByConst(Slot const &lhs, int denom);
+  void divSlotBySlot(Slot const &lhs, Slot const &rhs);
+  void modSlotByConst(Slot const &lhs, int denom);
+  void modSlotBySlot(Slot const &lhs, Slot const &rhs);
 
   void branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel);
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
@@ -341,6 +373,7 @@ private:
   void moveRel(int diff);
   void switchField(MacroCell::Field field);  
   void zeroCell();
+  void zeroCellPlus();
   void loopOpen(std::string const &tag = defaultOpenTag());
   void loopClose(std::string const &tag = defaultCloseTag());
 
@@ -358,20 +391,11 @@ private:
   void inc16(Cell high, Temps<2>);
   void dec16(Cell high, Temps<2>);
   
+
+  // TODO: constructive versions should accept "other" before result and carry
   void addConst(int delta);
   void addConstAndCarry(int delta, Cell carry, Temps<3>);
   void add16Const(int delta, Cell high, Temps<4>);
-
-  void subConst(int delta);
-  void subConstAndCarry(int delta, Cell carry, Temps<3>);
-  void sub16Const(int delta, Cell high, Temps<4>);
-
-
-  void mulConst(int factor, Temps<3>);
-  void mul16Const(int factor, Cell high, Temps<8>);
-
-  
-  // TODO: constructive versions should accept "other" before result and carry
   void addDestructive(Cell other);
   void addConstructive(Cell result, Cell other, Temps<2>);
   void add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
@@ -379,6 +403,9 @@ private:
   void addAndCarryDestructive(Cell carry, Cell other, Temps<3>);
   void addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4>);
 
+  void subConst(int delta);
+  void subConstAndCarry(int delta, Cell carry, Temps<3>);
+  void sub16Const(int delta, Cell high, Temps<4>);
   void subDestructive(Cell other);
   void subConstructive(Cell result, Cell other, Temps<2>);
   void sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
@@ -386,13 +413,24 @@ private:
   void subAndCarryDestructive(Cell carry, Cell other, Temps<3>);
   void subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4>);
 
+  void mulConst(int factor, Temps<3>);
+  void mul16Const(int factor, Cell high, Temps<8>);
   void mulDestructive(Cell other, Temps<3>);
   void mulConstructive(Cell result, Cell factor, Temps<4>);
   void mul16Destructive(Cell high, Cell factorLow, Cell factorHigh, Temps<9>);
   void mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell factorLow, Cell factorHigh, Temps<11>);
-  
+
+  void divModConst(int denom, Cell modResult, Temps<5>);
+  void divMod16Const(int denom, Cell high, Cell modResultLow, Cell modResultHigh, Temps<8>);
+  void divModDestructive(Cell denom, Cell modResult, Temps<5>);
+  void divModConstructive(Cell result, Cell denom, Cell modResult, Temps<6>);
+  void divMod16Destructive(Cell high, Cell denomLow, Cell denomHigh, Cell modResultLow, Cell modResultHigh, Temps<8>);
+  void divMod16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell denomLow, Cell denomHigh, Cell modResultLow, Cell modResultHigh, Temps<12>);
+
   void notDestructive(Temps<1>);
   void notConstructive(Cell result, Temps<1>);
+  void not16Destructive(Cell high, Temps<1>);
+  void not16Constructive(Cell high, Cell result, Temps<2>);
 
   void orDestructive(Cell other, Temps<1>);
   void orConstructive(Cell result, Cell other, Temps<2>);
