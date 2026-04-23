@@ -46,7 +46,7 @@ std::string Compiler::simplifyProgram(std::string const &bf) {
 
 void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
 					  std::string const &callee,
-					  std::vector<values::RValue> const &args, API_CTX) {
+					  std::vector<ExpressionResult> const &args, API_CTX) {
   auto const getHandles = [&](){
     std::vector<types::TypeHandle> result;
     for (auto const &arg: args) {

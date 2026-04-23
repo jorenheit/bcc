@@ -95,6 +95,35 @@ void Compiler::copyField(Cell dest, Temps<1> tmp) {
   emit<primitive::CopyData>(src, dst, tmp0);
 }
 
+void Compiler::boolDestructive(Temps<1> tmp) {
+  auto [current, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
+  emit<primitive::Boolean>(current, tmp0);
+}
+
+void Compiler::bool16Destructive(Cell high, Temps<1> tmp) {
+  orDestructive(high, tmp.select<0>());
+}
+
+void Compiler::boolConstructive(Cell result, Temps<1> tmp) {
+  pushPtr();
+  copyField(result, tmp);
+  moveTo(result);
+  boolDestructive(tmp);
+  popPtr();
+}
+
+void Compiler::bool16Constructive(Cell high, Cell result, Temps<2> tmp) {
+  Cell const resultHigh = tmp.get<0>();
+  
+  pushPtr();
+  copyField(result, tmp.select<1>());
+  moveTo(high);
+  copyField(resultHigh, tmp.select<1>());
+  moveTo(result);
+  bool16Destructive(resultHigh, tmp.select<1>());
+  popPtr();  
+}
+
 
 void Compiler::notDestructive(Temps<1> tmp) {
   auto [cur, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
@@ -159,6 +188,102 @@ void Compiler::andConstructive(Cell result, Cell other, Temps<2> tmp) {
   andDestructive(otherCopy, tmp.select<1>());
   popPtr();
 }
+
+void Compiler::and16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+
+  pushPtr();
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+
+  // Collapse both to bool
+  moveTo(currentLow);
+  bool16Destructive(currentHigh, tmp);
+  moveTo(otherLow);
+  bool16Destructive(otherHigh, tmp);
+
+  // And results
+  moveTo(currentLow);
+  andDestructive(otherLow, tmp);
+  popPtr();
+}
+
+
+void Compiler::and16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+  Cell const otherCopyLow = tmp.get<0>();
+  Cell const otherCopyHigh = tmp.get<1>();
+  Cell const resultHigh = tmp.get<2>();
+  
+  pushPtr();
+
+  moveTo(currentLow);  copyField(result, tmp.select<3>());
+  moveTo(currentHigh); copyField(resultHigh, tmp.select<3>());
+  moveTo(otherLow);    copyField(otherCopyLow, tmp.select<3>());
+  moveTo(otherHigh);   copyField(otherCopyHigh, tmp.select<3>());
+
+  moveTo(result);
+  and16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3>());
+  popPtr();
+}
+
+void Compiler::nandDestructive(Cell other, Temps<1> tmp) {
+  auto [cur, oth, tmp0] = getFieldIndices(_dp.current(), other, tmp.get<0>());
+  emit<primitive::Nand>(cur, oth, tmp0);
+}
+
+void Compiler::nandConstructive(Cell result, Cell other, Temps<2> tmp) { 
+  Cell const &otherCopy = tmp.get<0>();
+  pushPtr();
+  copyField(result, tmp.select<1>());  
+  moveTo(other);
+  copyField(otherCopy, tmp.select<1>());
+  moveTo(result);
+  nandDestructive(otherCopy, tmp.select<1>());
+  popPtr();
+}
+
+void Compiler::nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+
+  pushPtr();
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+
+  // Collapse both to bool
+  moveTo(currentLow);
+  bool16Destructive(currentHigh, tmp);
+  moveTo(otherLow);
+  bool16Destructive(otherHigh, tmp);
+
+  // And results
+  moveTo(currentLow);
+  nandDestructive(otherLow, tmp);
+  popPtr();
+}
+
+
+void Compiler::nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+  Cell const otherCopyLow = tmp.get<0>();
+  Cell const otherCopyHigh = tmp.get<1>();
+  Cell const resultHigh = tmp.get<2>();
+  
+  pushPtr();
+
+  moveTo(currentLow);  copyField(result, tmp.select<3>());
+  moveTo(currentHigh); copyField(resultHigh, tmp.select<3>());
+  moveTo(otherLow);    copyField(otherCopyLow, tmp.select<3>());
+  moveTo(otherHigh);   copyField(otherCopyHigh, tmp.select<3>());
+
+  moveTo(result);
+  nand16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3>());
+  popPtr();
+}
+
+
 
 void Compiler::compareToConstDestructive(int value, Temps<1> tmp) {
   auto [cur, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());

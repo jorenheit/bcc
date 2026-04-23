@@ -473,6 +473,13 @@ GEN(CopyData) {
 }
 
 
+// Boolean (destructive)
+TXT(Boolean) { return "bool"; } 
+GEN(Boolean) {
+  auto [cur, tmp] = defer::resolve(ctx, current, scratch);
+  return Algorithm::boolean(cur, tmp);
+}
+
 // Not (destructive)
 TXT(Not) { return "not"; } 
 GEN(Not) {

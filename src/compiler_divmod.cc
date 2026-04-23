@@ -1,83 +1,18 @@
 #include "compiler.ih"
 
-SlotProxy Compiler::divImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Div, lhs.type(), rhs.type());
+Compiler::Mop const Compiler::divSpec {
+  .op = BinOp::Div,
+  .fold = [](int x, int y) -> int { return x / y; },
+  .applyWithSlot = &Compiler::divSlotBySlot,
+  .applyWithConst = &Compiler::divSlotByConst
+};
 
-  auto divResult = types::rules::binOpResult(BinOp::Div, lhs.type(), rhs.type());
-  assert(divResult);
-
-  Slot const result = getTemp(divResult.type);
-  assign(result, lhs);
-  divAssign(result, rhs);
-  return result;
-}
-
-SlotProxy Compiler::modImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Mod, lhs.type(), rhs.type());
-
-  auto modResult = types::rules::binOpResult(BinOp::Mod, lhs.type(), rhs.type());
-  assert(modResult);
-  
-  Slot const result = getTemp(modResult.type);
-  assign(result, lhs);
-  modAssign(result, rhs);
-  return result;
-}
-
-void Compiler::divAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Div, lhs.type(), rhs.type());
-
-  pushPtr();
-  
-  Slot const lhsSlot = lhs.slot()->materialize(*this);
-  if (rhs.hasSlot()) {
-    divSlotBySlot(lhsSlot, rhs.slot()->materialize(*this));
-  } else {
-    API_REQUIRE_IS_INTEGER(rhs);
-    int const denom = values::cast<types::IntegerType>(rhs.value())->value();
-    divSlotByConst(lhsSlot, denom);
-  }
-
-  if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsSlot);
-  }
-
-  
-  popPtr();
-}
-
-
-void Compiler::modAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Mod, lhs.type(), rhs.type());
-
-  pushPtr();
-  
-  Slot const lhsSlot = lhs.slot()->materialize(*this);
-  if (rhs.hasSlot()) {
-    modSlotBySlot(lhsSlot, rhs.slot()->materialize(*this));
-  } else {
-    API_REQUIRE_IS_INTEGER(rhs);
-    int const denom = values::cast<types::IntegerType>(rhs.value())->value();
-    modSlotByConst(lhsSlot, denom);
-  }
-
-  if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsSlot);
-  }
-
-  
-  popPtr();
-}
-
-
+Compiler::Mop const Compiler::modSpec {
+  .op = BinOp::Mod,
+  .fold = [](int x, int y) -> int { return x % y; },
+  .applyWithSlot = &Compiler::modSlotBySlot,
+  .applyWithConst = &Compiler::modSlotByConst
+};
 
 void Compiler::divSlotByConst(Slot const &lhs, int denom) {
 

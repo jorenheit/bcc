@@ -1,71 +1,11 @@
 #include "compiler.ih"
 
-SlotProxy Compiler::addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
-
-  auto addResult = types::rules::binOpResult(BinOp::Add, lhs.type(), rhs.type());
-  assert(addResult);
-  
-  Slot const result = getTemp(addResult.type);
-  assign(result, lhs);
-  addAssign(result, rhs);
-  return result;
-}
-
-void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
-
-  pushPtr();
-
-  // TODO: factor this out (has in common with sub)
-  auto const [lhsBase, targetSlot, stride] = [&]() -> std::tuple<Slot, Slot, int> {
-    Slot const lhsBase = lhs.slot()->materialize(*this);
-    if (not types::isPointer(lhs.type())) {
-      return {lhsBase, lhsBase, 1};
-    }
-    auto ptrType = types::cast<types::PointerType>(lhs.type());      
-    return {
-      lhsBase,
-      lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset),
-      ptrType->pointeeType()->size()
-    };
-  }();
-
-  if (rhs.hasSlot()) {
-
-    auto operandSlot = [&]() -> Slot {
-      Slot const rhsSlot = rhs.slot()->materialize(*this);
-      if (stride == 1) return rhsSlot;
-
-      // Scale the operand
-      Slot const opSlot = [&]() {
-	if (not rhs.slot()->direct()) return rhsSlot;
-	Slot const copy = getTemp(rhs.type());
-	assignSlot(copy, rhsSlot);
-	return copy;
-      }();
-            
-      mulSlotByConst(opSlot, stride);
-      return opSlot;
-    }();
-    
-    addSlotToSlot(targetSlot, operandSlot);
-  }
-  else {
-    int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-    addConstToSlot(targetSlot, stride * delta);
-  }
-
-  if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsBase);
-  }
-  
-  popPtr();  
-}
+Compiler::Mop const Compiler::addSpec {
+  .op = BinOp::Add,
+  .fold = [](int x, int y) -> int { return x + y; },
+  .applyWithSlot = &Compiler::addSlotToSlot,
+  .applyWithConst = &Compiler::addConstToSlot
+};
 
 void Compiler::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();

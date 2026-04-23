@@ -193,6 +193,24 @@ namespace primitive {
   };
 
 
+  struct Boolean: Node {
+    DInt current, scratch;
+    /*
+      Converts 'current' to bool (destructive).
+
+      Assumed initial pointer position: current
+      Assumed empty: scratch
+      Invariants: ptr, scratch
+     */
+
+    inline explicit Boolean(DInt current, DInt scratch):
+      current(std::move(current)),
+      scratch(std::move(scratch))
+    {}
+    
+    COMMON_INTERFACE;
+  };
+  
   struct Not: Node {
     DInt current, scratch;
 

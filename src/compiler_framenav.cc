@@ -115,7 +115,7 @@ void Compiler::moveToPreviousFrame(Payload const &payload) {
 }
 
 
-void Compiler::initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args, API_CTX) {
+void Compiler::initializeArguments(std::string const &functionName, std::vector<ExpressionResult> const &args, API_CTX) {
 
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
@@ -153,7 +153,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
     }
   };
   
-  auto const constructInNextFrame = [&](auto&& self, int &offset, values::RValue const &arg) -> void {
+  auto const constructInNextFrame = [&](auto&& self, int &offset, ExpressionResult const &arg) -> void {
 
     if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
       Slot slot = arg.slot()->materialize(*this);
@@ -215,7 +215,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
       case types::I8:
       case types::I16: {
 	// Construct integer
-	int const value = values::cast<types::IntegerType>(arg.value())->value();
+	int const value = values::cast<types::IntegerType>(arg.literal())->value();
 	moveTo(0, MacroCell::Value0);
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
@@ -231,7 +231,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
       case types::STRING: {
 	// recursive call for each element
 	for (int i = 0; i != types::cast<types::ArrayLike>(argType)->length(); ++i)
-	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.value())->element(i), API_FWD));
+	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.literal())->element(i), API_FWD));
 	break;
       }
 	//TODO: pointer and struct as anonymous
@@ -242,7 +242,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 
   pushPtr();
   int offset = 0;
-  for (values::RValue const &arg: args) {
+  for (ExpressionResult const &arg: args) {
     constructInNextFrame(constructInNextFrame, offset, arg);
   }      
   popPtr();

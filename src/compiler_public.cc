@@ -91,11 +91,11 @@ void Compiler::beginFunction(std::string const &name, types::TypeHandle type, st
 }
 
 void Compiler::beginFunction(std::string const &name, API_FUNC) {
-  beginFunction(name, TypeSystem::function(TypeSystem::voidT()), {});
+  beginFunction(name, TypeSystem::function(TypeSystem::voidT()), std::vector<std::string>{});
 }
 
 void Compiler::beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC) {
-  beginFunction(name, funcType, {});
+  beginFunction(name, funcType, std::vector<std::string>{});
 }
 
 void Compiler::endFunction(API_FUNC) {
@@ -340,7 +340,7 @@ types::TypeHandle Compiler::defineStruct(std::string const& name, StructFields c
   return sType;
 }
 
-SlotProxy Compiler::structFieldImpl(values::LValue const &obj, int fieldIndex, API_CTX) {
+ExpressionResult Compiler::structFieldImpl(ExpressionResult const &obj, int fieldIndex, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
@@ -350,41 +350,61 @@ SlotProxy Compiler::structFieldImpl(values::LValue const &obj, int fieldIndex, A
   return structFieldImpl(obj, structType->fieldName(fieldIndex), API_FWD);
 }
 
-SlotProxy Compiler::structFieldImpl(values::LValue const &obj, std::string const &fieldName, API_CTX) {
+ExpressionResult Compiler::structFieldImpl(ExpressionResult const &obj, std::string const &fieldName, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
   API_REQUIRE_IS_FIELD(obj, fieldName);
 
-  return proxy::structField(obj.slot(), fieldName);
+  if (obj.isLiteral()) {
+    auto structVal = values::cast<types::StructType>(obj.literal());
+    return ExpressionResult{structVal->field(fieldName)};
+  }
+  
+  return ExpressionResult{proxy::structField(obj.slot(), fieldName)};
 }
 
-SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, int index, API_CTX) {
+ExpressionResult Compiler::arrayElementImpl(ExpressionResult const &arr, int index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
   API_REQUIRE_INDEX_IN_BOUNDS(arr, index);
 
-  return proxy::arrayElement(arr.slot(), index);  
+  if (arr.isLiteral()) {
+    auto arrVal = values::cast<types::ArrayLike>(arr.literal());
+    return ExpressionResult{arrVal->element(index)};
+  }
+  
+  return ExpressionResult{proxy::arrayElement(arr.slot(), index)};  
 }  
 
-SlotProxy Compiler::arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX) {
+ExpressionResult Compiler::arrayElementImpl(ExpressionResult const &arr, ExpressionResult const &index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
   API_REQUIRE_IS_INTEGER(index);
 
-  if (index.hasSlot()) return proxy::arrayElement(arr.slot(), index.slot());
-  else return arrayElementImpl(arr, values::cast<types::IntegerType>(index.value())->value(), API_FWD);  
+  if (index.isLiteral()) {
+    int const i = values::cast<types::IntegerType>(index.literal())->value();
+    return arrayElementImpl(arr, i, API_FWD);
+  }
+
+  if (arr.isLiteral()) {
+    Slot const tmp = getTemp(arr.type());
+    assignSlot(tmp, arr.literal());
+    return ExpressionResult{proxy::arrayElement(tmp, index.slot())};
+  }
+  
+  return ExpressionResult{proxy::arrayElement(arr.slot(), index.slot())};
 }
 
-
-SlotProxy Compiler::dereferencePointerImpl(values::RValue const &ptr, API_CTX) {
+ExpressionResult Compiler::dereferencePointerImpl(ExpressionResult const &ptr, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_POINTER(ptr);
-
-  return proxy::dereferencedPointer(ptr.hasSlot() ? ptr.slot() : getTemp(ptr.value()));
+  assert(not ptr.isLiteral());
+  
+  return ExpressionResult{proxy::dereferencedPointer(ptr.slot())};
 }
 
 void Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC) {
@@ -398,7 +418,7 @@ void Compiler::callFunction(std::string const& functionName, std::string const& 
 }
 
 void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-				std::optional<values::LValue> const &returnSlot, ArgList const &args, API_CTX) {
+				std::optional<ExpressionResult> const &returnSlot, ArgList const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -444,7 +464,7 @@ void Compiler::returnFromFunction(API_FUNC) {
   returnFromFunctionImpl({}, API_FWD);
 }
 
-void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, API_CTX) {
+void Compiler::returnFromFunctionImpl(std::optional<ExpressionResult> const &ret, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   
@@ -470,16 +490,16 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, 
 }
 
 
-void Compiler::branchIfImpl(values::RValue const &obj, std::string const &trueLabel,
-					std::string const &falseLabel, API_CTX) {
+void Compiler::branchIfImpl(ExpressionResult const &obj, std::string const &trueLabel,
+			    std::string const &falseLabel, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
 
-  if (obj.hasSlot()) branchIfSlot(obj.slot()->materialize(*this),
-					   trueLabel, falseLabel);
-  else {  
-    bool const value = values::cast<types::IntegerType>(obj.value())->value();
+  if (obj.hasSlot()) {
+    branchIfSlot(obj.slot()->materialize(*this), trueLabel, falseLabel);
+  } else {  
+    bool const value = values::cast<types::IntegerType>(obj.literal())->value();
     setNextBlockImpl(_currentFunction->name, value ? trueLabel : falseLabel);
   }
   
@@ -525,16 +545,17 @@ void Compiler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std:
   popPtr();
 }
 
-SlotProxy Compiler::addressOfImpl(values::LValue const &obj, API_CTX) {
+ExpressionResult Compiler::addressOfImpl(ExpressionResult const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
-
+  assert(not obj.isLiteral());
+  
   if (obj.slot()->direct()) {
     Slot const slot = obj.slot()->materialize(*this);
     API_REQUIRE(slot.kind != Slot::Temp, "Cannot take the address of a temporary value.");
   }
   
-  return obj.slot()->addressOf(*this);
+  return ExpressionResult(obj.slot()->addressOf(*this));
 }
 
 
@@ -731,13 +752,17 @@ void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
   else if (types::isArray(slot.type) || types::isString(slot.type)) {
     // recursive call for each element
     for (int i = 0; i != types::cast<types::ArrayLike>(val->type())->length(); ++i) {
-      arrayElement(slot, i)->write(*this, values::cast<types::ArrayLike>(val)->element(i));
+      ExpressionResult elem = arrayElement(slot, i);
+      assert(elem.hasSlot());
+      elem.slot()->write(*this, values::cast<types::ArrayLike>(val)->element(i));
     }
   }
   else if (types::isStruct(slot.type)) {
     // recursive call for each field	
     for (int i = 0; i != types::cast<types::StructType>(val->type())->fieldCount(); ++i) {
-      structField(slot, i)->write(*this, values::cast<types::StructType>(val)->field(i));
+      ExpressionResult field = structField(slot, i);
+      assert(field.hasSlot());
+      field.slot()->write(*this, values::cast<types::StructType>(val)->field(i));
     }
   }
   else {
@@ -747,14 +772,19 @@ void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
 }
 
 
-void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
+ExpressionResult Compiler::assignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_ASSIGNABLE(lhs.type(), rhs.type());
 
-  rhs.hasSlot()
-    ? lhs.slot()->write(*this, rhs.slot())
-    : lhs.slot()->write(*this, rhs.value());
+  if (rhs.hasSlot()) {
+    lhs.slot()->write(*this, rhs.slot());
+  }
+  else {
+    lhs.slot()->write(*this, rhs.literal());
+  }
+
+  return lhs;
 }
 
 
@@ -767,7 +797,7 @@ void Compiler::assignImpl(values::LValue const &lhs, values::RValue const &rhs, 
 
 
 
-void Compiler::writeOutImpl(values::RValue const &rhs, API_CTX) {
+void Compiler::writeOutImpl(ExpressionResult const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -775,7 +805,7 @@ void Compiler::writeOutImpl(values::RValue const &rhs, API_CTX) {
 
   Slot const slot = rhs.hasSlot()
     ? rhs.slot()->materialize(*this)
-    : getTemp(rhs.value());
+    : getTemp(rhs.literal());
 
   // Special case for Strings: look for NULL terminator
   if (types::isString(slot.type)) {

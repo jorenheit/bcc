@@ -8,34 +8,26 @@ int main() try {
   c.setEntryPoint("main");
 
   c.begin(); {
+
     auto i8 = TypeSystem::i8();
     auto i16 = TypeSystem::i16();
-    auto voidT = TypeSystem::voidT();
+    auto arrayT = TypeSystem::array(i8, 4);
     
     c.beginFunction("main"); {
       c.declareLocal("x", i8);
       c.declareLocal("y", i16);
 
       c.beginBlock("entry"); {
-	c.assign("x", values::i8('A'));
-	c.assign("y", values::i16('B'));
-	c.callFunction("foo", "end",
-		       c.constructFunctionArguments("x", "y"));
-      } c.endBlock();
 
-      c.beginBlock("end"); {
+	c.assign("x", values::i8(0));
+	c.assign("y", values::i16(1));
+	c.writeOut(c.lnand("x", "y"));
+	
+	
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
 
-    auto fooType = TypeSystem::function(voidT, i8, i16);
-    c.beginFunction("foo", fooType, {"x", "y"}); {
-      c.beginBlock("entry"); {
-	c.writeOut("x");
-	c.writeOut("y");
-	c.returnFromFunction();
-      } c.endBlock();
-    } c.endFunction();
   } c.end();
 
   std::cout << c.dumpBrainfuck() << '\n';

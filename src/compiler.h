@@ -7,7 +7,7 @@
 #include "program.h"
 #include "function.h"
 #include "data.h"
-#include "rlvalue.h"
+#include "expressionresult.h"
 #include "types.h"
 
 #define API_HEADER
@@ -62,7 +62,7 @@ public:
   inline Compiler() { TypeSystem::init(); }
 
   // TODO: there must be a cleaner way to pass args
-  using ArgList = std::vector<values::RValue>;
+  using ArgList = std::vector<ExpressionResult>;
   
   // TODO: API_FUNC 
   std::string dumpPrimitives() const;
@@ -99,47 +99,65 @@ public:
   template <typename ... Args> StructFields constructFields(Args&& ... args);
   types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
 
-
   template <typename... Args> ArgList constructFunctionArguments_(API_FUNC_SOURCE, Args&&... args);  
-  #define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
   
   template <typename Ret> void callFunction(std::string const& functionName, std::string const& nextBlockName,
 					    ArgList const &args, Ret const &returnSlot, API_FUNC);
 
-  // TODO: seperate template declarations from implementations in tpp file
-  // TODO: xxxAssign should take LValue, but xxx can take an RValue
   template <typename Ret> void returnFromFunction(Ret const &ret, API_FUNC);
-  template <typename Val> void writeOut(Val const &val, API_FUNC);
-  template <typename Obj> SlotProxy structField(Obj const &obj, std::string const &field, API_FUNC);
-  template <typename Obj> SlotProxy structField(Obj const &obj, int fieldIndex, API_FUNC);
-  template <typename Ptr> SlotProxy dereferencePointer(Ptr const &ptr, API_FUNC);
-  template <typename Arr> SlotProxy arrayElement(Arr const &arr, int index, API_FUNC);  
+
+  template <typename Obj> ExpressionResult structField(Obj const &obj, std::string const &field, API_FUNC);
+  template <typename Obj> ExpressionResult structField(Obj const &obj, int fieldIndex, API_FUNC);
+  template <typename Ptr> ExpressionResult dereferencePointer(Ptr const &ptr, API_FUNC);
+  template <typename Arr> ExpressionResult arrayElement(Arr const &arr, int index, API_FUNC);  
   template <typename Arr,
-	    typename Idx> SlotProxy arrayElement(Arr const &arr, Idx const &index, API_FUNC);
+	    typename Idx> ExpressionResult arrayElement(Arr const &arr, Idx const &index, API_FUNC);
 
-  template <typename L, typename R> void assign(L const &lhs, R const &rhs, API_FUNC);
 
-  template <typename L, typename R> void addAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> void subAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> void mulAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> void divAssign(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> void modAssign(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult addAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult subAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult mulAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult divAssign(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult modAssign(L const &lhs, R const &rhs, API_FUNC);  
 
-  template <typename L, typename R> SlotProxy add(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy sub(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> SlotProxy mul(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy div(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy mod(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult add(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult sub(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult mul(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult div(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult mod(L const &lhs, R const &rhs, API_FUNC);  
 
-  template <typename L, typename R> SlotProxy eq(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy neq(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> SlotProxy lt(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy le(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy gt(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> SlotProxy ge(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult landAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult lnandAssign(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult lorAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult lnorAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult lxorAssign(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult lxnorAssign(L const &lhs, R const &rhs, API_FUNC);  
+
+  template <typename L, typename R> ExpressionResult land(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult lnand(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult lor(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult lnor(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult lxor(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult lxnor(L const &lhs, R const &rhs, API_FUNC);
   
+  template <typename L, typename R> ExpressionResult eqAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult neqAssign(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult ltAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult leAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult gtAssign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult geAssign(L const &lhs, R const &rhs, API_FUNC);  
+
+  template <typename L, typename R> ExpressionResult eq(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult neq(L const &lhs, R const &rhs, API_FUNC);  
+  template <typename L, typename R> ExpressionResult lt(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult le(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult gt(L const &lhs, R const &rhs, API_FUNC);
+  template <typename L, typename R> ExpressionResult ge(L const &lhs, R const &rhs, API_FUNC);  
   
-  template <typename Obj> SlotProxy addressOf(Obj const &obj, API_FUNC);
+  template <typename L, typename R> ExpressionResult assign(L const &lhs, R const &rhs, API_FUNC);
+  template <typename Val> void writeOut(Val const &val, API_FUNC);
+  
+  template <typename Obj> ExpressionResult addressOf(Obj const &obj, API_FUNC);
   template <typename Con> void branchIf(Con const &condition, std::string const &trueLabel,
 					std::string const &falseLabel, API_FUNC);
   
@@ -155,54 +173,86 @@ private:
   int currentScopeDepth() const;
   
   // Normalize to RValue or LValue (compiler_rlvalue.cc)
-  values::RValue rValue(values::RValue const &val, API_CTX) const;
-  values::RValue rValue(std::string const &var, API_CTX) const;
-  values::RValue rValue(SlotProxy const &slot, API_CTX) const;
-  values::RValue rValue(values::Literal const &val, API_CTX) const;
-  values::LValue lValue(values::LValue const &val, API_CTX) const;
-  values::LValue lValue(std::string const &var, API_CTX) const;  
-  values::LValue lValue(SlotProxy const &slot, API_CTX) const;
+  ExpressionResult rValue(ExpressionResult const &val, API_CTX) const;
+  ExpressionResult rValue(std::string const &var, API_CTX) const;
+  ExpressionResult rValue(SlotProxy const &slot, API_CTX) const;
+  ExpressionResult rValue(values::Literal const &val, API_CTX) const;
+
+  ExpressionResult lValue(ExpressionResult const &val, API_CTX) const;
+  ExpressionResult lValue(std::string const &var, API_CTX) const;  
+  ExpressionResult lValue(SlotProxy const &slot, API_CTX) const;
 
   // Implementation functions for public interface
   void setNextBlockImpl(int index);
   void setNextBlockImpl(std::string const &f, std::string const &b);
 
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-			std::optional<values::LValue> const &returnSlot, ArgList const &args, API_CTX);
-  void returnFromFunctionImpl(std::optional<values::RValue> const &ret, API_CTX);
-  SlotProxy structFieldImpl(values::LValue const &obj, std::string const &field, API_CTX);
-  SlotProxy structFieldImpl(values::LValue const &obj, int fieldIndex, API_CTX);
-  SlotProxy arrayElementImpl(values::LValue const &arr, int index, API_CTX);
-  SlotProxy arrayElementImpl(values::LValue const &arr, values::RValue const &index, API_CTX);
-  SlotProxy dereferencePointerImpl(values::RValue const &ptr, API_CTX);
+			std::optional<ExpressionResult> const &returnSlot, ArgList const &args, API_CTX);
+  void returnFromFunctionImpl(std::optional<ExpressionResult> const &ret, API_CTX);
+  ExpressionResult structFieldImpl(ExpressionResult const &obj, std::string const &field, API_CTX);
+  ExpressionResult structFieldImpl(ExpressionResult const &obj, int fieldIndex, API_CTX);
+  ExpressionResult arrayElementImpl(ExpressionResult const &arr, int index, API_CTX);
+  ExpressionResult arrayElementImpl(ExpressionResult const &arr, ExpressionResult const &index, API_CTX);
+  ExpressionResult dereferencePointerImpl(ExpressionResult const &ptr, API_CTX);
 
-  // Arithmetic operators
-  SlotProxy addImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy divImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy modImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
+  ExpressionResult addressOfImpl(ExpressionResult const &obj, API_CTX);
+  ExpressionResult assignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX);
+  
+  void branchIfImpl(ExpressionResult const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
+  void writeOutImpl(ExpressionResult const &rhs, API_CTX); 
+  
+  // Binary operators
+  template <typename Fold>
+  struct BinOpSpec {
+    using MaterializeFunc = Slot(*)(ExpressionResult const &);
+    using ApplyWithSlot   = void(Compiler::*)(Slot const &, Slot const &);
+    using ApplyWithConst  = void(Compiler::*)(Slot const &, int);
+
+    BinOp op;
+    Fold fold;
+    ApplyWithSlot applyWithSlot;
+    ApplyWithConst applyWithConst;
+
+  };
+
+  using Lop = BinOpSpec<bool(*)(bool, bool)>;
+  using Mop = BinOpSpec<int(*)(int, int)>;
+  using Cop = BinOpSpec<bool(*)(int, int)>;
+
+  template <typename SpecType>
+  ExpressionResult opAssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &lop, API_CTX);
+
+  template <typename SpecType>  
+  ExpressionResult opImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &lop, API_CTX);
+  
+#define OP_DECL(Type, OP)						\
+  ExpressionResult OP##Impl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX); \
+  ExpressionResult OP##AssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX); \
+  static Type const OP##Spec;
+  
+  // Mathmatical operators
+  OP_DECL(Mop, add);
+  OP_DECL(Mop, sub);
+  OP_DECL(Mop, mul);
+  OP_DECL(Mop, div);
+  OP_DECL(Mop, mod);
+
+  // Logical operators
+  OP_DECL(Lop, land);
+  OP_DECL(Lop, lnand);
+  OP_DECL(Lop, lor);
+  OP_DECL(Lop, lnor);
+  OP_DECL(Lop, lxor);
+  OP_DECL(Lop, lxnor);
 
   // Comparison operators
-  SlotProxy eqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy neqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy ltImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy leImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy gtImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-  SlotProxy geImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-
-
-  void addAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void divAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void modAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-
-  void branchIfImpl(values::RValue const &condition, std::string const &trueLabel,
-			   std::string const &falseLabel, API_CTX);
-  void assignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX);
-  void writeOutImpl(values::RValue const &rhs, API_CTX); 
-  SlotProxy addressOfImpl(values::LValue const &obj, API_CTX);
+  OP_DECL(Cop, eq);
+  OP_DECL(Cop, neq);
+  OP_DECL(Cop, lt);
+  OP_DECL(Cop, le);
+  OP_DECL(Cop, gt);
+  OP_DECL(Cop, ge);
+#undef OP_DECL
   
   // Slot operations
   void assignSlot(Slot const &dest, Slot const &src);
@@ -218,6 +268,32 @@ private:
   void modSlotByConst(Slot const &lhs, int denom);
   void modSlotBySlot(Slot const &lhs, Slot const &rhs);
 
+  void andSlotWithConst(Slot const &lhs, int val);
+  void andSlotWithSlot(Slot const &lhs, Slot const &rhs);
+  void nandSlotWithConst(Slot const &lhs, int val);
+  void nandSlotWithSlot(Slot const &lhs, Slot const &rhs);
+  void orSlotWithConst(Slot const &lhs, int val);
+  void orSlotWithSlot(Slot const &lhs, Slot const &rhs);
+  void norSlotWithConst(Slot const &lhs, int val);
+  void norSlotWithSlot(Slot const &lhs, Slot const &rhs);
+  void xorSlotWithConst(Slot const &lhs, int val);
+  void xorSlotWithSlot(Slot const &lhs, Slot const &rhs);
+  void xnorSlotWithConst(Slot const &lhs, int val);
+  void xnorSlotWithSlot(Slot const &lhs, Slot const &rhs);
+
+  void slotEqualConst(Slot const &lhs, int val);
+  void slotEqualSlot(Slot const &lhs, Slot const &rhs);
+  void slotNotEqualConst(Slot const &lhs, int val);
+  void slotNotEqualSlot(Slot const &lhs, Slot const &rhs);
+  void slotLessConst(Slot const &lhs, int val);
+  void slotLessSlot(Slot const &lhs, Slot const &rhs);
+  void slotLessEqualConst(Slot const &lhs, int val);
+  void slotLessEqualSlot(Slot const &lhs, Slot const &rhs);
+  void slotGreaterConst(Slot const &lhs, int val);
+  void slotGreaterSlot(Slot const &lhs, Slot const &rhs);
+  void slotGreaterEqualConst(Slot const &lhs, int val);
+  void slotGreaterEqualSlot(Slot const &lhs, Slot const &rhs);
+  
   void branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel);
   void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
   void copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot);
@@ -286,6 +362,11 @@ private:
   void divMod16Destructive(Cell high, Cell denomLow, Cell denomHigh, Cell modResultLow, Cell modResultHigh, Temps<8>);
   void divMod16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell denomLow, Cell denomHigh, Cell modResultLow, Cell modResultHigh, Temps<12>);
 
+  void boolDestructive(Temps<1>);
+  void boolConstructive(Cell result, Temps<1>);
+  void bool16Destructive(Cell high, Temps<1>);
+  void bool16Constructive(Cell high, Cell result, Temps<2>);
+  
   void notDestructive(Temps<1>);
   void notConstructive(Cell result, Temps<1>);
   void not16Destructive(Cell high, Temps<1>);
@@ -296,7 +377,14 @@ private:
 
   void andDestructive(Cell other, Temps<1>);
   void andConstructive(Cell result, Cell other, Temps<2>);
+  void and16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void and16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
 
+  void nandDestructive(Cell other, Temps<1>);
+  void nandConstructive(Cell result, Cell other, Temps<2>);
+  void nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
+  
   void compareToConstDestructive(int value, Temps<1>);
   void compareToConstConstructive(int value, Cell result, Temps<1>);    
 
@@ -326,7 +414,7 @@ private:
   void setSeekMarker();
   void resetSeekMarker();
   void moveToPreviousFrame(Payload const &payload = {});  
-  void initializeArguments(std::string const &functionName, std::vector<values::RValue> const &args, API_CTX);  
+  void initializeArguments(std::string const &functionName, std::vector<ExpressionResult> const &args, API_CTX);  
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
 
@@ -391,7 +479,7 @@ private:
 
   // Post processing/optimization (compiler_misc.cc)
   void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
-				  std::vector<values::RValue> const &args, API_CTX);
+				  std::vector<ExpressionResult> const &args, API_CTX);
 
   void functionCallTypeChecks();
   

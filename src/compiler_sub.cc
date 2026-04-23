@@ -1,71 +1,11 @@
 #include "compiler.ih"
 
-SlotProxy Compiler::subImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Sub, lhs.type(), rhs.type());
-
-  auto subResult = types::rules::binOpResult(BinOp::Sub, lhs.type(), rhs.type());
-  assert(subResult);
-  
-  Slot const result = getTemp(subResult.type);
-  assign(result, lhs);
-  subAssign(result, rhs);
-  return result;
-}
-
-// TODO: refactor common parts with addAssign
-void Compiler::subAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Sub, lhs.type(), rhs.type());
-
-  pushPtr();
-  
-  auto const [lhsBase, targetSlot, factor] = [&]() -> std::tuple<Slot, Slot, int> {
-    Slot const lhsBase = lhs.slot()->materialize(*this);
-    if (not types::isPointer(lhs.type())) {
-      return {lhsBase, lhsBase, 1};
-    }
-    auto ptrType = types::cast<types::PointerType>(lhs.type());      
-    return {
-      lhsBase,
-      lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset),
-      ptrType->pointeeType()->size()
-    };
-  }();
-
-  if (rhs.hasSlot()) {
-
-    Slot const operandSlot = [&]() -> Slot {
-      Slot const rhsSlot = rhs.slot()->materialize(*this);
-      if (factor == 1) return rhsSlot;
-
-      // Scale the operand
-      Slot const opSlot = [&]() -> Slot {
-	if (not rhs.slot()->direct()) return rhsSlot;
-	Slot const copy = getTemp(rhs.type());
-	assignSlot(copy, rhsSlot);
-	return copy;
-      }();
-      
-      mulSlotByConst(opSlot, factor);
-      return opSlot;
-    }();
-    subSlotFromSlot(targetSlot, operandSlot);
-  }
-  else {
-    int const delta = values::cast<types::IntegerType>(rhs.value())->value();
-    subConstFromSlot(targetSlot, factor * delta);
-  }
-
-  if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsBase);
-  }
-  
-  popPtr();  
-}
-
+Compiler::Mop const Compiler::subSpec {
+  .op = BinOp::Sub,
+  .fold = [](int x, int y) -> int { return x - y; },
+  .applyWithSlot = &Compiler::subSlotFromSlot,
+  .applyWithConst = &Compiler::subConstFromSlot
+};
 
 void Compiler::subConstFromSlot(Slot const &lhs, int delta) {
   pushPtr();

@@ -91,6 +91,6 @@ Slot Compiler::getTemp(types::TypeHandle type) {
 
 Slot Compiler::getTemp(values::Literal const &value) {
   Slot tmp = getTemp(value->type());
-  assign(values::LValue(tmp), values::RValue(value));
+  assignSlot(tmp, value);
   return tmp;
 }

@@ -47,6 +47,19 @@ namespace {
     return ok(promotedInteger(lhs, rhs));
   }
 
+  bool isLogical(BinOp op) {
+    switch(op) {
+    case BinOp::And:
+    case BinOp::Nand:
+    case BinOp::Or:
+    case BinOp::Nor:
+    case BinOp::Xor:
+    case BinOp::Xnor: return true;
+    default: return false;
+    }
+    std::unreachable();
+  }
+
 } // namespace
 
 
@@ -61,7 +74,11 @@ OpResult types::rules::binOpResult(BinOp op, TypeHandle lhs, TypeHandle rhs) {
 		"'. Expected integer+integer or pointer+integer.");
   }
 
-  // For all other operators, require both to be integers
+  if (isLogical(op) && bothIntegers(lhs, rhs)) {
+    return ok(TypeSystem::i8());
+  }
+  
+  // For all other operators, require both to be integers and return promoted type
   return requireIntegers(op, lhs, rhs);
 }
 

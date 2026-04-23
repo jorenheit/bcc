@@ -1,42 +1,11 @@
 #include "compiler.ih"
 
-SlotProxy Compiler::mulImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
-
-  auto mulResult = types::rules::binOpResult(BinOp::Mul, lhs.type(), rhs.type());
-  assert(mulResult);
-  
-  Slot const result = getTemp(mulResult.type);
-  assign(result, lhs);
-  mulAssign(result, rhs);
-  return result;
-}
-
-
-void Compiler::mulAssignImpl(values::LValue const &lhs, values::RValue const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(BinOp::Mul, lhs.type(), rhs.type());
-
-  pushPtr();
-
-  Slot const lhsSlot = lhs.slot()->materialize(*this);
-  if (rhs.hasSlot()) {
-    mulSlotBySlot(lhsSlot, rhs.slot()->materialize(*this));
-  } else {
-    API_REQUIRE_IS_INTEGER(rhs);
-    int const factor = values::cast<types::IntegerType>(rhs.value())->value();
-    mulSlotByConst(lhsSlot, factor);
-  }
-
-  if (not lhs.slot()->direct()) {
-    lhs.slot()->write(*this, lhsSlot);
-  }
-  
-  popPtr();  
-}
+Compiler::Mop const Compiler::mulSpec {
+  .op = BinOp::Mul,
+  .fold = [](int x, int y) -> int { return x * y; },
+  .applyWithSlot = &Compiler::mulSlotBySlot,
+  .applyWithConst = &Compiler::mulSlotByConst
+};
 
 void Compiler::mulSlotByConst(Slot const &lhs, int factor) {
 

@@ -14,19 +14,24 @@ struct StructField {
 using StructFields = std::vector<StructField>;
 
 enum class BinOp {
-  Add, Sub, Mul, Div, Mod, And, Or, Xor
+  Add, Sub, Mul, Div, Mod,
+  And, Or, Nand, Nor, Xor, Xnor,
+  Eq, Neq, Lt, Le, Gt, Ge
 };
 
 inline std::string binOpStr(BinOp op) {
   switch (op) {
-  case BinOp::Add: return "+";
-  case BinOp::Sub: return "-";
-  case BinOp::Mul: return "*";
-  case BinOp::Div: return "/";
-  case BinOp::Mod: return "%";
-  case BinOp::And: return "&&";
-  case BinOp::Or:  return "||";
-  case BinOp::Xor: return "^";
+  case BinOp::Add:  return "+";
+  case BinOp::Sub:  return "-";
+  case BinOp::Mul:  return "*";
+  case BinOp::Div:  return "/";
+  case BinOp::Mod:  return "%";
+  case BinOp::And:  return "&";
+  case BinOp::Nand: return "~&";
+  case BinOp::Or:   return "|";
+  case BinOp::Nor:  return "~|";
+  case BinOp::Xor:  return "^";
+  case BinOp::Xnor: return "~^";
   default: std::unreachable();
   }
 }
