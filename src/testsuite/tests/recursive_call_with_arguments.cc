@@ -15,11 +15,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
-					   "x", TypeSystem::i8(),
-					   "y", TypeSystem::i8(),
-					   "z", TypeSystem::i8());
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8(), TypeSystem::i8(), TypeSystem::i8());
+c.beginFunction("foo", fooSig, {"x", "y", "z"}); {
   c.beginBlock("entry"); {
     c.writeOut("x");
     c.writeOut("y");

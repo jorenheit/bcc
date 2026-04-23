@@ -19,7 +19,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 			    
-auto sig = c.constructFunctionSignature(point);
+auto sig = TypeSystem::function(point);
 c.beginFunction("makePoint", sig); {
   c.declareLocal("p", point);
   c.beginBlock("entry"); {

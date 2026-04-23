@@ -13,8 +13,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(), "x", TypeSystem::i8());
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+c.beginFunction("foo", fooSig, {"x"}); {
   c.beginBlock("entry"); {
     auto args = c.constructFunctionArguments("x");
     c.callFunction("bar", "after_bar", args);
@@ -25,8 +25,8 @@ c.beginFunction("foo", fooSig); {
   } c.endBlock();
 } c.endFunction();
 
-auto barSig = c.constructFunctionSignature(TypeSystem::voidT(), "y", TypeSystem::i8());
-c.beginFunction("bar", barSig); {
+auto barSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+c.beginFunction("bar", barSig, {"y"}); {
   c.beginBlock("entry"); {
     c.writeOut("y");
     c.returnFromFunction();

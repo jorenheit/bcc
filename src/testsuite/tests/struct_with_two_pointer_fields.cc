@@ -34,9 +34,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = c.constructFunctionSignature(TypeSystem::voidT(),
-					"s", pair);
-c.beginFunction("foo", sig); {
+auto sig = TypeSystem::function(TypeSystem::voidT(), pair);
+c.beginFunction("foo", sig, {"s"}); {
   c.beginBlock("entry"); {
     auto pa = c.structField("s", "pa");
     auto pb = c.structField("s", "pb");

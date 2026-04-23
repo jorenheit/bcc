@@ -21,7 +21,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(array4);
+auto fooSig = TypeSystem::function(array4);
 c.beginFunction("foo", fooSig); {
   c.declareLocal("x", array4);
     

@@ -166,6 +166,12 @@ namespace api {
 		  "expected a pointer in call to '", (API_CTX_NAME).apiName(), "', but got '", \
 		  (obj).str(), "' of type '", (obj).type()->str(), "'.")
 
+#define API_REQUIRE_IS_FUNCTION(fType)					\
+  error::throw_if(not types::isFunction((fType)),			\
+		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
+		  "expected a function-type in call to '", (API_CTX_NAME).apiName(), "', but got '", \
+		  #fType, "' of type '", (fType)->str(), "'.")
+
 #define API_REQUIRE_FIELD_INDEX_IN_BOUNDS(obj, fieldIndex)		\
   error::throw_if((fieldIndex) < 0 ||					\
 		  (fieldIndex) >= types::cast<types::StructType>((obj).type())->fieldCount(), \
@@ -209,5 +215,14 @@ namespace api {
 		    (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
 		    "expected type '" + (expectedT)->str() + "', got '" + (t)->str() + "'"); \
   } while (false);
+
+#define API_REQUIRE_PARAM_COUNT_MATCHES_FUNCTION(funcType, params) do { \
+  error::throw_if(funcType->paramTypes().size() != (params).size(),		\
+		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
+		  "number or parameters does not match function-type; expected ", \
+		  funcType->paramTypes().size(), ", got ", (params).size(), "."); \
+  } while (false);
+
+		  
 
 #endif // API_H

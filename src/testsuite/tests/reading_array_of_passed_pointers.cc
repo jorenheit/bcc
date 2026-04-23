@@ -31,9 +31,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = c.constructFunctionSignature(TypeSystem::voidT(),
-					"p", i8pa);
-c.beginFunction("foo", sig); {
+auto sig = TypeSystem::function(TypeSystem::voidT(), i8pa);
+c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
     auto p1Deref = c.dereferencePointer(c.arrayElement("p", 1));

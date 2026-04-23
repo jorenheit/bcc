@@ -27,8 +27,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = c.constructFunctionSignature(TypeSystem::voidT(), "ch", TypeSystem::i8());
-c.beginFunction("printChar", sig); {
+auto sig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+c.beginFunction("printChar", sig, {"ch"}); {
   c.beginBlock("entry"); {
     c.writeOut("ch");
     c.returnFromFunction();

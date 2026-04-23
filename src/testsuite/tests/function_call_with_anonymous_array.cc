@@ -19,9 +19,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
-			     "arr", array4);
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::voidT(), array4);
+c.beginFunction("foo", fooSig, {"arr"}); {
   c.beginBlock("entry"); {
     c.writeOut("arr");
     c.returnFromFunction();

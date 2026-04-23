@@ -68,23 +68,34 @@ void Compiler::end(API_FUNC) {
   loopClose("main loop");
 }
 
-void Compiler::beginFunction(std::string const &name, API_FUNC) {
-  beginFunction(name, constructFunctionSignature(TypeSystem::voidT()));
-}
-
-void Compiler::beginFunction(std::string const &name, FunctionSignature const &sig, API_FUNC) {
+void Compiler::beginFunction(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_FUNC) {
   API_FUNC_BEGIN("beginFunction");
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_IS_FUNCTION(type);
+
+  auto fType = types::cast<types::FunctionType>(type);
+  API_REQUIRE_PARAM_COUNT_MATCHES_FUNCTION(fType, params);
   
   _state.allowGlobalDefinitions = false;
-  
-  _currentFunction = &_program.createFunction(name, sig);  
-  for (FunctionParam const &p: sig.params) {
-    declareLocal(p.name, p.type);
-  }
+  _currentFunction = &_program.createFunction(name, fType);  
 
+  std::unordered_set<std::string> paramSet;
+  for (size_t i = 0; i != params.size(); ++i) {
+    std::string const &name = params[i];
+    auto [_, unique] = paramSet.insert(name);
+    API_REQUIRE(unique, "parameter name '", name, "' used more than once.");
+    declareLocal(name, fType->paramTypes()[i]);
+  }
+}
+
+void Compiler::beginFunction(std::string const &name, API_FUNC) {
+  beginFunction(name, TypeSystem::function(TypeSystem::voidT()), {});
+}
+
+void Compiler::beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC) {
+  beginFunction(name, funcType, {});
 }
 
 void Compiler::endFunction(API_FUNC) {
@@ -438,7 +449,7 @@ void Compiler::returnFromFunctionImpl(std::optional<values::RValue> const &ret, 
   API_REQUIRE_INSIDE_CODE_BLOCK();
   
   if (ret) {
-    API_REQUIRE_ASSIGNABLE(ret->type(), _currentFunction->sig.returnType);
+    API_REQUIRE_ASSIGNABLE(ret->type(), _currentFunction->type->returnType());
 
     // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
     Slot returnSlot = {
@@ -517,7 +528,11 @@ void Compiler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std:
 SlotProxy Compiler::addressOfImpl(values::LValue const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
-  // TODO: if object has a direct slot, require this to be non-temp
+
+  if (obj.slot()->direct()) {
+    Slot const slot = obj.slot()->materialize(*this);
+    API_REQUIRE(slot.kind != Slot::Temp, "Cannot take the address of a temporary value.");
+  }
   
   return obj.slot()->addressOf(*this);
 }

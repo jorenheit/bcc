@@ -67,13 +67,12 @@ void Compiler::functionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
   for (auto const &[API_CTX_NAME, caller, callee, args]: _deferredFunctionCallTypeChecks) {
-    
-    auto const &params = _program.function(callee).sig.params;
-    API_REQUIRE(params.size() == args.size(),
+    auto const &paramTypes = _program.function(callee).type->paramTypes();
+    API_REQUIRE(paramTypes.size() == args.size(),
 		"invalid number of arguments in function-call to '", callee, "': "
-		"expected ", params.size(), ", got ", args.size(), ".");
+		"expected ", paramTypes.size(), ", got ", args.size(), ".");
     for (size_t i = 0; i != args.size(); ++i) {
-      API_REQUIRE_ASSIGNABLE(params[i].type, args[i]);
+      API_REQUIRE_ASSIGNABLE(paramTypes[i], args[i]);
     }
   }
 

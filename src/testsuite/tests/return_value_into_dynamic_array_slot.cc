@@ -27,7 +27,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = c.constructFunctionSignature(TypeSystem::i8());
+auto sig = TypeSystem::function(TypeSystem::i8());
 c.beginFunction("makeZ", sig); {
   c.beginBlock("entry"); {
     c.returnFromFunction(values::i8('Z'));

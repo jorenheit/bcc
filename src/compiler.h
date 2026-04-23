@@ -79,7 +79,8 @@ public:
   void beginBlock(std::string name, API_FUNC);
   void endBlock(API_FUNC);
   void beginFunction(std::string const &name, API_FUNC);
-  void beginFunction(std::string const &name, FunctionSignature const &sig, API_FUNC);   
+  void beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC);
+  void beginFunction(std::string const &name, types::TypeHandle funcType, std::vector<std::string> const &params, API_FUNC);
   void setNextBlock(int index, API_FUNC);
   void setNextBlock(std::string const &b, API_FUNC);
   void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
@@ -101,10 +102,6 @@ public:
 
   template <typename... Args> ArgList constructFunctionArguments_(API_FUNC_SOURCE, Args&&... args);  
   #define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
-
-  // TODO: replace FunctionSignature with types::FunctionType and accept a vector of strings that
-  //       bind variables to the param-types.  
-  template <typename ... Args> FunctionSignature constructFunctionSignature(Args&& ... args);
   
   template <typename Ret> void callFunction(std::string const& functionName, std::string const& nextBlockName,
 					    ArgList const &args, Ret const &returnSlot, API_FUNC);

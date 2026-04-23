@@ -28,9 +28,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = c.constructFunctionSignature(TypeSystem::voidT(),
-					"s", holder);
-c.beginFunction("foo", sig); {
+auto sig = TypeSystem::function(TypeSystem::voidT(), holder);
+c.beginFunction("foo", sig, {"s"}); {
   c.beginBlock("entry"); {
     auto p = c.structField("s", "p");
     auto pDeref = c.dereferencePointer(p);

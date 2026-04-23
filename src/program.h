@@ -20,20 +20,20 @@ struct Program {
   std::vector<Slot> globals;
   std::vector<Function::Block*> globalBlockOrder;
 
-  inline Function& createFunction(std::string name, FunctionSignature sig) {
+  inline Function& createFunction(std::string name, types::FunctionType const *type) {
     assert(!functionByName.contains(name));
     size_t idx = functions.size();
     functionByName[name] = idx;
     functions.push_back(Function{
 	.functionIndex = idx,
-	.name = std::move(name),
-	.frame = FrameLayout{sig.returnType->size()},
-	.sig = std::move(sig)
+	.name  = std::move(name),
+	.frame = FrameLayout{type->returnType()->size()},
+	.type  = type
       });
     functions.back().createScope(nullptr);
     return functions.back();
   }
-
+  
   inline Function &function(std::string const &name) {
     return functions.at(functionByName.at(name));
   }

@@ -32,7 +32,7 @@ struct Function {
   size_t functionIndex = 0;
   std::string name;
   FrameLayout frame;
-  FunctionSignature sig;
+  types::FunctionType const *type;
   
   std::vector<std::unique_ptr<Block>> blocks;
   std::unordered_map<std::string, size_t> blockByName;

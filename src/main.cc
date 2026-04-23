@@ -8,30 +8,34 @@ int main() try {
   c.setEntryPoint("main");
 
   c.begin(); {
-    // compare variable rhs vs literal rhs for the same modulo
+    auto i8 = TypeSystem::i8();
     auto i16 = TypeSystem::i16();
-
+    auto voidT = TypeSystem::voidT();
+    
     c.beginFunction("main"); {
-      c.declareLocal("x", i16);
+      c.declareLocal("x", i8);
       c.declareLocal("y", i16);
 
       c.beginBlock("entry"); {
-	// c.assign("x", values::i16(0x7171));
-	// c.assign("y", values::i16(0x5050));
-	// c.writeOut(c.add(c.mod("x", "y"), values::i16(0x2424)));              // should be EE
+	c.assign("x", values::i8('A'));
+	c.assign("y", values::i16('B'));
+	c.callFunction("foo", "end",
+		       c.constructFunctionArguments("x", "y"));
+      } c.endBlock();
 
-	c.assign("x", values::i16(0x7171));
-	// c.assign("y", values::i16(0x5050));
-	//	c.writeOut("x");
-	//	c.writeOut("y");
-	c.writeOut(c.mod("x", values::i16(0x5050)));
-	// c.writeOut(c.mod("x", "y"));
-	
-	//	c.writeOut(c.add(c.mod("x", values::i16(0x5050)), values::i16(0x2424))); // should also be EE
-
+      c.beginBlock("end"); {
 	c.returnFromFunction();
       } c.endBlock();
-    } c.endFunction();    
+    } c.endFunction();
+
+    auto fooType = TypeSystem::function(voidT, i8, i16);
+    c.beginFunction("foo", fooType, {"x", "y"}); {
+      c.beginBlock("entry"); {
+	c.writeOut("x");
+	c.writeOut("y");
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
   } c.end();
 
   std::cout << c.dumpBrainfuck() << '\n';

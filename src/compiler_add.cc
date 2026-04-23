@@ -20,7 +20,8 @@ void Compiler::addAssignImpl(values::LValue const &lhs, values::RValue const &rh
   API_REQUIRE_BINOP(BinOp::Add, lhs.type(), rhs.type());
 
   pushPtr();
-  
+
+  // TODO: factor this out (has in common with sub)
   auto const [lhsBase, targetSlot, stride] = [&]() -> std::tuple<Slot, Slot, int> {
     Slot const lhsBase = lhs.slot()->materialize(*this);
     if (not types::isPointer(lhs.type())) {

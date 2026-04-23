@@ -20,12 +20,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
-					   "p0", TypeSystem::i8(),
-					   "p1", TypeSystem::i8(),
-					   "p2", TypeSystem::i8(),
-					   "p3", TypeSystem::i8());
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8(), TypeSystem::i8(), TypeSystem::i8(), TypeSystem::i8());
+c.beginFunction("foo", fooSig, {"p0", "p1", "p2", "p3"}); {
   c.beginBlock("entry"); {
     c.writeOut("p0");
     c.writeOut("p1");

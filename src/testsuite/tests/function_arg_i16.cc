@@ -18,10 +18,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::i16(),
-					   "arg1", TypeSystem::i16(),
-					   "arg2", TypeSystem::i16());
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::i16(), TypeSystem::i16(), TypeSystem::i16());
+c.beginFunction("foo", fooSig, {"arg1", "arg2"}); {
   c.beginBlock("entry"); {
     c.returnFromFunction("arg2");
   } c.endBlock();

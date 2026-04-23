@@ -16,9 +16,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::i8(),
-					   "x", TypeSystem::i8());
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::i8(), TypeSystem::i8());
+c.beginFunction("foo", fooSig, {"x"}); {
   c.declareLocal("tmp", TypeSystem::i8());
 
   c.beginBlock("entry"); {
@@ -31,8 +30,8 @@ c.beginFunction("foo", fooSig); {
   } c.endBlock();
 } c.endFunction();
 
-auto barSig = c.constructFunctionSignature(TypeSystem::i8(), "y", TypeSystem::i8());
-c.beginFunction("bar", barSig); {
+auto barSig = TypeSystem::function(TypeSystem::i8(), TypeSystem::i8());
+c.beginFunction("bar", barSig, {"y"}); {
   c.beginBlock("entry"); {
     c.returnFromFunction("y");
   } c.endBlock();

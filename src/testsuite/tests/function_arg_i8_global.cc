@@ -20,10 +20,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
-					   "arg1", TypeSystem::i8());
-
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+c.beginFunction("foo", fooSig, {"arg1"}); {
   c.beginBlock("entry"); {
     c.writeOut("arg1");
     c.assign("arg1", values::i8('H'));

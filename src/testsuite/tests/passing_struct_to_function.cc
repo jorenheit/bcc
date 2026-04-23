@@ -28,9 +28,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::voidT(),
-					   "p", point);
-c.beginFunction("foo", fooSig); {
+auto fooSig = TypeSystem::function(TypeSystem::voidT(), point);
+c.beginFunction("foo", fooSig, {"p"}); {
   c.beginBlock("entry"); {
     auto px = c.structField("p", "x");
     auto py = c.structField("p", "y");

@@ -161,8 +161,3 @@ void Compiler::branchIf(Condition const &condition, std::string const &trueLabel
 	      std::string const &falseLabel, API_FUNC_SOURCE) { API_FUNC_BEGIN("branchIf");
   return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
 }
-
-template <typename ... Args>
-FunctionSignature Compiler::constructFunctionSignature(Args&& ... args) {
-  return FunctionSignature{std::forward<Args>(args)...};
-}

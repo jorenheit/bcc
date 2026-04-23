@@ -12,20 +12,19 @@ void Compiler::blockOpen() {
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
 
+  // TODO: replace this with "equals"
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   compare16ToConstConstructive(/* value =    */ _currentBlock->globalBlockIndex,
 			       /* highByte = */ Cell{FrameLayout::TargetBlock, MacroCell::Value1},
 			       /* result =   */ Cell{FrameLayout::TargetBlock, MacroCell::Flag},
 			       Temps<2>::select(FrameLayout::TargetBlock, MacroCell::Scratch0,
-					      FrameLayout::TargetBlock, MacroCell::Scratch1)
-			       );
+						FrameLayout::TargetBlock, MacroCell::Scratch1));
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   andConstructive(/* result = */ Cell{FrameLayout::RunState, MacroCell::Flag},
 		  /* other  = */ Cell{FrameLayout::TargetBlock, MacroCell::Flag},
 		  Temps<2>::select(FrameLayout::RunState, MacroCell::Scratch0,
-				 FrameLayout::RunState, MacroCell::Scratch1)
-		  );
+				   FrameLayout::RunState, MacroCell::Scratch1));
 
   // Clear the targetblock flag
   moveTo(FrameLayout::TargetBlock, MacroCell::Flag);
@@ -59,12 +58,12 @@ void Compiler::constructMetaBlocks() {
     _currentFunction = &_program.function(m.caller);    
     beginBlock(m.name); {
 
-      if (callee->sig.returnType == TypeSystem::voidT() || not m.returnSlot){
+      if (callee->type->returnType() == TypeSystem::voidT() || not m.returnSlot){
 	fetchReturnData();
       }
       else {
 	SlotProxy returnSlot = *m.returnSlot;
-	assert(callee->sig.returnType == returnSlot->type());
+	assert(callee->type->returnType() == returnSlot->type());	
 
 	if (returnSlot->direct()) {
 	  Slot const ret = returnSlot->materialize(*this);
@@ -74,7 +73,7 @@ void Compiler::constructMetaBlocks() {
 	  }
 	}
 	else {
-	  Slot const ret = getTemp(callee->sig.returnType);
+	  Slot const ret = getTemp(callee->type->returnType());
 	  fetchReturnData(ret);
 	  returnSlot->write(*this, ret);
 	}

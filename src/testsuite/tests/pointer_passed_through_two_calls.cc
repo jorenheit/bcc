@@ -24,8 +24,8 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = c.constructFunctionSignature(TypeSystem::voidT(), "p", i8p);
-c.beginFunction("foo", sig); {
+auto sig = TypeSystem::function(TypeSystem::voidT(), i8p);
+c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto args = c.constructFunctionArguments("p");
     c.callFunction("bar", "return", args);
@@ -36,7 +36,7 @@ c.beginFunction("foo", sig); {
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("bar", sig); {
+c.beginFunction("bar", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto pDeref = c.dereferencePointer("p");
     c.writeOut(pDeref);

@@ -281,8 +281,10 @@ public:
     for (auto const &ptr: _functionTypes) {
       if (ret == ptr->returnType()) {
 	if (ptr->paramTypes().size() != sizeof ... (ParamTypes)) continue;
+	constexpr size_t N = sizeof ... (ParamTypes);
 
 	bool match = true;
+	if constexpr (N == 0) break;
 	types::TypeHandle theseTypes[] = {params ...};
 	for (size_t i = 0; i != ptr->paramTypes().size(); ++i) {
 	  if (theseTypes[i] != ptr->paramTypes()[i]) {

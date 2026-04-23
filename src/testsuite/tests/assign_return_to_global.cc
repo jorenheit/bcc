@@ -22,7 +22,7 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-auto fooSig = c.constructFunctionSignature(TypeSystem::i8());
+auto fooSig = TypeSystem::function(TypeSystem::i8());
 c.beginFunction("foo", fooSig); {
   c.declareLocal("y", TypeSystem::i8());
   c.beginBlock("entry"); {

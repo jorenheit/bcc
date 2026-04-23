@@ -19,7 +19,7 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 // foo: returns i8
-auto fooSig = c.constructFunctionSignature(TypeSystem::i8());
+auto fooSig = TypeSystem::function(TypeSystem::i8());
 c.beginFunction("foo", fooSig); {
 
   c.beginBlock("entry"); {

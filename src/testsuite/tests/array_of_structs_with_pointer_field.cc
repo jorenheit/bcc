@@ -35,8 +35,8 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 
-auto sig = c.constructFunctionSignature(TypeSystem::voidT(), "arr", holders);
-c.beginFunction("foo", sig); {
+auto sig = TypeSystem::function(TypeSystem::voidT(), holders);
+c.beginFunction("foo", sig, {"arr"}); {
   c.beginBlock("entry"); {
     auto p0 = c.structField(c.arrayElement("arr", 0), "p");
     auto p1 = c.structField(c.arrayElement("arr", 1), "p");
