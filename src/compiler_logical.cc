@@ -71,7 +71,7 @@ void Compiler::andSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs);
 
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     and16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{rhsCopy, MacroCell::Value0},
 		     Cell{rhsCopy, MacroCell::Value1},
@@ -115,7 +115,7 @@ void Compiler::nandSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs);
 
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     nand16Destructive(Cell{lhs, MacroCell::Value1},
 		      Cell{rhsCopy, MacroCell::Value0},
 		      Cell{rhsCopy, MacroCell::Value1},
@@ -159,7 +159,7 @@ void Compiler::orSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs);
 
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     or16Destructive(Cell{lhs, MacroCell::Value1},
 		    Cell{rhsCopy, MacroCell::Value0},
 		    Cell{rhsCopy, MacroCell::Value1},
@@ -202,7 +202,7 @@ void Compiler::norSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs);
 
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     nor16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{rhsCopy, MacroCell::Value0},
 		     Cell{rhsCopy, MacroCell::Value1},
@@ -247,15 +247,17 @@ void Compiler::xorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs);
 
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     xor16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{rhsCopy, MacroCell::Value0},
 		     Cell{rhsCopy, MacroCell::Value1},
-		     Temps<1>::select(lhs, MacroCell::Scratch0));
+		     Temps<2>::select(lhs, MacroCell::Scratch0,
+				      lhs, MacroCell::Scratch1));
 		     
   } else {
     xorDestructive(Cell{rhsCopy, MacroCell::Value0},
-		   Temps<1>::select(lhs, MacroCell::Scratch0));
+		   Temps<2>::select(lhs, MacroCell::Scratch0,
+				    lhs, MacroCell::Scratch1));
   }
 
   popPtr();
@@ -292,15 +294,17 @@ void Compiler::xnorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   moveTo(lhs);
 
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     xnor16Destructive(Cell{lhs, MacroCell::Value1},
 		      Cell{rhsCopy, MacroCell::Value0},
 		      Cell{rhsCopy, MacroCell::Value1},
-		      Temps<1>::select(lhs, MacroCell::Scratch0));
+		      Temps<2>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1));
 		     
   } else {
     xnorDestructive(Cell{rhsCopy, MacroCell::Value0},
-		    Temps<1>::select(lhs, MacroCell::Scratch0));
+		    Temps<2>::select(lhs, MacroCell::Scratch0,
+				     lhs, MacroCell::Scratch1));
   }
 
   popPtr();

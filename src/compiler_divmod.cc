@@ -60,7 +60,7 @@ void Compiler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
 
   
   pushPtr();
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     moveTo(lhs, MacroCell::Value0);    
     divMod16Destructive(Cell{lhs, MacroCell::Value1},
 			Cell{rhsCopy, MacroCell::Value0},
@@ -141,7 +141,7 @@ void Compiler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
   assignSlot(rhsCopy, rhs);
   
   pushPtr();
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     moveTo(lhs, MacroCell::Value0);    
     divMod16Destructive(Cell{lhs, MacroCell::Value1},
 			Cell{rhsCopy, MacroCell::Value0},

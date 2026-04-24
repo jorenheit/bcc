@@ -1041,7 +1041,35 @@ tests.push_back(expectOutput("Integer Literal RHS i16",
                              "AABBCCDDEEAABBCCDDEE", []() {
 #include "tests/integer_literals_i16.cc"
                              }));
- 
+tests.push_back(expectOutput("Logical AND",
+                             "BABABABABA", []() {
+#include "tests/logical_and.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical NAND",
+                             "ABABABABAB", []() {
+#include "tests/logical_nand.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical OR",
+                             "BBBBBBBBBA", []() {
+#include "tests/logical_or.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical NOR",
+                             "AAAAAAAAAB", []() {
+#include "tests/logical_nor.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical XOR",
+                             "ABABABABAA", []() {
+#include "tests/logical_xor.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical XNOR",
+                             "BABABABABB", []() {
+#include "tests/logical_xnor.cc"
+                             })); 
  return tests;
 }
 

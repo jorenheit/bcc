@@ -11,19 +11,23 @@ int main() try {
 
     auto i8 = TypeSystem::i8();
     auto i16 = TypeSystem::i16();
-    auto arrayT = TypeSystem::array(i8, 4);
-    
+
     c.beginFunction("main"); {
-      c.declareLocal("x", i8);
+      c.declareLocal("a", i8);
+      c.declareLocal("b", i8);
+      c.declareLocal("x", i16);
       c.declareLocal("y", i16);
 
       c.beginBlock("entry"); {
 
-	c.assign("x", values::i8(0));
-	c.assign("y", values::i16(1));
-	c.writeOut(c.lxnor("x", "y"));
-	
-	
+	// 2. i8 variable + i8 variable: true XOR false -> 1
+	c.assign("a", values::i8(1));
+	c.assign("b", values::i8(1));
+	// c.writeOut("a");
+	// c.writeOut("b");
+	c.writeOut(c.lxor("a", "b"));
+	// c.writeOut(c.add(c.lxor("a", "b"), values::i8('A')));
+
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

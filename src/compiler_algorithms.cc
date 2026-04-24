@@ -265,33 +265,32 @@ void Compiler::and16Constructive(Cell high, Cell result, Cell otherLow, Cell oth
   popPtr();
 }
 
-void Compiler::xorDestructive(Cell other, Temps<1> tmp) {
-  auto [cur, oth, tmp0] = getFieldIndices(_dp.current(), other, tmp.get<0>());
-  emit<primitive::Xor>(cur, oth, tmp0);
+void Compiler::xorDestructive(Cell other, Temps<2> tmp) {
+  auto [cur, oth, tmp0, tmp1] = getFieldIndices(_dp.current(), other, tmp.get<0>(), tmp.get<1>());
+  emit<primitive::Xor>(cur, oth, tmp0, tmp1);
 }
 
-void Compiler::xorConstructive(Cell result, Cell other, Temps<2> tmp) { 
+void Compiler::xorConstructive(Cell result, Cell other, Temps<3> tmp) { 
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());  
   moveTo(other);
   copyField(otherCopy, tmp.select<1>());
   moveTo(result);
-  xorDestructive(otherCopy, tmp.select<1>());
+  xorDestructive(otherCopy, tmp.select<1, 2>());
   popPtr();
 }
 
-void Compiler::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
-
+void Compiler::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2> tmp) {
   pushPtr();
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
 
   // Collapse both to bool
   moveTo(currentLow);
-  bool16Destructive(currentHigh, tmp);
+  bool16Destructive(currentHigh, tmp.select<0>());
   moveTo(otherLow);
-  bool16Destructive(otherHigh, tmp);
+  bool16Destructive(otherHigh, tmp.select<0>());
 
   // And results
   moveTo(currentLow);
@@ -300,7 +299,7 @@ void Compiler::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<
 }
 
 
-void Compiler::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+void Compiler::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5> tmp) { 
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -316,7 +315,7 @@ void Compiler::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell oth
   moveTo(otherHigh);   copyField(otherCopyHigh, tmp.select<3>());
 
   moveTo(result);
-  xor16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3>());
+  xor16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3, 4>());
   popPtr();
 }
 
@@ -361,22 +360,22 @@ void Compiler::nor16Constructive(Cell high, Cell result, Cell otherLow, Cell oth
   notDestructive(tmp.select<0>());
 }
 
-void Compiler::xnorDestructive(Cell other, Temps<1> tmp) {
+void Compiler::xnorDestructive(Cell other, Temps<2> tmp) {
   xorDestructive(other, tmp);
-  notDestructive(tmp);
+  notDestructive(tmp.select<1>());
 }
 
-void Compiler::xnorConstructive(Cell result, Cell other, Temps<2> tmp) {
+void Compiler::xnorConstructive(Cell result, Cell other, Temps<3> tmp) {
   xorConstructive(result, other, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Compiler::xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Compiler::xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2> tmp) {
   xor16Destructive(high, otherLow, otherHigh, tmp);
-  notDestructive(tmp);
+  notDestructive(tmp.select<0>());
 }
 
-void Compiler::xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Compiler::xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5> tmp) {
   xor16Constructive(high, result, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }

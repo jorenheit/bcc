@@ -201,58 +201,31 @@ private:
   void branchIfImpl(ExpressionResult const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
   void writeOutImpl(ExpressionResult const &rhs, API_CTX); 
   
-  // Binary operators
+  // Binary operators implementation
   template <typename Fold>
   struct BinOpSpec {
-    using MaterializeFunc = Slot(*)(ExpressionResult const &);
     using ApplyWithSlot   = void(Compiler::*)(Slot const &, Slot const &);
     using ApplyWithConst  = void(Compiler::*)(Slot const &, int);
 
     BinOp op;
-    Fold fold;
+    Fold *fold;
     ApplyWithSlot applyWithSlot;
     ApplyWithConst applyWithConst;
-
   };
 
-  using Lop = BinOpSpec<bool(*)(bool, bool)>;
-  using Mop = BinOpSpec<int(*)(int, int)>;
-  using Cop = BinOpSpec<bool(*)(int, int)>;
+  using Mop = BinOpSpec<int(int, int)>;
+  using Lop = BinOpSpec<bool(bool, bool)>;
+  using Cop = BinOpSpec<bool(int, int)>;
 
+  static const Mop addSpec, subSpec, mulSpec, divSpec, modSpec;
+  static const Lop landSpec, lnandSpec, lorSpec, lnorSpec, lxorSpec, lxnorSpec;
+  static const Cop eqSpec, neqSpec, ltSpec, leSpec, gtSpec, geSpec;
+  
   template <typename SpecType>
-  ExpressionResult opAssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &lop, API_CTX);
+  ExpressionResult opAssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &spec, API_CTX);
 
   template <typename SpecType>  
-  ExpressionResult opImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &lop, API_CTX);
-  
-#define OP_DECL(Type, OP)						\
-  ExpressionResult OP##Impl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX); \
-  ExpressionResult OP##AssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX); \
-  static Type const OP##Spec;
-  
-  // Mathmatical operators
-  OP_DECL(Mop, add);
-  OP_DECL(Mop, sub);
-  OP_DECL(Mop, mul);
-  OP_DECL(Mop, div);
-  OP_DECL(Mop, mod);
-
-  // Logical operators
-  OP_DECL(Lop, land);
-  OP_DECL(Lop, lnand);
-  OP_DECL(Lop, lor);
-  OP_DECL(Lop, lnor);
-  OP_DECL(Lop, lxor);
-  OP_DECL(Lop, lxnor);
-
-  // Comparison operators
-  OP_DECL(Cop, eq);
-  OP_DECL(Cop, neq);
-  OP_DECL(Cop, lt);
-  OP_DECL(Cop, le);
-  OP_DECL(Cop, gt);
-  OP_DECL(Cop, ge);
-#undef OP_DECL
+  ExpressionResult opImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &spec, API_CTX);
   
   // Slot operations
   void assignSlot(Slot const &dest, Slot const &src);
@@ -392,15 +365,15 @@ private:
   void nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
   void nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
 
-  void xorDestructive(Cell other, Temps<1>);
-  void xorConstructive(Cell result, Cell other, Temps<2>);
-  void xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
-  void xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
+  void xorDestructive(Cell other, Temps<2>);
+  void xorConstructive(Cell result, Cell other, Temps<3>);
+  void xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2>);
+  void xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5>);
 
-  void xnorDestructive(Cell other, Temps<1>);
-  void xnorConstructive(Cell result, Cell other, Temps<2>);
-  void xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
-  void xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
+  void xnorDestructive(Cell other, Temps<2>);
+  void xnorConstructive(Cell result, Cell other, Temps<3>);
+  void xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2>);
+  void xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5>);
   
   void compareToConstDestructive(int value, Temps<1>);
   void compareToConstConstructive(int value, Cell result, Temps<1>);    

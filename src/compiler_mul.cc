@@ -39,7 +39,7 @@ void Compiler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
   Slot const tmp = getTemp(rhs.type);
   assignSlot(tmp, rhs);  
   moveTo(lhs, MacroCell::Value0);
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     mul16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{tmp, MacroCell::Value0},
 		     Cell{tmp, MacroCell::Value1},

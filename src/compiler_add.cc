@@ -12,7 +12,7 @@ void Compiler::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
   moveTo(lhs, MacroCell::Value0);
-  if (lhs.type->usesValue1()) {
+  if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     add16Destructive(Cell{lhs, MacroCell::Value1},
 		     Cell{rhsCopy, MacroCell::Value0},
 		     Cell{rhsCopy, MacroCell::Value1},

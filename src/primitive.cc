@@ -215,26 +215,27 @@ namespace Algorithm {
   }
 
   // Destructive XOR (result in current, destroys other)
-  std::string xorValues(int current, int other, int tmp) {
-    assert(util::allDifferent(current, other, tmp));
+  std::string xorValues(int current, int other, int tmp1, int tmp2) {
+    assert(util::allDifferent(current, other, tmp1, tmp2));
 
+    int const result = tmp1;
+    int const tmp = tmp2;
+    
     std::ostringstream oss;
     oss << "["
 	<<   movePtr(other, current)
-	<<   zero()
+	<<   notValue(other, tmp)
+	<<   moveValue(other, result)
 	<<   movePtr(current, other)
 	<<   zero()
 	<< "]"
 	<< movePtr(other, current)
 	<< "["
-	<<   movePtr(tmp, other)
-	<<   increment()
-	<<   movePtr(other, tmp)
-	<<   zero()
+	<<   moveValue(other, result)
 	<< "]"
-	<< movePtr(tmp, other)
-	<< moveValue(tmp, current)
-	<< movePtr(current, tmp);
+	<< movePtr(result, other)  
+	<< moveValue(result, current)
+	<< movePtr(current, result);
     
     return oss.str();
   }
@@ -533,8 +534,8 @@ GEN(And) {
 // Xor (destructive)
 TXT(Xor) { return "xor"; } 
 GEN(Xor) {
-  auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
-  return Algorithm::xorValues(cur, oth, tmp);
+  auto [cur, oth, tmp1, tmp2] = defer::resolve(ctx, current, other, scratch1, scratch2);
+  return Algorithm::xorValues(cur, oth, tmp1, tmp2);
 }
 
 

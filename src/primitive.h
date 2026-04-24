@@ -256,7 +256,7 @@ namespace primitive {
   };
 
   struct Xor: Node {
-    DInt current, other, scratch;
+    DInt current, other, scratch1, scratch2;
 
     /*
       XOR operator applied to the values stored at current and other. Overwrites
@@ -264,15 +264,16 @@ namespace primitive {
       Consumes other as well (other == 0 afterwards).
       
       Assumed initial pointer position: current
-      Assumed empty: scratch
-      Invariants: ptr, scratch
+      Assumed empty: scratch1, scratch2
+      Invariants: ptr, scratch1, scratch2
       Clears: other
      */
     
-    inline explicit Xor(DInt current, DInt other, DInt scratch):
+    inline explicit Xor(DInt current, DInt other, DInt scratch1, DInt scratch2):
       current(std::move(current)),
       other(std::move(other)),
-      scratch(std::move(scratch))
+      scratch1(std::move(scratch1)),
+      scratch2(std::move(scratch2))
     {}
 
     COMMON_INTERFACE;
