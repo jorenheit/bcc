@@ -128,6 +128,7 @@ namespace Algorithm {
     return oss.str();
   }
 
+  
   // Store !!current back intor current
   std::string boolean(int current, int tmp) {
     assert(util::allDifferent(current, tmp));
@@ -262,15 +263,6 @@ namespace Algorithm {
     return oss.str();
   }
   
-  // Compare to constant value (destructive)
-  std::string cmpConst(int value, int current, int tmp) {
-    assert(util::allDifferent(current, tmp));
-    
-    std::ostringstream oss;
-    oss << decrement(value)
-	<< notValue(current, tmp);
-    return oss.str();
-  }
 
   // Add other to current, destroys other
   std::string add(int current, int other) {
@@ -336,6 +328,8 @@ namespace Algorithm {
 
     return oss.str();
   }
+
+
   
   // Compute current < other and stores the result in current. Other is destroyed
   // Result: 0 if false, any nonzero if true
@@ -432,17 +426,23 @@ namespace Algorithm {
     return oss.str();
   }
   
-  // Compute current == other and stores the result in current. Other is destroyed
-  // Result: 0 if false, any nonzero if true    
-  std::string equal(int current, int other, int tmp1, int tmp2) {
-    assert(util::allDifferent(current, other, tmp1, tmp2));
-
-    // Reduce pair -> if current == other, both are zero -> return nor(current, other)
+  // Equal
+  std::string equal(int current, int other) {
+    assert(util::allDifferent(current, other));
+    
     std::ostringstream oss;
-    oss << reducePair(current, other, tmp1, tmp2)
-	<< movePtr(current, tmp1)
-	<< norValues(current, other, tmp1);
-      
+    oss << subtract(current, other)
+	<< notValue(current, other); // use empty other as tmp
+    return oss.str();
+  }
+
+  // Compare to constant value (destructive)
+  std::string cmpConst(int value, int current, int tmp) {
+    assert(util::allDifferent(current, tmp));
+    
+    std::ostringstream oss;
+    oss << decrement(value)
+	<< notValue(current, tmp);
     return oss.str();
   }
   
@@ -500,6 +500,12 @@ GEN(CopyData) {
   return Algorithm::copyValue(cur, dst, tmp);
 }
 
+// Compare to constant
+TXT(Cmp) { return "cmp"; } 
+GEN(Cmp) {
+  auto [val, cur, tmp] = defer::resolve(ctx, value, current, scratch);
+  return Algorithm::cmpConst(val, cur, tmp);
+}
 
 // Boolean (destructive)
 TXT(Boolean) { return "bool"; } 
@@ -538,29 +544,6 @@ GEN(Xor) {
   return Algorithm::xorValues(cur, oth, tmp1, tmp2);
 }
 
-
-// // Nor (destructive)
-// TXT(Nor) { return "nor"; } 
-// GEN(Nor) {
-//   auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
-//   return Algorithm::norValues(cur, oth, tmp);
-// }
-
-
-// // Nand (destructive)
-// TXT(Nand) { return "nand"; } 
-// GEN(Nand) {
-//   auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
-//   return Algorithm::nandValues(cur, oth, tmp);
-// }
-
-
-// Cmp
-TXT(Cmp) { return "cmp"; } 
-GEN(Cmp) {
-  auto [val, cur, tmp] = defer::resolve(ctx, value, current, scratch);
-  return Algorithm::cmpConst(val, cur, tmp);
-}
 
 // Out
 TXT(Out) { return "out"; }
@@ -610,10 +593,9 @@ GEN(GreaterOrEqual) {
   return Algorithm::greaterOrEqual(cur, oth, tmp1, tmp2);
 }
 
-
 // Equal
 TXT(Equal) { return "equal"; } 
 GEN(Equal) {
-  auto [cur, oth, tmp1, tmp2] = defer::resolve(ctx, current, other, scratch1, scratch2);
-  return Algorithm::equal(cur, oth, tmp1, tmp2);
+  auto [cur, oth] = defer::resolve(ctx, current, other);
+  return Algorithm::equal(cur, oth);
 }

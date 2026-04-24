@@ -1,15 +1,10 @@
-#include <iostream>
-#include "compiler.h"
+// Less-than comparison tests (lt / ltAssign)
+// Covers: i8/i8, i16/i16, mixed i8/i16, variable/literal,
+// literal/variable, literal/literal constant folding, and assign variants.
+// Output convention: 'A' = false, 'B' = true.
+// Expected output: BABABAAAABABB
 
-#define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
-
-int main() try {
-  Compiler c;
-  c.setEntryPoint("main");
-
-  c.begin(); {
-
-
+TEST_BEGIN
     auto i8 = TypeSystem::i8();
     auto i16 = TypeSystem::i16();
 
@@ -68,11 +63,4 @@ int main() try {
       } c.endBlock();
     } c.endFunction();
 
-
-
-  } c.end();
-
-  std::cout << c.dumpBrainfuck() << '\n';
- } catch (std::exception const &e) {
-  std::cerr << e.what() << '\n';
- }
+TEST_END

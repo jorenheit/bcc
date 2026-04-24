@@ -60,6 +60,19 @@ namespace {
     std::unreachable();
   }
 
+  bool isComparison(BinOp op) {
+    switch(op) {
+    case BinOp::Eq:
+    case BinOp::Neq:
+    case BinOp::Lt:
+    case BinOp::Le:
+    case BinOp::Gt:
+    case BinOp::Ge: return true;
+    default: return false;
+    }
+    std::unreachable();
+  }
+  
 } // namespace
 
 
@@ -74,7 +87,7 @@ OpResult types::rules::binOpResult(BinOp op, TypeHandle lhs, TypeHandle rhs) {
 		"'. Expected integer+integer or pointer+integer.");
   }
 
-  if (isLogical(op) && bothIntegers(lhs, rhs)) {
+  if ((isLogical(op) || isComparison(op)) && bothIntegers(lhs, rhs)) {
     return ok(TypeSystem::i8());
   }
   

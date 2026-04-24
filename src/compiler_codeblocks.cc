@@ -13,6 +13,7 @@ void Compiler::blockOpen() {
   // the block.
 
   // TODO: replace this with "equals"
+
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   compare16ToConstConstructive(/* value =    */ _currentBlock->globalBlockIndex,
 			       /* highByte = */ Cell{FrameLayout::TargetBlock, MacroCell::Value1},

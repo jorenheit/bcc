@@ -744,9 +744,12 @@ void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
     int const x = values::cast<types::IntegerType>(val)->value();
     moveTo(slot, MacroCell::Value0);
     setToValue(x & 0xff);
+    moveTo(slot, MacroCell::Value1);    
     if (slot.type->usesValue1()) {
-      moveTo(slot, MacroCell::Value1);
       setToValue((x >> 8) & 0xff);
+    }
+    else {
+      setToValue(0);      
     }
   }
   else if (types::isArray(slot.type) || types::isString(slot.type)) {
@@ -786,16 +789,6 @@ ExpressionResult Compiler::assignImpl(ExpressionResult const &lhs, ExpressionRes
 
   return lhs;
 }
-
-
-// SlotProxy eqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-//   SlotProxy neqImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-//   SlotProxy ltImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-//   SlotProxy leImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-//   SlotProxy gtImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-//   SlotProxy geImpl(values::RValue const &lhs, values::RValue const &rhs, API_CTX);
-
-
 
 void Compiler::writeOutImpl(ExpressionResult const &rhs, API_CTX) {
   API_CHECK_EXPECTED();

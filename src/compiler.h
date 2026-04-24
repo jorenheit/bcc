@@ -374,27 +374,37 @@ private:
   void xnorConstructive(Cell result, Cell other, Temps<3>);
   void xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2>);
   void xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5>);
-  
+
   void compareToConstDestructive(int value, Temps<1>);
   void compareToConstConstructive(int value, Cell result, Temps<1>);    
-
   void compare16ToConstDestructive(int value, Cell high, Temps<1>);
   void compare16ToConstConstructive(int value, Cell high, Cell result, Temps<2>);    
+
+  void eqDestructive(Cell other, Temps<1>);
+  void eqConstructive(Cell result, Cell other, Temps<1>);
+  void eq16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void eq16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
   
   void lessDestructive(Cell other, Temps<2>);
   void lessConstructive(Cell result, Cell other, Temps<3>);
+  void less16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
+  void less16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8>);
 
   void lessOrEqualDestructive(Cell other, Temps<2>);
   void lessOrEqualConstructive(Cell result, Cell other, Temps<3>);
+  void lessOrEqual16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
+  void lessOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8>);
 
   void greaterDestructive(Cell other, Temps<2>);
   void greaterConstructive(Cell result, Cell other, Temps<3>);
+  void greater16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
+  void greater16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8>);
 
   void greaterOrEqualDestructive(Cell other, Temps<2>);
   void greaterOrEqualConstructive(Cell result, Cell other, Temps<3>);
+  void greaterOrEqual16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4>);
+  void greaterOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8>);
 
-  void equalDestructive(Cell other, Temps<2>);
-  void equalConstructive(Cell result, Cell other, Temps<3>);
   
   // Frame Navigation (compiler_framenav.cc)
   

@@ -429,7 +429,7 @@ namespace primitive {
 
 
   struct Equal: Node {
-    DInt current, other, scratch1, scratch2;
+    DInt current, other;
 
     /*
       NAND operator applied to the values stored at current and other. Overwrites
@@ -437,17 +437,14 @@ namespace primitive {
       other as well (other == 0 afterwards).
       
       Assumed initial pointer position: current
-      Assumed empty: scratch1, scratch2
-      Invariants: ptr, scratch1, scratch2
+      Invariants: ptr
       Clears: other
       
      */
     
-    inline explicit Equal(DInt current, DInt other, DInt scratch1, DInt scratch2):
+    inline explicit Equal(DInt current, DInt other):
       current(std::move(current)),
-      other(std::move(other)),
-      scratch1(std::move(scratch1)),
-      scratch2(std::move(scratch2))
+      other(std::move(other))
     {}
 
     COMMON_INTERFACE;
