@@ -21,7 +21,7 @@ int main() try {
 
 	c.assign("x", values::i8(0));
 	c.assign("y", values::i16(1));
-	c.writeOut(c.lnand("x", "y"));
+	c.writeOut(c.lxnor("x", "y"));
 	
 	
 	c.returnFromFunction();

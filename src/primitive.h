@@ -255,12 +255,12 @@ namespace primitive {
     COMMON_INTERFACE;
   };
 
-  struct Nor: Node {
+  struct Xor: Node {
     DInt current, other, scratch;
 
     /*
-      NOR operator applied to the values stored at current and other. Overwrites
-      the value at 'current' with the result of '!(current || other)'.
+      XOR operator applied to the values stored at current and other. Overwrites
+      the value at 'current' with the result of 'current ^ other'.
       Consumes other as well (other == 0 afterwards).
       
       Assumed initial pointer position: current
@@ -269,7 +269,7 @@ namespace primitive {
       Clears: other
      */
     
-    inline explicit Nor(DInt current, DInt other, DInt scratch):
+    inline explicit Xor(DInt current, DInt other, DInt scratch):
       current(std::move(current)),
       other(std::move(other)),
       scratch(std::move(scratch))
@@ -302,29 +302,29 @@ namespace primitive {
     COMMON_INTERFACE;
   };
 
-  struct Nand: Node {
-    DInt current, other, scratch;
+  // struct Nand: Node {
+  //   DInt current, other, scratch;
 
-    /*
-      NAND operator applied to the values stored at current and other. Overwrites
-      the value at 'current' with the result of '!(current && other)'. Consumes
-      other as well (other == 0 afterwards).
+  //   /*
+  //     NAND operator applied to the values stored at current and other. Overwrites
+  //     the value at 'current' with the result of '!(current && other)'. Consumes
+  //     other as well (other == 0 afterwards).
       
-      Assumed initial pointer position: current
-      Assumed empty: scratch
-      Invariants: ptr, scratch
-      Clears: other
+  //     Assumed initial pointer position: current
+  //     Assumed empty: scratch
+  //     Invariants: ptr, scratch
+  //     Clears: other
       
-     */
+  //    */
     
-    inline explicit Nand(DInt current, DInt other, DInt scratch):
-      current(std::move(current)),
-      other(std::move(other)),
-      scratch(std::move(scratch))
-    {}
+  //   inline explicit Nand(DInt current, DInt other, DInt scratch):
+  //     current(std::move(current)),
+  //     other(std::move(other)),
+  //     scratch(std::move(scratch))
+  //   {}
 
-    COMMON_INTERFACE;
-  };
+  //   COMMON_INTERFACE;
+  // };
 
   struct Less: Node {
     DInt current, other, scratch1, scratch2;

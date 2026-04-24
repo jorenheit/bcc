@@ -374,7 +374,14 @@ private:
 
   void orDestructive(Cell other, Temps<1>);
   void orConstructive(Cell result, Cell other, Temps<2>);
+  void or16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void or16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
 
+  void norDestructive(Cell other, Temps<1>);
+  void norConstructive(Cell result, Cell other, Temps<2>);
+  void nor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void nor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
+  
   void andDestructive(Cell other, Temps<1>);
   void andConstructive(Cell result, Cell other, Temps<2>);
   void and16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
@@ -384,6 +391,16 @@ private:
   void nandConstructive(Cell result, Cell other, Temps<2>);
   void nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
   void nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
+
+  void xorDestructive(Cell other, Temps<1>);
+  void xorConstructive(Cell result, Cell other, Temps<2>);
+  void xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
+
+  void xnorDestructive(Cell other, Temps<1>);
+  void xnorConstructive(Cell result, Cell other, Temps<2>);
+  void xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>);
+  void xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4>);
   
   void compareToConstDestructive(int value, Temps<1>);
   void compareToConstConstructive(int value, Cell result, Temps<1>);    

@@ -129,34 +129,179 @@ void Compiler::nandSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
+
 void Compiler::orSlotWithConst(Slot const &lhs, int val) {
-  assert(false);
+  pushPtr();
+  moveTo(lhs);
+
+  if (val > 0) {
+    setToValue(1);
+    moveTo(lhs, MacroCell::Value1);
+    zeroCell();
+    popPtr();
+    return;
+  }
+
+  if (lhs.type->usesValue1()) {
+    bool16Destructive(Cell{lhs, MacroCell::Value1},
+		      Temps<1>::select(lhs, MacroCell::Scratch0));
+  } else {
+    boolDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
+  }
+  
+  popPtr();
 }
 
 void Compiler::orSlotWithSlot(Slot const &lhs, Slot const &rhs) {
-  assert(false);
+  pushPtr();
+
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  moveTo(lhs);
+
+  if (lhs.type->usesValue1()) {
+    or16Destructive(Cell{lhs, MacroCell::Value1},
+		    Cell{rhsCopy, MacroCell::Value0},
+		    Cell{rhsCopy, MacroCell::Value1},
+		    Temps<1>::select(lhs, MacroCell::Scratch0));
+		     
+  } else {
+    orDestructive(Cell{rhsCopy, MacroCell::Value0},
+		  Temps<1>::select(lhs, MacroCell::Scratch0));
+  }
+
+  popPtr();
 }
 
 void Compiler::norSlotWithConst(Slot const &lhs, int val) {
-  assert(false);
+  pushPtr();
+  moveTo(lhs);
+
+  if (val > 0) {
+    setToValue(0);
+    moveTo(lhs, MacroCell::Value1);
+    zeroCell();
+    popPtr();
+    return;
+  }
+
+  if (lhs.type->usesValue1()) {
+    not16Destructive(Cell{lhs, MacroCell::Value1},
+		      Temps<1>::select(lhs, MacroCell::Scratch0));
+  } else {
+    notDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
+  }
+  
+  popPtr();
 }
 
 void Compiler::norSlotWithSlot(Slot const &lhs, Slot const &rhs) {
-  assert(false);
+  pushPtr();
+
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  moveTo(lhs);
+
+  if (lhs.type->usesValue1()) {
+    nor16Destructive(Cell{lhs, MacroCell::Value1},
+		     Cell{rhsCopy, MacroCell::Value0},
+		     Cell{rhsCopy, MacroCell::Value1},
+		     Temps<1>::select(lhs, MacroCell::Scratch0));
+		     
+  } else {
+    norDestructive(Cell{rhsCopy, MacroCell::Value0},
+		   Temps<1>::select(lhs, MacroCell::Scratch0));
+  }
+
+  popPtr();
 }
 
 void Compiler::xorSlotWithConst(Slot const &lhs, int val) {
-  assert(false);
+  pushPtr();
+  moveTo(lhs);
+
+  if (val > 0) {
+    if (lhs.type->usesValue1()) {
+      not16Destructive(Cell{lhs, MacroCell::Value1},
+		       Temps<1>::select(lhs, MacroCell::Scratch0));
+    } else {
+      notDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
+    }
+  }
+  else {
+    if (lhs.type->usesValue1()) {
+      bool16Destructive(Cell{lhs, MacroCell::Value1},
+		       Temps<1>::select(lhs, MacroCell::Scratch0));
+    } else {
+      boolDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
+    }
+  }
+
+  popPtr();
 }
 
 void Compiler::xorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
-  assert(false);
+  pushPtr();
+
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  moveTo(lhs);
+
+  if (lhs.type->usesValue1()) {
+    xor16Destructive(Cell{lhs, MacroCell::Value1},
+		     Cell{rhsCopy, MacroCell::Value0},
+		     Cell{rhsCopy, MacroCell::Value1},
+		     Temps<1>::select(lhs, MacroCell::Scratch0));
+		     
+  } else {
+    xorDestructive(Cell{rhsCopy, MacroCell::Value0},
+		   Temps<1>::select(lhs, MacroCell::Scratch0));
+  }
+
+  popPtr();
 }
 
 void Compiler::xnorSlotWithConst(Slot const &lhs, int val) {
-  assert(false);
+  pushPtr();
+  moveTo(lhs);
+
+  if (val == 0) {
+    if (lhs.type->usesValue1()) {
+      not16Destructive(Cell{lhs, MacroCell::Value1},
+		       Temps<1>::select(lhs, MacroCell::Scratch0));
+    } else {
+      notDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
+    }
+  }
+  else {
+    if (lhs.type->usesValue1()) {
+      bool16Destructive(Cell{lhs, MacroCell::Value1},
+		       Temps<1>::select(lhs, MacroCell::Scratch0));
+    } else {
+      boolDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
+    }
+  }
+
+  popPtr();
 }
 
 void Compiler::xnorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
-  assert(false);
+  pushPtr();
+
+  Slot const rhsCopy = getTemp(rhs.type);
+  assignSlot(rhsCopy, rhs);
+  moveTo(lhs);
+
+  if (lhs.type->usesValue1()) {
+    xnor16Destructive(Cell{lhs, MacroCell::Value1},
+		      Cell{rhsCopy, MacroCell::Value0},
+		      Cell{rhsCopy, MacroCell::Value1},
+		      Temps<1>::select(lhs, MacroCell::Scratch0));
+		     
+  } else {
+    xnorDestructive(Cell{rhsCopy, MacroCell::Value0},
+		    Temps<1>::select(lhs, MacroCell::Scratch0));
+  }
+
+  popPtr();
 }

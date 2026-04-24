@@ -172,6 +172,43 @@ void Compiler::orConstructive(Cell result, Cell other, Temps<2> tmp) {
   popPtr();
 }
 
+void Compiler::or16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+
+  pushPtr();
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+
+  // Collapse both to bool
+  moveTo(currentLow);
+  bool16Destructive(currentHigh, tmp);
+  moveTo(otherLow);
+  bool16Destructive(otherHigh, tmp);
+
+  // And results
+  moveTo(currentLow);
+  orDestructive(otherLow, tmp);
+  popPtr();
+}
+
+void Compiler::or16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+  Cell const otherCopyLow = tmp.get<0>();
+  Cell const otherCopyHigh = tmp.get<1>();
+  Cell const resultHigh = tmp.get<2>();
+  
+  pushPtr();
+
+  moveTo(currentLow);  copyField(result, tmp.select<3>());
+  moveTo(currentHigh); copyField(resultHigh, tmp.select<3>());
+  moveTo(otherLow);    copyField(otherCopyLow, tmp.select<3>());
+  moveTo(otherHigh);   copyField(otherCopyHigh, tmp.select<3>());
+
+  moveTo(result);
+  or16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3>());
+  popPtr();
+}
 
 void Compiler::andDestructive(Cell other, Temps<1> tmp) {
   auto [cur, oth, tmp0] = getFieldIndices(_dp.current(), other, tmp.get<0>());
@@ -228,23 +265,23 @@ void Compiler::and16Constructive(Cell high, Cell result, Cell otherLow, Cell oth
   popPtr();
 }
 
-void Compiler::nandDestructive(Cell other, Temps<1> tmp) {
+void Compiler::xorDestructive(Cell other, Temps<1> tmp) {
   auto [cur, oth, tmp0] = getFieldIndices(_dp.current(), other, tmp.get<0>());
-  emit<primitive::Nand>(cur, oth, tmp0);
+  emit<primitive::Xor>(cur, oth, tmp0);
 }
 
-void Compiler::nandConstructive(Cell result, Cell other, Temps<2> tmp) { 
+void Compiler::xorConstructive(Cell result, Cell other, Temps<2> tmp) { 
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());  
   moveTo(other);
   copyField(otherCopy, tmp.select<1>());
   moveTo(result);
-  nandDestructive(otherCopy, tmp.select<1>());
+  xorDestructive(otherCopy, tmp.select<1>());
   popPtr();
 }
 
-void Compiler::nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Compiler::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
 
   pushPtr();
   Cell const currentLow = _dp.current();
@@ -258,12 +295,12 @@ void Compiler::nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps
 
   // And results
   moveTo(currentLow);
-  nandDestructive(otherLow, tmp);
+  xorDestructive(otherLow, tmp);
   popPtr();
 }
 
 
-void Compiler::nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+void Compiler::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -279,11 +316,70 @@ void Compiler::nand16Constructive(Cell high, Cell result, Cell otherLow, Cell ot
   moveTo(otherHigh);   copyField(otherCopyHigh, tmp.select<3>());
 
   moveTo(result);
-  nand16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3>());
+  xor16Destructive(resultHigh, otherCopyLow, otherCopyHigh, tmp.select<3>());
   popPtr();
 }
 
+void Compiler::nandDestructive(Cell other, Temps<1> tmp) {
+  andDestructive(other, tmp);
+  notDestructive(tmp);
+}
 
+void Compiler::nandConstructive(Cell result, Cell other, Temps<2> tmp) {
+  andConstructive(result, other, tmp);
+  notDestructive(tmp.select<0>());
+}
+
+void Compiler::nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+  and16Destructive(high, otherLow, otherHigh, tmp);
+  notDestructive(tmp);
+}
+
+
+void Compiler::nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+  and16Constructive(high, result, otherLow, otherHigh, tmp);
+  notDestructive(tmp.select<0>());
+}
+
+void Compiler::norDestructive(Cell other, Temps<1> tmp) {
+  orDestructive(other, tmp);
+  notDestructive(tmp);
+}
+
+void Compiler::norConstructive(Cell result, Cell other, Temps<2> tmp) {
+  orConstructive(result, other, tmp);
+  notDestructive(tmp.select<0>());
+}
+
+void Compiler::nor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+  or16Destructive(high, otherLow, otherHigh, tmp);
+  notDestructive(tmp);
+}
+
+void Compiler::nor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+  or16Constructive(high, result, otherLow, otherHigh, tmp);
+  notDestructive(tmp.select<0>());
+}
+
+void Compiler::xnorDestructive(Cell other, Temps<1> tmp) {
+  xorDestructive(other, tmp);
+  notDestructive(tmp);
+}
+
+void Compiler::xnorConstructive(Cell result, Cell other, Temps<2> tmp) {
+  xorConstructive(result, other, tmp);
+  notDestructive(tmp.select<0>());
+}
+
+void Compiler::xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+  xor16Destructive(high, otherLow, otherHigh, tmp);
+  notDestructive(tmp);
+}
+
+void Compiler::xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+  xor16Constructive(high, result, otherLow, otherHigh, tmp);
+  notDestructive(tmp.select<0>());
+}
 
 void Compiler::compareToConstDestructive(int value, Temps<1> tmp) {
   auto [cur, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());

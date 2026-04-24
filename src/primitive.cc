@@ -128,6 +128,23 @@ namespace Algorithm {
     return oss.str();
   }
 
+  // Store !!current back intor current
+  std::string boolean(int current, int tmp) {
+    assert(util::allDifferent(current, tmp));
+
+    std::ostringstream oss;
+    oss << moveValue(current, tmp)
+	<< movePtr(tmp, current)
+	<< "["
+	<<   zero()
+	<<   movePtr(current, tmp)
+	<<   setToValue(1)
+	<<   movePtr(tmp, current)
+	<< "]"
+	<< movePtr(current, tmp);
+    return oss.str();
+  }
+
   // Store !current back into current  
   std::string notValue(int current, int tmp) {
     assert(util::allDifferent(current, tmp));
@@ -197,6 +214,31 @@ namespace Algorithm {
     return oss.str();
   }
 
+  // Destructive XOR (result in current, destroys other)
+  std::string xorValues(int current, int other, int tmp) {
+    assert(util::allDifferent(current, other, tmp));
+
+    std::ostringstream oss;
+    oss << "["
+	<<   movePtr(other, current)
+	<<   zero()
+	<<   movePtr(current, other)
+	<<   zero()
+	<< "]"
+	<< movePtr(other, current)
+	<< "["
+	<<   movePtr(tmp, other)
+	<<   increment()
+	<<   movePtr(other, tmp)
+	<<   zero()
+	<< "]"
+	<< movePtr(tmp, other)
+	<< moveValue(tmp, current)
+	<< movePtr(current, tmp);
+    
+    return oss.str();
+  }
+  
   // Destructive NAND (result in current, destroys other)
   std::string nandValues(int current, int other, int tmp) {
     assert(util::allDifferent(current, other, tmp));
@@ -264,21 +306,6 @@ namespace Algorithm {
   }
   
 
-  std::string boolean(int current, int tmp) {
-    assert(util::allDifferent(current, tmp));
-
-    std::ostringstream oss;
-    oss << moveValue(current, tmp)
-	<< movePtr(tmp, current)
-	<< "["
-	<<   zero()
-	<<   movePtr(current, tmp)
-	<<   setToValue(1)
-	<<   movePtr(tmp, current)
-	<< "]"
-	<< movePtr(current, tmp);
-    return oss.str();
-  }
 
   // Decrement current and other until either (or both) becomes zero
   std::string reducePair(int current, int other, int tmp1, int tmp2) {
@@ -503,21 +530,28 @@ GEN(And) {
   return Algorithm::andValues(cur, oth, tmp);
 }
 
-
-// Nor (destructive)
-TXT(Nor) { return "nor"; } 
-GEN(Nor) {
+// Xor (destructive)
+TXT(Xor) { return "xor"; } 
+GEN(Xor) {
   auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
-  return Algorithm::norValues(cur, oth, tmp);
+  return Algorithm::xorValues(cur, oth, tmp);
 }
 
 
-// Nand (destructive)
-TXT(Nand) { return "nand"; } 
-GEN(Nand) {
-  auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
-  return Algorithm::nandValues(cur, oth, tmp);
-}
+// // Nor (destructive)
+// TXT(Nor) { return "nor"; } 
+// GEN(Nor) {
+//   auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
+//   return Algorithm::norValues(cur, oth, tmp);
+// }
+
+
+// // Nand (destructive)
+// TXT(Nand) { return "nand"; } 
+// GEN(Nand) {
+//   auto [cur, oth, tmp] = defer::resolve(ctx, current, other, scratch);
+//   return Algorithm::nandValues(cur, oth, tmp);
+// }
 
 
 // Cmp

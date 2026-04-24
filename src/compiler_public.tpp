@@ -129,44 +129,33 @@ ExpressionResult Compiler::opAssignImpl(ExpressionResult const &lhs, ExpressionR
 
   pushPtr();
 
-  auto const [lhsBase, targetSlot, stride] = [&]() -> std::tuple<Slot, Slot, int> {
-    Slot const lhsBase = lhs.slot()->materialize(*this);
-    if (not types::isPointer(lhs.type())) {
-      return {lhsBase, lhsBase, 1};
-    }
-    auto ptrType = types::cast<types::PointerType>(lhs.type());      
-    return {
-      lhsBase,
-      lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset),
-      ptrType->pointeeType()->size()
-    };
-  }();
+  int stride = 1;
+  Slot const lhsBase = lhs.slot()->materialize(*this);
+  Slot targetSlot = lhsBase;
+  if (types::isPointer(lhs.type())) {
+    targetSlot = lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset);
+    stride = types::cast<types::PointerType>(lhs.type())->pointeeType()->size();
+  }
+  
+  if (stride != 1) {
+    assert(spec.op == BinOp::Add || spec.op == BinOp::Sub);
+  }
 
   if (rhs.hasSlot()) {
-
-    auto operandSlot = [&]() -> Slot {
-      Slot const rhsSlot = rhs.slot()->materialize(*this);
-      if (stride == 1) return rhsSlot;
-
-      // Scale the operand
-      Slot const opSlot = [&]() {
-	if (not rhs.slot()->direct()) return rhsSlot;
-	Slot const copy = getTemp(rhs.type());
-	assignSlot(copy, rhsSlot);
-	return copy;
-      }();
-            
-      mulSlotByConst(opSlot, stride);
-      return opSlot;
-    }();
-    
+    Slot operandSlot = rhs.slot()->materialize(*this);
+    if (stride != 1) {
+      Slot const operandCopy = getTemp(operandSlot.type);
+      assignSlot(operandCopy, operandSlot);
+      mulSlotByConst(operandCopy, stride);
+      operandSlot = operandCopy;
+    }
     (this->*spec.applyWithSlot)(targetSlot, operandSlot);
   }
   else {
     int const delta = values::cast<types::IntegerType>(rhs.literal())->value();
     (this->*spec.applyWithConst)(targetSlot, stride * delta);
   }
-
+  
   if (not lhs.slot()->direct()) {
     lhs.slot()->write(*this, lhsBase);
   }
