@@ -18,9 +18,9 @@ The following sketch builds a tiny program whose `main` function calls a separat
 ```cpp
 acus::ProgramBuilder b;
 
-b.begin();
+b.begin(); {
 
-b.setEntryPoint("main");
+  b.setEntryPoint("main");
   
   b.beginFunction("main"); {
    
@@ -43,7 +43,7 @@ b.setEntryPoint("main");
     
   } bf.endFunction();
 
-bf.end();
+} bf.end();
 ```
 
 Most public functions carry an internal source-location/context argument used for diagnostics. That argument is omitted from the signatures below.
