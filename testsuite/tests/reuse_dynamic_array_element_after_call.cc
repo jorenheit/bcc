@@ -21,7 +21,7 @@ c.beginFunction("main"); {
     auto elem = c.arrayElement("arr", "idx");
     c.assign(elem, values::i8('X'));
 
-    c.callFunction("noop", "after_call");
+    c.callFunction("noop", "after_call")();
   } c.endBlock();
 
   c.beginBlock("after_call"); {

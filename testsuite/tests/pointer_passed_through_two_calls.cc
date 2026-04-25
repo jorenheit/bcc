@@ -14,8 +14,7 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     c.assign("x", values::i8('A'));
     c.assign("p", c.addressOf("x"));
-    auto args = c.constructFunctionArguments("p");
-    c.callFunction("foo", "after", args);
+    c.callFunction("foo", "after")("p");
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -27,8 +26,7 @@ c.beginFunction("main"); {
 auto sig = TypeSystem::function(TypeSystem::voidT(), i8p);
 c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments("p");
-    c.callFunction("bar", "return", args);
+    c.callFunction("bar", "return")("p");
   } c.endBlock();
 
   c.beginBlock("return"); {

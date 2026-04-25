@@ -8,12 +8,12 @@ c.beginFunction("main"); {
   c.referGlobals({"g"});
       
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo", {}, "g");
+    c.callFunction("foo", "after_foo", "g")();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
     c.writeOut("g");
-    c.callFunction("bar", "after_bar");
+    c.callFunction("bar", "after_bar")();
   } c.endBlock();
 
   c.beginBlock("after_bar"); {

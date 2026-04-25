@@ -18,14 +18,13 @@ c.beginFunction("main"); {
     c.assign("pg", c.addressOf("g")); 
     c.assign("g", values::i8('G'));
     c.assign("x", values::i8('X'));
-    auto args = c.constructFunctionArguments("pg");
-    c.callFunction("foo", "after1", args);
+    c.callFunction("foo", "after1")("pg");
   } c.endBlock();
 
   c.beginBlock("after1"); {
     c.assign("g", values::i8('H'));
-    auto args = c.constructFunctionArguments("pg");    
-    c.callFunction("foo", "after2", args);
+        
+    c.callFunction("foo", "after2")("pg");
   } c.endBlock();
 
   c.beginBlock("after2"); {

@@ -28,8 +28,6 @@ class Compiler {
 public:
   inline Compiler() { TypeSystem::init(); }
 
-  // TODO: there must be a cleaner way to pass args
-  
   // TODO: API_FUNC 
   std::string dumpPrimitives() const;
   std::string dumpBrainfuck() const;
@@ -58,19 +56,23 @@ public:
   Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
 
-  using ArgList = std::vector<ExpressionResult>;  
-  ArgList constructFunctionArguments_(API_FUNC_SOURCE, auto&&... args);  
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, auto const &returnSlot, API_FUNC);
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC);
-
   void returnFromFunction(auto const &ret, API_FUNC);
   void returnFromFunction(API_FUNC);
   void abortProgram(API_FUNC);
 
-  StructFields constructFields(auto&& ... args);
-  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
+  struct FunctionCall;
+  struct StructDefinition;
+  
+#define FUNCTION_CALL_OBJECT [[nodiscard("call the returned FunctionCall object with arguments, e.g. callFunction(...)(args...)")]] FunctionCall
+#define STRUCT_DEFINE_OBJECT [[nodiscard("call the returned StructDefinition object with arguments, e.g. defineStruct(...)(args...)")]] StructDefinition
 
+  FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);
+  FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
+  STRUCT_DEFINE_OBJECT defineStruct(std::string const& name, API_FUNC);
+
+#undef FUNCTION_CALL_OBJECT
+#undef STRUCT_DEFINE_OBJECT
+  
   ExpressionResult assign(auto const &lhs, auto const &rhs, API_FUNC);
 
   ExpressionResult structField(auto const &obj, std::string const &field, API_FUNC);
@@ -160,18 +162,18 @@ private:
 
   std::stack<Cell> _ptrStack;
 
-  struct FunctionCall {
+  struct FunctionCallInfo {
     api::Context API_CTX_NAME;
     std::string caller, callee;
     std::vector<types::TypeHandle> args;
   };
-  std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
+  std::vector<FunctionCallInfo> _deferredFunctionCallTypeChecks;
 
-  struct BlockName {
+  struct BlockNameCheck {
     api::Context API_CTX_NAME;
     std::string functionName, blockName;
   };
-  std::vector<BlockName> _deferredBlockNameChecks;
+  std::vector<BlockNameCheck> _deferredBlockNameChecks;
 
   std::unordered_set<std::string> _aliasedGlobals;
   
@@ -198,9 +200,10 @@ private:
   // Implementation functions for public interface
   void setNextBlockImpl(int index);
   void setNextBlockImpl(std::string const &f, std::string const &b);
+  types::TypeHandle defineStructImpl(std::string const& name, StructFields const &fields, API_CTX);
 
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-			std::optional<ExpressionResult> const &returnSlot, ArgList const &args, API_CTX);
+			std::optional<ExpressionResult> const &returnSlot, std::vector<ExpressionResult> const &args, API_CTX);
   void returnFromFunctionImpl(std::optional<ExpressionResult> const &ret, API_CTX);
   ExpressionResult structFieldImpl(ExpressionResult const &obj, std::string const &field, API_CTX);
   ExpressionResult structFieldImpl(ExpressionResult const &obj, int fieldIndex, API_CTX);
@@ -502,6 +505,47 @@ private:
   template <typename... Args> requires ((std::convertible_to<Args, Cell>) && ...)
   auto getFieldIndices(Args... args);
 };
+
+
+// Builder objects for calls and struct definitions
+
+struct Compiler::FunctionCall {
+  void operator()(auto const&... args) {
+    std::vector<ExpressionResult> argList;
+    (argList.emplace_back(_compiler->rValue(std::forward<decltype(args)>(args), _context)), ...);
+    _compiler->callFunctionImpl(_functionName, _nextBlockName, _return, argList, _context);
+  }
+
+  Compiler* _compiler;
+  std::string _functionName;
+  std::string _nextBlockName;
+  std::optional<ExpressionResult> _return;
+  api::Context _context;
+};
+
+
+struct Compiler::StructDefinition {
+
+  types::TypeHandle operator()(auto const&... args) {
+    static_assert(sizeof ... (args) % 2 == 0);
+    std::vector<StructField> fields;
+
+    auto addField = [&]<typename ... Rest>(auto&& self, std::string const &name, types::TypeHandle type, Rest&& ... rest) -> void {
+      fields.push_back(StructField{name, type});
+      if constexpr (sizeof ... (Rest) == 0) return;
+      else self(self, std::forward<Rest>(rest)...);
+    };
+
+    addField(addField, std::forward<decltype(args)>(args)...);
+    return _compiler->defineStructImpl(_structName, fields, _context);
+  }
+    
+    
+  Compiler* _compiler;
+  std::string _structName;
+  api::Context _context;
+};
+  
 
 #include "bfc/compiler/compiler_private.tpp"
 #include "bfc/compiler/compiler_public.tpp"

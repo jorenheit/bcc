@@ -11,8 +11,7 @@ c.beginFunction("main"); {
     c.assign("a", values::i8('Z'));
     c.assign("b", values::i8('Y'));
 
-    auto args = c.constructFunctionArguments(values::i8('A'), "a", values::i8('B'), "b");
-    c.callFunction("foo", "after_foo", args);
+    c.callFunction("foo", "after_foo")(values::i8('A'), "a", values::i8('B'), "b");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

@@ -11,7 +11,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("g", values::i8('A'));
-    c.callFunction("foo", "after");
+    c.callFunction("foo", "after")();
   } c.endBlock();
 
   c.beginBlock("after"); {

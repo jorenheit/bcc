@@ -6,9 +6,8 @@ TEST_BEGIN
 auto i8  = TypeSystem::i8();
 auto i8p = TypeSystem::pointer(i8);
 
-auto pairFields = c.constructFields("x", i8,
+auto pairT = c.defineStruct("Pair")("x", i8,
                                     "y", i8);
-auto pairT = c.defineStruct("Pair", pairFields);
 
 c.beginFunction("main"); {
   c.declareLocal("p", i8p);

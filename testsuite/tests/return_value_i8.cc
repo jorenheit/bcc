@@ -8,7 +8,7 @@ c.beginFunction("main"); {
   c.declareLocal("x", TypeSystem::i8());
 
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo", {}, "x");
+    c.callFunction("foo", "after_foo", "x")();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

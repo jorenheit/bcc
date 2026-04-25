@@ -3,9 +3,8 @@
 
 TEST_BEGIN
 
-auto pairFields = c.constructFields("x", TypeSystem::i16(),
+auto pairT = c.defineStruct("Pair16")("x", TypeSystem::i16(),
                                     "y", TypeSystem::i16());
-auto pairT = c.defineStruct("Pair16", pairFields);
 
 c.beginFunction("main"); {
   c.declareLocal("p", pairT);

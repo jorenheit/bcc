@@ -13,8 +13,7 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     c.assign("x", values::i8('X'));
     c.assign("p", c.addressOf("x")); //values::pointer(i8, "x"));
-    auto args = c.constructFunctionArguments("p");
-    c.callFunction("foo", "after", args);
+    c.callFunction("foo", "after")("p");
   } c.endBlock();
 
   c.beginBlock("after"); {

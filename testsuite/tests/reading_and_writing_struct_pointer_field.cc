@@ -7,8 +7,7 @@ TEST_BEGIN
 auto i8  = TypeSystem::i8();
 auto i8p = TypeSystem::pointer(i8);
 
-auto holderFields = c.constructFields("p", i8p);
-auto holder = c.defineStruct("Holder", holderFields);
+auto holder = c.defineStruct("Holder")("p", i8p);
 
 c.beginFunction("main"); {
   c.declareLocal("s", holder);
@@ -18,8 +17,7 @@ c.beginFunction("main"); {
     c.assign("x", values::i8('A'));
     c.assign(c.structField("s", "p"), c.addressOf("x"));
 
-    auto args = c.constructFunctionArguments("s");
-    c.callFunction("foo", "after", args);
+    c.callFunction("foo", "after")("s");
   } c.endBlock();
 
   c.beginBlock("after"); {

@@ -1,52 +1,48 @@
 // Tests referenced global array access across a call, including element-wise writes in caller and reads in callee.
 // Expected output: ABCD
 
-Compiler c;
-auto &ts = c.typeSystem();
-c.setEntryPoint("main");
+TEST_BEGIN
 
-c.begin(); {
-  c.declareGlobal("x", TypeSystem::array(TypeSystem::i8(), 10));
+c.declareGlobal("x", TypeSystem::array(TypeSystem::i8(), 10));
     
-  c.beginFunction("main"); {
-    c.referGlobals({"x"});
+c.beginFunction("main"); {
+  c.referGlobals({"x"});
       
-    c.beginBlock("entry"); {
-      Slot x0 = c.arrayElementConst("x", 0);
-      Slot x1 = c.arrayElementConst("x", 1);
-      Slot x2 = c.arrayElementConst("x", 2);
-      Slot x3 = c.arrayElementConst("x", 3);
+  c.beginBlock("entry"); {
+    auto x0 = c.arrayElement("x", 0);
+    auto x1 = c.arrayElement("x", 1);
+    auto x2 = c.arrayElement("x", 2);
+    auto x3 = c.arrayElement("x", 3);
 	
-      c.assignConst(x0, 'A');
-      c.assignConst(x1, 'B');
-      c.assignConst(x2, 'C');
-      c.assignConst(x3, 'D');
+    c.assign(x0, values::i8('A'));
+    c.assign(x1, values::i8('B'));
+    c.assign(x2, values::i8('C'));
+    c.assign(x3, values::i8('D'));
 
-      c.callFunction("foo", "after_foo");
-    } c.endBlock();
+    c.callFunction("foo", "after_foo")();
+  } c.endBlock();
 
-    c.beginBlock("after_foo"); {
-      c.returnFromFunction();
-    } c.endBlock();
-  } c.endFunction();
+  c.beginBlock("after_foo"); {
+    c.returnFromFunction();
+  } c.endBlock();
+} c.endFunction();
 
-  c.beginFunction("foo"); {
-    c.referGlobals({"x"});
+c.beginFunction("foo"); {
+  c.referGlobals({"x"});
       
-    c.beginBlock("entry"); {
-      Slot x0 = c.arrayElementConst("x", 0);
-      Slot x1 = c.arrayElementConst("x", 1);
-      Slot x2 = c.arrayElementConst("x", 2);
-      Slot x3 = c.arrayElementConst("x", 3);
+  c.beginBlock("entry"); {
+    auto x0 = c.arrayElement("x", values::i8(0));
+    auto x1 = c.arrayElement("x", values::i8(1));
+    auto x2 = c.arrayElement("x", values::i8(2));
+    auto x3 = c.arrayElement("x", values::i8(3));
 	
-      c.writeOut(x0);
-      c.writeOut(x1);
-      c.writeOut(x2);
-      c.writeOut(x3);
+    c.writeOut(x0);
+    c.writeOut(x1);
+    c.writeOut(x2);
+    c.writeOut(x3);
 
-      c.returnFromFunction();
-    } c.endBlock();
-  } c.endFunction();
-} c.end();
-  
-return c.dumpBrainfuck();
+    c.returnFromFunction();
+  } c.endBlock();
+} c.endFunction();
+
+TEST_END

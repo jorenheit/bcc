@@ -19,8 +19,7 @@ c.beginFunction("main"); {
     c.assign(x3, values::i8('D'));
 
     c.writeOut("x");
-    auto args = c.constructFunctionArguments("x");
-    c.callFunction("foo", "after_foo", args);
+    c.callFunction("foo", "after_foo")("x");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

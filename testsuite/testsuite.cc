@@ -597,6 +597,11 @@ static std::vector<bftest::TestCase> buildTests() {
 #include "tests/reading_and_writing_from_global_struct.cc"
 			       }));
 
+ tests.push_back(expectOutput("Global Array Across Call",
+                             "ABCD", []() {
+#include "tests/global_array_across_call.cc"
+                             }));
+  
   tests.push_back(expectOutput("Return Value to Field",
 			       "AZ", []() {
 #include "tests/return_function_value_into_struct_field.cc"
@@ -986,7 +991,7 @@ tests.push_back(expectOutput("Integer Division Mixed i16/i8",
                              "AACC", []() {
 #include "tests/integer_division_mixed_i16_i8.cc"
                              }));
-
+ 
 tests.push_back(expectOutput("Integer Modulo i8",
                              " !", []() {
 #include "tests/integer_modulo_i8.cc"
@@ -1037,10 +1042,10 @@ tests.push_back(expectOutput("Integer Literal RHS i8",
 #include "tests/integer_literals_i8.cc"
                              }));
 
-// tests.push_back(expectOutput("Integer Literal RHS i16",
-//                              "AABBCCDDEEAABBCCDDEE", []() {
-// #include "tests/integer_literals_i16.cc"
-//                              }));
+tests.push_back(expectOutput("Integer Literal RHS i16",
+                             "AABBCCDDEEAABBCCDDEE", []() {
+#include "tests/integer_literals_i16.cc"
+                             }));
 
  tests.push_back(expectOutput("Logical AND",
                              "BABABABABA", []() {

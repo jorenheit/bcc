@@ -13,8 +13,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("s", values::string(str));
-    auto args = c.constructFunctionArguments("s");
-    c.callFunction("print", "return", args);
+    c.callFunction("print", "return")("s");
   } c.endBlock();
 
   c.beginBlock("return"); {

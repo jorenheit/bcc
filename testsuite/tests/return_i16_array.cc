@@ -9,7 +9,7 @@ c.beginFunction("main"); {
   c.declareLocal("x", array4);
       
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo", {}, "x");
+    c.callFunction("foo", "after_foo", "x")();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

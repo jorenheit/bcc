@@ -15,8 +15,7 @@ c.beginFunction("main"); {
     c.assign(x1, values::i16(CAT('C', 'D')));
 
     c.writeOut("x");
-    auto args = c.constructFunctionArguments("x");
-    c.callFunction("foo", "after_foo", args);
+    c.callFunction("foo", "after_foo")("x");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

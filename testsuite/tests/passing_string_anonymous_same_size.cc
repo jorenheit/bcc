@@ -8,8 +8,7 @@ auto string = TypeSystem::string(str.size());
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments(values::string(str));
-    c.callFunction("print", "return", args);
+    c.callFunction("print", "return")(values::string(str));
   } c.endBlock();
 
   c.beginBlock("return"); {

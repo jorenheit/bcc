@@ -4,9 +4,8 @@
 TEST_BEGIN
 
 auto i8    = TypeSystem::i8();
-auto pairFields = c.constructFields("x", i8,
+auto pairT = c.defineStruct("Pair")("x", i8,
                                     "y", i8);
-auto pairT = c.defineStruct("Pair", pairFields);
 auto pairP = TypeSystem::pointer(pairT);
 auto arrT  = TypeSystem::array(pairT, 3);
 

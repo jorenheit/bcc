@@ -1,31 +1,14 @@
-// TODO: there must be a cleaner way to define a struct
-StructFields Compiler::constructFields(auto&& ... args) {
-  static_assert(sizeof ... (args) % 2 == 0);
-  StructFields fields; fields.reserve(sizeof...(args) / 2);
 
-  auto addField = [&]<typename ... Rest>(auto&& self, std::string const &name, types::TypeHandle type, Rest&& ... rest) -> void {
-    fields.push_back(StructField{name, type});
-    if constexpr (sizeof ... (Rest) == 0) return;
-    else self(self, std::forward<Rest>(rest)...);
-  };
-
-  addField(addField, std::forward<decltype(args)>(args)...);
-  return fields;
-}    
-
-Compiler::ArgList Compiler::constructFunctionArguments_(API_FUNC_SOURCE, auto&&... args) {
-  API_FUNC_BEGIN("constructFunctionArguments");
-  ArgList result;
-  result.reserve(sizeof...(args));
-  (result.emplace_back(rValue(std::forward<decltype(args)>(args), API_FWD)), ...);
-  return result;
-}
-#define constructFunctionArguments(...) constructFunctionArguments_(std::source_location::current(), __VA_ARGS__)
-
-void Compiler::callFunction(std::string const &functionName, std::string const &nextBlockName,
-			    ArgList const &args, auto const &returnSlot, API_FUNC_SOURCE) {
+Compiler::FunctionCall Compiler::callFunction(std::string const &functionName, std::string const &nextBlockName,
+						     auto const &returnSlot, API_FUNC_SOURCE) {
   API_FUNC_BEGIN("callFunction");
-  callFunctionImpl(functionName, nextBlockName, lValue(returnSlot, API_FWD), args, API_FWD);
+  return FunctionCall {
+    ._compiler = this,
+    ._functionName = functionName,
+    ._nextBlockName = nextBlockName,
+    ._return = lValue(returnSlot, API_FWD),
+    ._context = API_FWD
+  };
 }
 
 void Compiler::returnFromFunction(auto const &rhs, API_FUNC_SOURCE) {

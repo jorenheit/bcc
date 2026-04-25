@@ -18,8 +18,7 @@ c.beginFunction("main"); {
     c.assign("g", values::i8('A'));
     c.assign("p", c.addressOf("g"));
 
-    auto args = c.constructFunctionArguments("p");
-    c.callFunction("foo", "after", args);
+    c.callFunction("foo", "after")("p");
   } c.endBlock();
 
   c.beginBlock("after"); {

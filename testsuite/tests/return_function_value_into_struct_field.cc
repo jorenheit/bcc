@@ -3,9 +3,8 @@
 
 TEST_BEGIN
 
-auto pointFields = c.constructFields("x", TypeSystem::i8(),
+auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
 				     "y", TypeSystem::i8());
-auto point = c.defineStruct("Point", pointFields);
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);
@@ -15,7 +14,7 @@ c.beginFunction("main"); {
     auto y = c.structField("s", "y");
 
     c.assign(x, values::i8('A'));
-    c.callFunction("makeZ", "after_makeZ", {}, y);
+    c.callFunction("makeZ", "after_makeZ", y)();
   } c.endBlock();
 
   c.beginBlock("after_makeZ"); {

@@ -19,8 +19,7 @@ c.beginFunction("main"); {
     c.assign("pa", c.addressOf("a"));
     c.assign("pb", c.addressOf("b"));
 
-    auto args = c.constructFunctionArguments("pa", "pb");
-    c.callFunction("foo", "after", args);
+    c.callFunction("foo", "after")("pa", "pb");
   } c.endBlock();
 
   c.beginBlock("after"); {

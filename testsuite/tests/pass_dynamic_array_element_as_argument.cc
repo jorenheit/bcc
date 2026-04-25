@@ -18,8 +18,7 @@ c.beginFunction("main"); {
     c.assign("idx", values::i8(2));
 
     auto elem = c.arrayElement("arr", "idx");
-    auto args = c.constructFunctionArguments(elem);
-    c.callFunction("printChar", "return", args);
+    c.callFunction("printChar", "return")(elem);
   } c.endBlock();
 
   c.beginBlock("return"); {

@@ -6,12 +6,11 @@ auto array4 = TypeSystem::array(TypeSystem::i8(), 4);
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments(values::array(TypeSystem::i8(),
+    c.callFunction("foo", "after_foo")(values::array(TypeSystem::i8(),
 							   values::i8('A'),
 							   values::i8('B'),
 							   values::i8('C'),
 							   values::i8('D')));
-    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

@@ -8,8 +8,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("x", values::i16(CAT('C', 'D')));
-    auto args = c.constructFunctionArguments("x", values::i16(CAT('A', 'B')));
-    c.callFunction("foo", "after_foo", args, "y");
+    c.callFunction("foo", "after_foo", "y")("x", values::i16(CAT('A', 'B')));
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

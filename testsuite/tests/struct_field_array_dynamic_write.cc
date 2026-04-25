@@ -4,9 +4,8 @@
 TEST_BEGIN
 
 auto inner = TypeSystem::array(TypeSystem::i8(), 3);
-auto holderFields = c.constructFields("tag", TypeSystem::i8(),
+auto holder = c.defineStruct("Holder")("tag", TypeSystem::i8(),
 				      "data", inner);
-auto holder = c.defineStruct("Holder", holderFields);
 
 c.beginFunction("main"); {
   c.declareLocal("h", holder);

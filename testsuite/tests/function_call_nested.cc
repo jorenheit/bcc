@@ -4,8 +4,7 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments(values::i8('A'));
-    c.callFunction("foo", "after_foo", args);
+    c.callFunction("foo", "after_foo")(values::i8('A'));
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -16,8 +15,7 @@ c.beginFunction("main"); {
 auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
 c.beginFunction("foo", fooSig, {"x"}); {
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments("x");
-    c.callFunction("bar", "after_bar", args);
+    c.callFunction("bar", "after_bar")("x");
   } c.endBlock();
 
   c.beginBlock("after_bar"); {

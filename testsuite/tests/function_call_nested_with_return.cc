@@ -6,8 +6,7 @@ c.beginFunction("main"); {
   c.declareLocal("r", TypeSystem::i8());
 
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments(values::i8('Z'));
-    c.callFunction("foo", "after_foo", args, "r");
+    c.callFunction("foo", "after_foo", "r")(values::i8('Z'));
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -21,8 +20,7 @@ c.beginFunction("foo", fooSig, {"x"}); {
   c.declareLocal("tmp", TypeSystem::i8());
 
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments("x");
-    c.callFunction("bar", "after_bar", args, "tmp");
+    c.callFunction("bar", "after_bar", "tmp")("x");
   } c.endBlock();
 
   c.beginBlock("after_bar"); {

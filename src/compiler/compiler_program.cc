@@ -239,7 +239,7 @@ void Compiler::setNextBlockImpl(int index) {
 
 
 void Compiler::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
-  _deferredBlockNameChecks.emplace_back(BlockName{
+  _deferredBlockNameChecks.emplace_back( BlockNameCheck {
       .API_CTX_NAME = API_FWD,
       .functionName = f,
       .blockName = b

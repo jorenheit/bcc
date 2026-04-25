@@ -3,11 +3,10 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    auto args = c.constructFunctionArguments(values::i8('A'),
+    
+    c.callFunction("foo", "after_foo")(values::i8('A'),
 					     values::i8('B'),
 					     values::i8('C'));
-
-    c.callFunction("foo", "after_foo", args);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -22,8 +21,7 @@ c.beginFunction("foo", fooSig, {"x", "y", "z"}); {
     c.writeOut("y");
     c.writeOut("z");
 
-    auto args = c.constructFunctionArguments("x", "y", "z");
-    c.callFunction("foo", "after_recurse", args);
+    c.callFunction("foo", "after_recurse")("x", "y", "z");
   } c.endBlock();
 
   c.beginBlock("after_recurse"); {

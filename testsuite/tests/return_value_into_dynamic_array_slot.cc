@@ -18,7 +18,7 @@ c.beginFunction("main"); {
     c.assign("idx", values::i8(3));
 
     auto dest = c.arrayElement("arr", "idx");
-    c.callFunction("makeZ", "after_makeZ", {}, dest);
+    c.callFunction("makeZ", "after_makeZ", dest)();
   } c.endBlock();
 
   c.beginBlock("after_makeZ"); {

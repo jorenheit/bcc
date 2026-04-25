@@ -1,17 +1,19 @@
 #include "compiler.ih"
 
-void Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC) {
+Compiler::FunctionCall Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
   API_FUNC_BEGIN("callFunction");
-  callFunctionImpl(functionName, nextBlockName, {}, args, API_FWD);
+  return FunctionCall {
+    ._compiler = this,
+    ._functionName = functionName,
+    ._nextBlockName = nextBlockName,
+    ._return = {},
+    ._context = API_FWD
+  };
 }
 
-void Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
-  API_FUNC_BEGIN("callFunction");
-  callFunctionImpl(functionName, nextBlockName, {}, {}, API_FWD);
-}
 
 void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-				std::optional<ExpressionResult> const &returnSlot, ArgList const &args, API_CTX) {
+				std::optional<ExpressionResult> const &returnSlot, std::vector<ExpressionResult> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -48,7 +50,7 @@ void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
     return result;
   };
 
-  _deferredFunctionCallTypeChecks.emplace_back(FunctionCall{
+  _deferredFunctionCallTypeChecks.emplace_back(FunctionCallInfo {
       .API_CTX_NAME = API_FWD,
       .caller = caller,
       .callee = callee,

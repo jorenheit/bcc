@@ -20,8 +20,7 @@ c.beginFunction("main"); {
     c.assign(c.arrayElement("p", 0), c.addressOf("a"));
     c.assign(c.arrayElement("p", 1), c.addressOf("b"));
 
-    auto args = c.constructFunctionArguments("p");
-    c.callFunction("foo", "after", args);
+    c.callFunction("foo", "after")("p");
   } c.endBlock();
 
   c.beginBlock("after"); {
