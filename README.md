@@ -32,7 +32,7 @@ b.begin(); {
        b.returnFromFunction();
     } b.endBlock();
   
-  } bf.endFunction();
+  } b.endFunction();
   
   b.beginFunction("hello"); {
   
