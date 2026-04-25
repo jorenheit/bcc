@@ -25,12 +25,116 @@
 // ============================================================
 
 class Compiler {
+public:
+  inline Compiler() { TypeSystem::init(); }
+
+  // TODO: there must be a cleaner way to pass args
+  
+  // TODO: API_FUNC 
+  std::string dumpPrimitives() const;
+  std::string dumpBrainfuck() const;
+
+  // Builders
+  void setEntryPoint(std::string functionName, API_FUNC);
+
+  void begin(API_FUNC);
+  void end(API_FUNC);
+
+  void beginScope(API_FUNC);
+  void endScope(API_FUNC);
+
+  void beginBlock(std::string name, API_FUNC);
+  void endBlock(API_FUNC);
+
+  void beginFunction(std::string const &name, API_FUNC);
+  void beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC);
+  void beginFunction(std::string const &name, types::TypeHandle funcType, std::vector<std::string> const &params, API_FUNC);
+  void endFunction(API_FUNC);
+
+  void setNextBlock(std::string const &b, API_FUNC);
+  void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
+
+  void referGlobals(std::vector<std::string> const &names, API_FUNC);
+  Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
+  Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
+
+  using ArgList = std::vector<ExpressionResult>;  
+  ArgList constructFunctionArguments_(API_FUNC_SOURCE, auto&&... args);  
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, auto const &returnSlot, API_FUNC);
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
+  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC);
+
+  void returnFromFunction(auto const &ret, API_FUNC);
+  void returnFromFunction(API_FUNC);
+  void abortProgram(API_FUNC);
+
+  StructFields constructFields(auto&& ... args);
+  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
+
+  ExpressionResult assign(auto const &lhs, auto const &rhs, API_FUNC);
+
+  ExpressionResult structField(auto const &obj, std::string const &field, API_FUNC);
+  ExpressionResult structField(auto const &obj, int fieldIndex, API_FUNC);
+  ExpressionResult dereferencePointer(auto const &ptr, API_FUNC);
+  ExpressionResult arrayElement(auto const &arr, int index, API_FUNC);  
+  ExpressionResult arrayElement(auto const &arr, auto const &index, API_FUNC);
+
+  ExpressionResult addAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult subAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult mulAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult divAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult modAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+
+  ExpressionResult add(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult sub(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult mul(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult div(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult mod(auto const &lhs, auto const &rhs, API_FUNC);  
+
+  // TODO: implement lnot
+  ExpressionResult lnotAssign(auto const &rhs, API_FUNC);
+  ExpressionResult lnot(auto const &rhs, API_FUNC);
+  
+  ExpressionResult landAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult lnandAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult lorAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult lnorAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult lxorAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult lxnorAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  
+  ExpressionResult land(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult lnand(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult lor(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult lnor(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult lxor(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult lxnor(auto const &lhs, auto const &rhs, API_FUNC);
+
+  ExpressionResult eqAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult neqAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult ltAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult leAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult gtAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult geAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+
+  ExpressionResult eq(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult neq(auto const &lhs, auto const &rhs, API_FUNC);  
+  ExpressionResult lt(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult le(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult gt(auto const &lhs, auto const &rhs, API_FUNC);
+  ExpressionResult ge(auto const &lhs, auto const &rhs, API_FUNC);  
+
+  ExpressionResult addressOf(auto const &obj, API_FUNC);
+
+  void writeOut(auto const &val, API_FUNC);
+  void branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
+  
+private:
   friend class proxy::Impl::Direct;
   friend class proxy::Impl::ArrayElement;
   friend class proxy::Impl::StructField;
   friend class proxy::Impl::DereferencedPointer;
   friend class api::Context;
-  
+
   Program _program;
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
@@ -71,113 +175,6 @@ class Compiler {
 
   std::unordered_set<std::string> _aliasedGlobals;
   
-public:
-  inline Compiler() { TypeSystem::init(); }
-
-  // TODO: there must be a cleaner way to pass args
-  using ArgList = std::vector<ExpressionResult>;
-  
-  // TODO: API_FUNC 
-  std::string dumpPrimitives() const;
-  std::string dumpBrainfuck() const;
-
-  // IR Directives
-  // TODO: move implementation to compiler_public.cc and compiler_public.tpp
-  void setEntryPoint(std::string functionName, API_FUNC);
-  void begin(API_FUNC);
-  void end(API_FUNC);
-  void endFunction(API_FUNC);
-  void beginScope(API_FUNC);
-  void endScope(API_FUNC);
-  void beginBlock(std::string name, API_FUNC);
-  void endBlock(API_FUNC);
-  void beginFunction(std::string const &name, API_FUNC);
-  void beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC);
-  void beginFunction(std::string const &name, types::TypeHandle funcType, std::vector<std::string> const &params, API_FUNC);
-  //  void setNextBlock(int index, API_FUNC);
-  void setNextBlock(std::string const &b, API_FUNC);
-  void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
-  void abortProgram(API_FUNC);
-  void referGlobals(std::vector<std::string> const &names, API_FUNC);
-  Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
-  Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
-  Slot declareGlobalReference(Slot const &globalSlot);
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
-  void callFunction(std::string const& functionName, std::string const& nextBlockName, ArgList const &args, API_FUNC);
-  void returnFromFunction(API_FUNC);
-
-
-  // TODO: there must be a cleaner way to define a struct
-  template <typename ... Args> StructFields constructFields(Args&& ... args);
-  types::TypeHandle defineStruct(std::string const& name, StructFields const &fields, API_FUNC);
-
-  template <typename... Args> ArgList constructFunctionArguments_(API_FUNC_SOURCE, Args&&... args);  
-  
-  template <typename Ret> void callFunction(std::string const& functionName, std::string const& nextBlockName,
-					    ArgList const &args, Ret const &returnSlot, API_FUNC);
-
-  template <typename Ret> void returnFromFunction(Ret const &ret, API_FUNC);
-
-  template <typename Obj> ExpressionResult structField(Obj const &obj, std::string const &field, API_FUNC);
-  template <typename Obj> ExpressionResult structField(Obj const &obj, int fieldIndex, API_FUNC);
-  template <typename Ptr> ExpressionResult dereferencePointer(Ptr const &ptr, API_FUNC);
-  template <typename Arr> ExpressionResult arrayElement(Arr const &arr, int index, API_FUNC);  
-  template <typename Arr,
-	    typename Idx> ExpressionResult arrayElement(Arr const &arr, Idx const &index, API_FUNC);
-
-
-  template <typename L, typename R> ExpressionResult addAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult subAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult mulAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult divAssign(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult modAssign(L const &lhs, R const &rhs, API_FUNC);  
-
-  template <typename L, typename R> ExpressionResult add(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult sub(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult mul(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult div(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult mod(L const &lhs, R const &rhs, API_FUNC);  
-
-  // TODO: implement lnot
-  template <typename L> ExpressionResult lnotAssign(L const &rhs, API_FUNC);
-  template <typename R> ExpressionResult lnot(R const &rhs, API_FUNC);
-  
-  template <typename L, typename R> ExpressionResult landAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult lnandAssign(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult lorAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult lnorAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult lxorAssign(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult lxnorAssign(L const &lhs, R const &rhs, API_FUNC);  
-  
-  template <typename L, typename R> ExpressionResult land(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult lnand(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult lor(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult lnor(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult lxor(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult lxnor(L const &lhs, R const &rhs, API_FUNC);
-  
-  template <typename L, typename R> ExpressionResult eqAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult neqAssign(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult ltAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult leAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult gtAssign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult geAssign(L const &lhs, R const &rhs, API_FUNC);  
-
-  template <typename L, typename R> ExpressionResult eq(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult neq(L const &lhs, R const &rhs, API_FUNC);  
-  template <typename L, typename R> ExpressionResult lt(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult le(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult gt(L const &lhs, R const &rhs, API_FUNC);
-  template <typename L, typename R> ExpressionResult ge(L const &lhs, R const &rhs, API_FUNC);  
-  
-  template <typename L, typename R> ExpressionResult assign(L const &lhs, R const &rhs, API_FUNC);
-  template <typename Val> void writeOut(Val const &val, API_FUNC);
-  
-  template <typename Obj> ExpressionResult addressOf(Obj const &obj, API_FUNC);
-  template <typename Con> void branchIf(Con const &condition, std::string const &trueLabel,
-					std::string const &falseLabel, API_FUNC);
-  
-private:
   // Diagnostics (compiler_diag.cc)
   std::string currentFunction() const;
   std::string currentBlock() const;
@@ -446,6 +443,7 @@ private:
   Slot getTemp(types::TypeHandle type);
   Slot getTemp(values::Literal const &val);
   void swapLocalWithTemp(Slot const &local, Slot const &tmp);
+  Slot declareGlobalReference(Slot const &globalSlot);
   
   // Global Data Synchronization (compiler_globals.cc)
   void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);

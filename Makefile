@@ -18,7 +18,7 @@ COMMON_SRCS := \
 	src/core/proxy.cc \
 	src/core/slot.cc \
 	src/compiler/compiler_program.cc \
-	src/compiler/compiler_declarations.cc \
+	src/compiler/compiler_struct.cc \
 	src/compiler/compiler_access.cc \
 	src/compiler/compiler_calls_control.cc \
 	src/compiler/compiler_pointers_memory.cc \

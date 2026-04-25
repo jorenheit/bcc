@@ -32,8 +32,6 @@ Slot Compiler::declareLocal(std::string const& name, types::TypeHandle type, API
   return allocSlot(name, type, Slot::Local);
 }
 
-
-// TODO: does not belong in public interface
 Slot Compiler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.kind == Slot::Global);
   assert(_currentFunction != nullptr);
