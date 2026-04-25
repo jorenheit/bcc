@@ -1,4 +1,10 @@
 *
-!*/
 !.gitignore
+!Makefile
 !README.md
+!todo.txt
+!include/
+!src/
+!testsuite/
+!app/
+!doc/

@@ -1,8 +1,0 @@
-*
-!/testsuite
-!*.cc
-!*.h
-!*.ih
-!*.tpp
-!.gitignore
-!todo.txt
