@@ -1,14 +1,8 @@
 #include "compiler.ih"
 
 Compiler::FunctionCall Compiler::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
-  API_FUNC_BEGIN("callFunction");
-  return FunctionCall {
-    ._compiler = this,
-    ._functionName = functionName,
-    ._nextBlockName = nextBlockName,
-    ._return = {},
-    ._context = API_FWD
-  };
+  API_FUNC_BEGIN();
+  return FunctionCall { *this, functionName, nextBlockName, {}, API_FWD };
 }
 
 
@@ -77,7 +71,7 @@ void Compiler::functionCallTypeChecks() {
 }
 
 void Compiler::abortProgram(API_FUNC) {
-  API_FUNC_BEGIN("abortProgram");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -92,7 +86,7 @@ void Compiler::abortProgram(API_FUNC) {
 }
 
 void Compiler::returnFromFunction(API_FUNC) {
-  API_FUNC_BEGIN("returnFromFunction");
+  API_FUNC_BEGIN();
   returnFromFunctionImpl({}, API_FWD);
 }
 

@@ -118,7 +118,7 @@ Slot Compiler::getTemp(values::Literal const &value) {
 }
 
 Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
-  API_FUNC_BEGIN("declareGlobal");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_DECLARE_GLOBAL_ALLOWED();
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
@@ -140,7 +140,7 @@ Slot Compiler::declareGlobal(std::string const &name, types::TypeHandle type, AP
 
 
 Slot Compiler::declareLocal(std::string const& name, types::TypeHandle type, API_FUNC) {
-  API_FUNC_BEGIN("declareLocal");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
@@ -169,7 +169,7 @@ Slot Compiler::declareGlobalReference(Slot const &globalSlot) {
 
 
 void Compiler::referGlobals(std::vector<std::string> const &names, API_FUNC) {
-  API_FUNC_BEGIN("referGlobals");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();

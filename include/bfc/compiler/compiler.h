@@ -148,7 +148,8 @@ private:
     bool begun = false;
     bool allowGlobalDefinitions = true; // TODO: rename to allowGlobalDeclarations
   } _state;
-  
+
+  std::stack<Cell> _ptrStack;
   DataPointer _dp;
 
   struct MetaBlock {
@@ -160,7 +161,6 @@ private:
   };
   std::vector<MetaBlock> _metaBlocks;
 
-  std::stack<Cell> _ptrStack;
 
   struct FunctionCallInfo {
     api::Context API_CTX_NAME;
@@ -509,24 +509,49 @@ private:
 
 // Builder objects for calls and struct definitions
 
-struct Compiler::FunctionCall {
-  void operator()(auto const&... args) {
+class Compiler::FunctionCall {
+public:
+  void operator()(auto const&... args) && {
     std::vector<ExpressionResult> argList;
-    (argList.emplace_back(_compiler->rValue(std::forward<decltype(args)>(args), _context)), ...);
-    _compiler->callFunctionImpl(_functionName, _nextBlockName, _return, argList, _context);
+    (argList.emplace_back(_compiler.rValue(std::forward<decltype(args)>(args), API_FWD)), ...);
+    _compiler.callFunctionImpl(_functionName, _nextBlockName, _return, argList, API_FWD);
+    _called = true;
   }
 
-  Compiler* _compiler;
+  ~FunctionCall() noexcept(false) {
+    API_REQUIRE(_called, "operator() must be called on result of callFunction(); e.g. callFunction(\"foo\", \"after_foo\")(\"x\", \"y\");");
+  }
+
+private:
+  friend class Compiler;  
+  Compiler& _compiler;
   std::string _functionName;
   std::string _nextBlockName;
   std::optional<ExpressionResult> _return;
-  api::Context _context;
+  api::Context API_CTX_NAME;
+  bool _called = false;
+
+  FunctionCall(Compiler &c, std::string const &functionName, std::string const &nextBlockName,
+	       std::optional<ExpressionResult> ret, api::Context const &ctx):
+    _compiler(c),
+    _functionName(functionName),
+    _nextBlockName(nextBlockName),
+    _return(std::move(ret)),
+    API_CTX_NAME(ctx)
+  {}
+    
+  FunctionCall(FunctionCall const&) = delete;
+  FunctionCall(FunctionCall &&) = delete;
+  FunctionCall& operator=(FunctionCall const&) = delete;
+  FunctionCall& operator=(FunctionCall &&) = delete;
+  
+  
 };
 
 
-struct Compiler::StructDefinition {
-
-  types::TypeHandle operator()(auto const&... args) {
+class Compiler::StructDefinition {
+public:
+  types::TypeHandle operator()(auto const&... args) && {
     static_assert(sizeof ... (args) % 2 == 0);
     std::vector<StructField> fields;
 
@@ -537,13 +562,32 @@ struct Compiler::StructDefinition {
     };
 
     addField(addField, std::forward<decltype(args)>(args)...);
-    return _compiler->defineStructImpl(_structName, fields, _context);
+    _called = true;
+    return _compiler.defineStructImpl(_structName, fields, API_FWD);
   }
-    
-    
-  Compiler* _compiler;
+
+  ~StructDefinition() noexcept(false) {
+    API_REQUIRE(_called, "operator() must be called on result of defineStruct(); e.g. defineStruct(\"Point\")(\"x\", i8, \"y\", i8);");
+  }
+
+private:
+  friend class Compiler;
+  Compiler& _compiler;
   std::string _structName;
-  api::Context _context;
+  api::Context API_CTX_NAME;
+  bool _called = false;
+  
+  StructDefinition(Compiler &c, std::string const &structName, api::Context const &ctx):
+    _compiler(c),
+    _structName(structName),
+    API_CTX_NAME(ctx)
+  {}
+  
+  StructDefinition(StructDefinition const&) = delete;
+  StructDefinition(StructDefinition&&) = delete;
+  StructDefinition& operator=(StructDefinition const&) = delete;
+  StructDefinition& operator=(StructDefinition&&) = delete;
+    
 };
   
 

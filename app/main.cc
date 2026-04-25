@@ -60,9 +60,7 @@ int main() try {
     // } c.endFunction();
 
     auto i8 = TypeSystem::i8();
-    c.defineStruct("Point")("x", i8,
-			    "y", i8);
-    
+    c.defineStruct("Point")("x", i8, "y", i8);
 
     c.beginFunction("main"); {
       c.declareLocal("f", i8);

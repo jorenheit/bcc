@@ -46,11 +46,8 @@ namespace api {
 #define API_CTX api::Context const & API_CTX_NAME
 #define API_FWD API_CTX_NAME
 
-#define API_FUNC_BEGIN(name)				\
-  api::Context API_CTX_NAME{*this, name, API_LOC};
-
-#define API_FUNC_BEGIN_FREE(name)				\
-  api::Context API_CTX_NAME{nullptr, name, API_LOC};
+#define API_FUNC_BEGIN()				\
+  api::Context API_CTX_NAME{*this, __func__, API_LOC};
 
 #define API_EXPECT_NEXT(name) api::expectNext((name));			
 

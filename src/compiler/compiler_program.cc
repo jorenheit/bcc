@@ -1,15 +1,14 @@
 #include "compiler.ih"
 
-
 void Compiler::setEntryPoint(std::string functionName, API_FUNC) {
-  API_FUNC_BEGIN("setEntryPoint");
+  API_FUNC_BEGIN();
   API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
   
   _program.entryFunctionName = std::move(functionName);
 }
 
 void Compiler::begin(API_FUNC) {
-  API_FUNC_BEGIN("begin");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE(not _program.entryFunctionName.empty(), "no entry point set; call 'setEntryPoint' first.");
   API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
@@ -21,7 +20,7 @@ void Compiler::begin(API_FUNC) {
 }
 
 void Compiler::end(API_FUNC) {
-  API_FUNC_BEGIN("end");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
@@ -74,7 +73,7 @@ void Compiler::end(API_FUNC) {
 }
 
 void Compiler::beginFunction(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_FUNC) {
-  API_FUNC_BEGIN("beginFunction");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
@@ -104,7 +103,7 @@ void Compiler::beginFunction(std::string const &name, types::TypeHandle funcType
 }
 
 void Compiler::endFunction(API_FUNC) {
-  API_FUNC_BEGIN("endFunction");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_NO_SCOPE();
@@ -114,7 +113,7 @@ void Compiler::endFunction(API_FUNC) {
 }
 
 void Compiler::beginScope(API_FUNC) {
-  API_FUNC_BEGIN("beginScope");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
@@ -123,7 +122,7 @@ void Compiler::beginScope(API_FUNC) {
 }
 
 void Compiler::endScope(API_FUNC) {
-  API_FUNC_BEGIN("endScope");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
@@ -134,7 +133,7 @@ void Compiler::endScope(API_FUNC) {
 
 
 void Compiler::beginBlock(std::string name, API_FUNC) {
-  API_FUNC_BEGIN("beginBlock");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
@@ -156,7 +155,7 @@ void Compiler::beginBlock(std::string name, API_FUNC) {
 }
 
 void Compiler::endBlock(API_FUNC) {
-  API_FUNC_BEGIN("endBlock");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED_STRICT();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -176,7 +175,7 @@ void Compiler::endBlock(API_FUNC) {
 // }
 
 void Compiler::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
-  API_FUNC_BEGIN("setNextBlock");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -187,7 +186,7 @@ void Compiler::setNextBlock(std::string const &f, std::string const &b, API_FUNC
 }
 
 void Compiler::setNextBlock(std::string const &b, API_FUNC) {
-  API_FUNC_BEGIN("setNextBlock");
+  API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
