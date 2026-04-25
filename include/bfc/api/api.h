@@ -29,8 +29,13 @@
 #define API_H_INCLUDED
 
 namespace api {
-  void expectNext(std::string const &shortName);
-  bool isExpected(std::string const &longName, bool strict = false);
+  struct ExpResult {
+    bool expected;
+    std::string msg;
+  };
+  
+  void expectNext(std::string const &name);
+  ExpResult isExpected(std::string const &name, bool strict = false);
   std::string expected();
   void clearExpected();
 }
@@ -51,10 +56,10 @@ namespace api {
 
 #define API_CHECK_EXPECTED_IMPL(strict) do {				\
     std::string const apiName = (API_CTX_NAME).apiName();		\
-    bool const isExpected = api::isExpected(apiName, strict);		\
-    error::throw_if(not isExpected,					\
+    auto expResult = api::isExpected(apiName, strict);			\
+    error::throw_if(not expResult.expected,				\
 		    (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		    "expected ", api::expected(), ".");			\
+		    expResult.msg);					\
     if (api::expected() == apiName) api::clearExpected();		\
   } while (false);
 

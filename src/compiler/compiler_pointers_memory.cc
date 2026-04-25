@@ -245,6 +245,7 @@ ExpressionResult Compiler::assignImpl(ExpressionResult const &lhs, ExpressionRes
   return lhs;
 }
 
+// TODO: factor out into a writeSlot? That's more consistent with the other API functions
 void Compiler::writeOutImpl(ExpressionResult const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -293,21 +294,16 @@ void Compiler::writeOutImpl(ExpressionResult const &rhs, API_CTX) {
   popPtr();
 }
 
-// TODO: factor common code out from these deref functions
-
-void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
+void Compiler::moveToPointee(Slot const &ptrSlot) {
   assert(types::isPointer(ptrSlot.type));
-  assert(srcSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
-
-  pushPtr();
-
+  // NOTE: this leaves the pointer in an unknown position. Leave a seekmarker before calling this
+  
   // Decompose the pointer into its frameDepth and offset
   Cell const frameDepth { ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0 };
   Cell const offsetLow  { ptrSlot + RuntimePointer::Offset, MacroCell::Value0 };
   Cell const offsetHigh { ptrSlot + RuntimePointer::Offset, MacroCell::Value1 };
 
   // Payload cells start at the origin. First, the pointer-fields
-  // TODO: just load payload into ptrSlot payload and move dynamically to FrameMarker?
   Cell const frameDepthPayload { 0 + RuntimePointer::FrameDepth, MacroCell::Payload0 };
   Cell const offsetLowPayload  { 0 + RuntimePointer::Offset, MacroCell::Payload0 };
   Cell const offsetHighPayload { 0 + RuntimePointer::Offset, MacroCell::Payload1 };
@@ -322,9 +318,6 @@ void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot con
   moveTo(offsetHigh);
   copyField(offsetHighPayload, Temps<1>::select(offsetHighPayload, MacroCell::Scratch0));
 
-  // Leave a marker at the sourceSlot
-  moveTo(srcSlot);
-  setSeekMarker();
 
   // If frameDepth is nonzero, we need to keep moving to the 
   // previous frame start until the depth-counter becomes 0.
@@ -338,11 +331,23 @@ void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot con
     
     // We're now at the start of the previous frame -> exit if depth == 0 after subtracting 1
     moveTo(frameDepthPayload);
-    subConst(1); // TODO: dec()
+    dec();
   } loopClose();
 
   // At the target frame -> move to offset indicated by pointer value in payload
   goToDynamicOffset(offsetLowPayload, offsetHighPayload);
+}
+
+
+void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
+  assert(types::isPointer(ptrSlot.type));
+  assert(srcSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
+
+  pushPtr();
+  // Leave a marker at the sourceSlot and move to pointee
+  moveTo(srcSlot);
+  setSeekMarker();
+  moveToPointee(ptrSlot);
 
   // Set the marker and move back to the source
   setSeekMarker();
@@ -386,11 +391,12 @@ void Compiler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot con
   seek(MacroCell::SeekMarker, primitive::Right, {}, false);
   resetSeekMarker();
   _dp.set(srcSlot);
-  
   popPtr();
 
   syncGlobalToLocal(true);
 }
+
+
 
 // TODO: factor common code with write
 void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
@@ -398,51 +404,12 @@ void Compiler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &deref
   assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
 
   syncLocalToGlobal(true);
-  
   pushPtr();
 
-  // Decompose the pointer into its frameDepth and offset
-  Cell const frameDepth { ptrSlot + RuntimePointer::FrameDepth, MacroCell::Value0 };
-  Cell const offsetLow  { ptrSlot + RuntimePointer::Offset, MacroCell::Value0 };
-  Cell const offsetHigh { ptrSlot + RuntimePointer::Offset, MacroCell::Value1 };
-
-  // Payload cells will be at the origin
-  // TODO: just load payload into ptrSlot payload and move dynamically to FrameMarker?
-  Cell const frameDepthPayload { 0 + RuntimePointer::FrameDepth, MacroCell::Payload0 };
-  Cell const offsetLowPayload  { 0 + RuntimePointer::Offset, MacroCell::Payload0 };
-  Cell const offsetHighPayload { 0 + RuntimePointer::Offset, MacroCell::Payload1 };
-
-  // Copy both values (frameDepth and offset) to the payload-cells of cell 0 and 1
-  moveTo(frameDepth);
-  copyField(frameDepthPayload, Temps<1>::select(frameDepthPayload, MacroCell::Scratch0));
-
-  moveTo(offsetLow);
-  copyField(offsetLowPayload,  Temps<1>::select(offsetLowPayload, MacroCell::Scratch0));
-
-  moveTo(offsetHigh);
-  copyField(offsetHighPayload, Temps<1>::select(offsetHighPayload, MacroCell::Scratch0));
-
-  // Leave a marker at the destination
+  // Leave a pointer at the derefSlot and move to the pointee
   moveTo(derefSlot);
   setSeekMarker();
-
-  // If frameDepth is nonzero, we need to keep moving to the 
-  // previous frame start until the depth-counter becomes 0.
-  moveTo(frameDepthPayload);
-  loopOpen(); {
-    Payload payload{
-      1, Payload::Width::Single, // depth
-      1, Payload::Width::Double, // offset
-    };
-    moveToPreviousFrame(payload);
-    
-    // We're now at the start of the previous frame -> exit if depth == 0 after subtracting 1
-    moveTo(frameDepthPayload);
-    subConst(1);
-  } loopClose();
-
-  // At the target frame -> move to offset indicated by pointer value in payload
-  goToDynamicOffset(offsetLowPayload, offsetHighPayload);
+  moveToPointee(ptrSlot);
   _dp.set(0);
 
   // Copy the value into the payload

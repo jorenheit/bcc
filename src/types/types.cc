@@ -12,7 +12,11 @@ std::vector<std::unique_ptr<types::PointerType>> TypeSystem::_pointerTypes;
 std::vector<std::unique_ptr<types::FunctionType>> TypeSystem::_functionTypes;
 
 void TypeSystem::init() {
-  _void = std::make_unique<types::VoidType>();
-  _i8 = std::make_unique<types::IntegerType>(8);
-  _i16 = std::make_unique<types::IntegerType>(16);
+  static bool initialized = false;
+  if (!initialized) {
+    _void = std::make_unique<types::VoidType>();
+    _i8 = std::make_unique<types::IntegerType>(8);
+    _i16 = std::make_unique<types::IntegerType>(16);
+    initialized = true;
+  }
 }

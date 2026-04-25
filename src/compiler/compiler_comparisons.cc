@@ -247,7 +247,7 @@ void Compiler::slotGreaterEqualConst(Slot const &lhs, int val) {
   }
   else if (val == 0) {
     moveTo(lhs);
-    setToValue(0);
+    setToValue(1);
     popPtr();
     return;
   }

@@ -18,9 +18,24 @@ void api::expectNext(std::string const &name) {
   Impl::expected = name;
 }
 
-bool api::isExpected(std::string const &name, bool strict) {
-  if (not strict && Impl::expected.empty()) return true;
-  return Impl::expected == name;
+api::ExpResult api::isExpected(std::string const &name, bool strict) {
+  std::string const &expected = Impl::expected;
+
+  if (expected == name || (!strict && expected.empty())) {
+    return { true, "" };
+  }
+
+  if (expected.empty()) {
+    return {
+      .expected = false,
+      .msg = "unexpected '" + name + "'."
+    };
+  }
+
+  return {
+    .expected = false,
+    .msg = "expected '" + expected + "', but got '" + name + "'."
+  };
 }
 
 api::Context::Context(Compiler const &c, std::string const &name, std::source_location loc):

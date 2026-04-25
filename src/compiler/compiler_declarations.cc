@@ -71,7 +71,8 @@ void Compiler::referGlobals(std::vector<std::string> const &names, API_FUNC) {
     }
 
     syncGlobalToLocal();
-    setNextBlock(_program.nextGlobalBlockIndex());
+    setNextBlockImpl(_program.nextGlobalBlockIndex());
+    API_EXPECT_NEXT("endBlock");
   } endBlock();
 }
 

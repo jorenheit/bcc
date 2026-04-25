@@ -63,6 +63,12 @@ class Compiler {
   };
   std::vector<FunctionCall> _deferredFunctionCallTypeChecks;
 
+  struct BlockName {
+    api::Context API_CTX_NAME;
+    std::string functionName, blockName;
+  };
+  std::vector<BlockName> _deferredBlockNameChecks;
+
   std::unordered_set<std::string> _aliasedGlobals;
   
 public:
@@ -88,7 +94,7 @@ public:
   void beginFunction(std::string const &name, API_FUNC);
   void beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC);
   void beginFunction(std::string const &name, types::TypeHandle funcType, std::vector<std::string> const &params, API_FUNC);
-  void setNextBlock(int index, API_FUNC);
+  //  void setNextBlock(int index, API_FUNC);
   void setNextBlock(std::string const &b, API_FUNC);
   void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
   void abortProgram(API_FUNC);
@@ -296,7 +302,7 @@ private:
   void loopOpen(std::string const &tag = defaultOpenTag());
   void loopClose(std::string const &tag = defaultCloseTag());
 
-  void goToDynamicOffset(Cell offsetLow, Cell offsetHigh);
+  void goToDynamicOffset(Cell offsetLow, Cell offsetHigh);// TODO: rename moveTo..
   void fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload const &payload, primitive::Direction seekDir);
   
   void moveField(Cell dest);
@@ -417,6 +423,9 @@ private:
 
   
   // Frame Navigation (compiler_framenav.cc)
+  void resetOrigin();
+  void pushPtr();
+  void popPtr();  
   void pushFrame();
   void popFrame();
   void seek(MacroCell::Field markerField, primitive::Direction dir, Payload const &payload, bool checkCurrent);
@@ -426,6 +435,8 @@ private:
   void initializeArguments(std::string const &functionName, std::vector<ExpressionResult> const &args, API_CTX);  
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
+  void moveToPointee(Slot const &ptrSlot);
+
 
   // Temporaries and memory management (compiler_memory.cc)
   void freeSlot(Slot &slot);
@@ -458,21 +469,18 @@ private:
   void setTargetSequence(primitive::Sequence *seq);
   primitive::Context constructContext() const;    
   primitive::Sequence compilePrimitives() const;
-  
-  // Pointer management (compiler_misc.cc)
-  void resetOrigin();
-  void pushPtr();
-  void popPtr();
+  static std::string simplifyProgram(std::string const &bf);
 
-  // Post processing/optimization (compiler_misc.cc)
+    // Post processing
   void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
 				  std::vector<ExpressionResult> const &args, API_CTX);
-
   void functionCallTypeChecks();
+
+  void deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX);
+  void blockNameChecks();
   
-  static std::string simplifyProgram(std::string const &bf);
   
-  // General helpers (inline definitions)
+  // General helpers (inline definitions) // TODO: remove those tags. Never used
   static inline std::string defaultOpenTag() {
     static int count = 0;
     return std::string("open_loop_") + std::to_string(count++);

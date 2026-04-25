@@ -24,11 +24,11 @@ namespace {
 
     if (types::isArrayLike(pointeeType)) {
       auto arrayType = types::cast<types::ArrayLike>(pointeeType);
-      return pointerCanDecayInto(TypeSystem::pointer(arrayType->elementType()), target);
+      return pointerCanDecayInto(target, TypeSystem::pointer(arrayType->elementType()));
     }
     if (types::isStruct(pointeeType)) {
       auto structType = types::cast<types::StructType>(pointeeType);
-      return pointerCanDecayInto(TypeSystem::pointer(structType->fieldType(0)), target);
+      return pointerCanDecayInto(target, TypeSystem::pointer(structType->fieldType(0)));
     }
     return false;
   }

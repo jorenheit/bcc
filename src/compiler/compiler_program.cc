@@ -25,8 +25,10 @@ void Compiler::end(API_FUNC) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
+  API_REQUIRE(_program.functions.size() > 0, "a program should contain at least one function.");
       
   functionCallTypeChecks();
+  blockNameChecks();
   
   // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
   constructMetaBlocks();
@@ -67,6 +69,8 @@ void Compiler::end(API_FUNC) {
   setTargetSequence(&_program.hatstrap);
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   loopClose("main loop");
+
+  _state.begun = false;
 }
 
 void Compiler::beginFunction(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_FUNC) {
@@ -104,6 +108,7 @@ void Compiler::endFunction(API_FUNC) {
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_NO_SCOPE();
+  API_REQUIRE(_currentFunction->blocks.size() > 0, "a function should contain at least 1 code-block.");
   
   _currentFunction = nullptr;
 }
@@ -160,24 +165,15 @@ void Compiler::endBlock(API_FUNC) {
   _currentBlock = nullptr;
 }
 
-void Compiler::setNextBlock(int index, API_FUNC) {
-  API_FUNC_BEGIN("setNextBlock");
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+// void Compiler::setNextBlock(int index, API_FUNC) {
+//   API_FUNC_BEGIN("setNextBlock");
+//   API_CHECK_EXPECTED();
+//   API_REQUIRE_INSIDE_CODE_BLOCK();
 
-  setNextBlockImpl(index);
+//   setNextBlockImpl(index, API_CTX);
 
-  API_EXPECT_NEXT("endBlock");
-}
-
-
-void Compiler::setNextBlockImpl(int index) {
-  pushPtr();
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
-  popPtr();
-  _nextBlockIsSet = true;
-}
+//   API_EXPECT_NEXT("endBlock");
+// }
 
 void Compiler::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
   API_FUNC_BEGIN("setNextBlock");
@@ -185,6 +181,7 @@ void Compiler::setNextBlock(std::string const &f, std::string const &b, API_FUNC
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
   setNextBlockImpl(f, b);
+  deferBlockNameCheck(f, b, API_FWD);
 
   API_EXPECT_NEXT("endBlock");  
 }
@@ -195,9 +192,11 @@ void Compiler::setNextBlock(std::string const &b, API_FUNC) {
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
   setNextBlockImpl(_currentFunction->name, b);
+  deferBlockNameCheck(_currentFunction->name, b, API_FWD);
 
   API_EXPECT_NEXT("endBlock");  
 }
+
 
 void Compiler::setNextBlockImpl(std::string const &f, std::string const &b) {
   // It is possible that the function or block name has not been
@@ -212,7 +211,6 @@ void Compiler::setNextBlockImpl(std::string const &f, std::string const &b) {
 
   pushPtr();
   
-  // TODO: proper error for undefined block names
   
   // Could not determine block index yet -> postpone until actual code generation
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
@@ -230,6 +228,32 @@ void Compiler::setNextBlockImpl(std::string const &f, std::string const &b) {
   _nextBlockIsSet = true;
   popPtr();
 }
-    
+
+void Compiler::setNextBlockImpl(int index) {
+  pushPtr();
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
+  setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
+  popPtr();
+  _nextBlockIsSet = true;
+}
 
 
+void Compiler::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
+  _deferredBlockNameChecks.emplace_back(BlockName{
+      .API_CTX_NAME = API_FWD,
+      .functionName = f,
+      .blockName = b
+    });
+}
+
+void Compiler::blockNameChecks() {
+  assert(_currentFunction == nullptr);
+
+  for (auto const &[API_CTX_NAME, functionName, blockName]: _deferredBlockNameChecks) {
+    API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");
+    API_REQUIRE(_program.function(functionName).isBlockDefined(blockName),
+		"block '", blockName, "' not defined inside function '", functionName, "'.");
+  }
+
+  _deferredBlockNameChecks.clear();
+}

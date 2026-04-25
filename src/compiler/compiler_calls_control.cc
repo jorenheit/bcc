@@ -29,6 +29,7 @@ void Compiler::callFunctionImpl(std::string const& functionName, std::string con
     });
 
   deferFunctionCallTypeCheck(_currentFunction->name, functionName, args, API_FWD);
+  deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);
   initializeArguments(functionName, args, API_FWD);
   pushFrame();
 
@@ -59,6 +60,8 @@ void Compiler::functionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
   for (auto const &[API_CTX_NAME, caller, callee, args]: _deferredFunctionCallTypeChecks) {
+    API_REQUIRE(_program.isFunctionDefined(callee), "function '", callee, "' not defined.");
+
     auto const &paramTypes = _program.function(callee).type->paramTypes();
     API_REQUIRE(paramTypes.size() == args.size(),
 		"invalid number of arguments in function-call to '", callee, "': "
@@ -129,6 +132,9 @@ void Compiler::branchIfImpl(ExpressionResult const &obj, std::string const &true
     bool const value = values::cast<types::IntegerType>(obj.literal())->value();
     setNextBlockImpl(_currentFunction->name, value ? trueLabel : falseLabel);
   }
+
+  deferBlockNameCheck(_currentFunction->name, trueLabel, API_FWD);
+  deferBlockNameCheck(_currentFunction->name, falseLabel, API_FWD);
   
   API_EXPECT_NEXT("endBlock");
 }
