@@ -1,24 +1,24 @@
-#include "bfc/api/context.h"
-#include "bfc/compiler/compiler.h"
+#include "acus/api/context.h"
+#include "acus/builder/builder.h"
 
 namespace Impl {
   std::string expected;
 }
 
 
-std::string api::expected() {
+std::string acus::api::expected() {
   return Impl::expected;
 }
 
-void api::clearExpected() {
+void acus::api::clearExpected() {
   Impl::expected = "";
 }
 
-void api::expectNext(std::string const &name) {
+void acus::api::expectNext(std::string const &name) {
   Impl::expected = name;
 }
 
-api::ExpResult api::isExpected(std::string const &name, bool strict) {
+acus::api::ExpResult acus::api::isExpected(std::string const &name, bool strict) {
   std::string const &expected = Impl::expected;
 
   if (expected == name || (!strict && expected.empty())) {
@@ -38,53 +38,53 @@ api::ExpResult api::isExpected(std::string const &name, bool strict) {
   };
 }
 
-api::Context::Context(Compiler const &c, std::string const &name, std::source_location loc):
-  _compiler(&c),
+acus::api::Context::Context(Builder const &b, std::string const &name, std::source_location loc):
+  _builder(&b),
   _name(name),
   _loc(std::move(loc))
 {}
 
-bool api::Context::programStarted() const {
-  assert(_compiler);
-  return _compiler->programStarted();
+bool acus::api::Context::programStarted() const {
+  assert(_builder);
+  return _builder->programStarted();
 }
 
-std::string api::Context::currentFunction() const {
-  assert(_compiler);
-  return _compiler->currentFunction();
+std::string acus::api::Context::currentFunction() const {
+  assert(_builder);
+  return _builder->currentFunction();
 }
 
-std::string api::Context::currentBlock() const {
-  assert(_compiler);
-  return _compiler->currentBlock();
+std::string acus::api::Context::currentBlock() const {
+  assert(_builder);
+  return _builder->currentBlock();
 }
 
-int api::Context::currentScopeDepth() const {
-  assert(_compiler);
-  return _compiler->currentScopeDepth();
+int acus::api::Context::currentScopeDepth() const {
+  assert(_builder);
+  return _builder->currentScopeDepth();
 }
 
-bool api::Context::declaredAsGlobal(std::string const &name) const {
-  assert(_compiler);
-  return _compiler->declaredAsGlobal(name);
+bool acus::api::Context::declaredAsGlobal(std::string const &name) const {
+  assert(_builder);
+  return _builder->declaredAsGlobal(name);
 }
 
-std::string api::Context::apiName() const {
-  assert(_compiler);
+std::string acus::api::Context::apiName() const {
+  assert(_builder);
   return _name;
 }
 
-bool api::Context::globalDeclarationsAllowed() const {
-  assert(_compiler);
-  return _compiler->globalDeclarationsAllowed();
+bool acus::api::Context::globalDeclarationsAllowed() const {
+  assert(_builder);
+  return _builder->globalDeclarationsAllowed();
 }
 
-bool api::Context::inScope(std::string const &name) const {
-  assert(_compiler);
-  return _compiler->inScope(name);
+bool acus::api::Context::inScope(std::string const &name) const {
+  assert(_builder);
+  return _builder->inScope(name);
 }
 
-bool api::Context::inCurrentScope(std::string const &name) const {
-  assert(_compiler);
-  return _compiler->inCurrentScope(name);
+bool acus::api::Context::inCurrentScope(std::string const &name) const {
+  assert(_builder);
+  return _builder->inCurrentScope(name);
 }

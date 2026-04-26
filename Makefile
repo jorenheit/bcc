@@ -17,26 +17,26 @@ COMMON_SRCS := \
 	src/types/operators.cc \
 	src/core/proxy.cc \
 	src/core/slot.cc \
-	src/compiler/compiler_program.cc \
-	src/compiler/compiler_struct.cc \
-	src/compiler/compiler_access.cc \
-	src/compiler/compiler_calls_control.cc \
-	src/compiler/compiler_pointers_memory.cc \
-	src/compiler/compiler_algorithms.cc \
-	src/compiler/compiler_codeblocks.cc \
-	src/compiler/compiler_framenav.cc \
-	src/compiler/compiler_diag.cc \
-	src/compiler/compiler_codegen.cc \
-	src/compiler/compiler_globals.cc \
-	src/compiler/compiler_memory.cc \
-	src/compiler/compiler_rlvalue.cc \
-	src/compiler/compiler_add.cc \
-	src/compiler/compiler_sub.cc \
-	src/compiler/compiler_divmod.cc \
-	src/compiler/compiler_mul.cc \
-	src/compiler/compiler_logical.cc \
-	src/compiler/compiler_comparisons.cc \
-	src/compiler/compiler_binop_general.cc \
+	src/builder/builder_program.cc \
+	src/builder/builder_struct.cc \
+	src/builder/builder_access.cc \
+	src/builder/builder_calls_control.cc \
+	src/builder/builder_pointers_memory.cc \
+	src/builder/builder_algorithms.cc \
+	src/builder/builder_codeblocks.cc \
+	src/builder/builder_framenav.cc \
+	src/builder/builder_diag.cc \
+	src/builder/builder_codegen.cc \
+	src/builder/builder_globals.cc \
+	src/builder/builder_memory.cc \
+	src/builder/builder_rlvalue.cc \
+	src/builder/builder_add.cc \
+	src/builder/builder_sub.cc \
+	src/builder/builder_divmod.cc \
+	src/builder/builder_mul.cc \
+	src/builder/builder_logical.cc \
+	src/builder/builder_comparisons.cc \
+	src/builder/builder_binop_general.cc \
 
 MAIN_SRC := app/main.cc
 TEST_SRC := testsuite/testsuite.cc

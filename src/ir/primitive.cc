@@ -1,9 +1,10 @@
 #include <sstream>
 #include <iostream>
-#include "bfc/ir/primitive.h"
-#include "bfc/core/data.h"
-#include "bfc/util/util.h"
+#include "acus/ir/primitive.h"
+#include "acus/core/data.h"
+#include "acus/util/util.h"
 
+using namespace acus;
 
 std::string primitive::Sequence::dumpText(Context const &ctx) {
   std::ostringstream oss;
@@ -19,7 +20,7 @@ std::string primitive::Sequence::dumpCode(Context const &ctx) {
 }
 
 
-namespace Algorithm {
+namespace acus::Algorithm {
 
   std::string movePtr(int amount) {
     char const ch = (amount > 0) ? '>' : '<';

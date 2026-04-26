@@ -1,25 +1,25 @@
-#include "bfc/core/proxy.h"
-#include "bfc/compiler/compiler.h"
+#include "acus/core/proxy.h"
+#include "acus/builder/builder.h"
 
-namespace proxy {
+namespace acus::proxy {
 
   Impl::SlotProxy::SlotProxy(Slot const &slot):
     BasePtr(proxy::direct(slot))
   {}
 
-  Slot Impl::Direct::materialize(Compiler&) const {
+  Slot Impl::Direct::materialize(Builder&) const {
     return _slot;
   }
   
-  void Impl::Direct::write(Compiler &c, SlotProxy src) const {
+  void Impl::Direct::write(Builder &c, SlotProxy src) const {
     c.assignSlot(_slot, src->materialize(c));
   }
 
-  void Impl::Direct::write(Compiler &c, values::Literal src) const {
+  void Impl::Direct::write(Builder &c, values::Literal src) const {
     c.assignSlot(_slot, src);
   }
 
-  Slot Impl::Direct::addressOf(Compiler &c) const {
+  Slot Impl::Direct::addressOf(Builder &c) const {
     return c.addressOfSlot(_slot);
   }
   
@@ -28,12 +28,12 @@ namespace proxy {
   }
 
   // Materialize a slot at known offset
-  Slot Impl::ArrayElement::materializeImpl(Compiler &c, int index) const {
+  Slot Impl::ArrayElement::materializeImpl(Builder &c, int index) const {
     return getElementSlot(_arr->materialize(c), index);
   }
 
   // Materialize a slot at unknown offset
-  Slot Impl::ArrayElement::materializeImpl(Compiler &c, SlotProxy index) const {
+  Slot Impl::ArrayElement::materializeImpl(Builder &c, SlotProxy index) const {
     Slot const arrSlot = _arr->materialize(c);
     Slot const indexSlot = index->materialize(c);
     Slot const elementSlot = c.getTemp(this->type());
@@ -43,7 +43,7 @@ namespace proxy {
   }
 
   // Write an anonymous value to a slot at known offset
-  void Impl::ArrayElement::writeImpl(Compiler &c, int index, values::Literal src) const {
+  void Impl::ArrayElement::writeImpl(Builder &c, int index, values::Literal src) const {
     Slot const arrSlot = _arr->materialize(c);
     Slot const elementSlot = getElementSlot(arrSlot, index);
 
@@ -54,7 +54,7 @@ namespace proxy {
   }
 
   // Write a slot-proxy to a slot at known offset
-  void Impl::ArrayElement::writeImpl(Compiler &c, int index, SlotProxy src) const {
+  void Impl::ArrayElement::writeImpl(Builder &c, int index, SlotProxy src) const {
     Slot const srcSlot = src->materialize(c);
     Slot const arrSlot = _arr->materialize(c);
     Slot const elementSlot = getElementSlot(arrSlot, index);
@@ -66,12 +66,12 @@ namespace proxy {
   }
 
   // Write an anonymous value to a dynamic offset
-  void Impl::ArrayElement::writeImpl(Compiler &c, SlotProxy index, values::Literal src) const {
+  void Impl::ArrayElement::writeImpl(Builder &c, SlotProxy index, values::Literal src) const {
     writeImpl(c, index, c.getTemp(src));
   }
 
   // Write a slot-proxy to a dynamic offset
-  void Impl::ArrayElement::writeImpl(Compiler &c, SlotProxy index, SlotProxy src) const {
+  void Impl::ArrayElement::writeImpl(Builder &c, SlotProxy index, SlotProxy src) const {
     Slot const srcSlot = src->materialize(c);
     Slot const arrSlot = _arr->materialize(c);
     Slot const indexSlot = index->materialize(c);
@@ -81,7 +81,7 @@ namespace proxy {
     }
   }
 
-  Slot Impl::ArrayElement::addressOf(Compiler &c) const {
+  Slot Impl::ArrayElement::addressOf(Builder &c) const {
     Slot ptr = _arr->addressOf(c);
     ptr.type = TypeSystem::pointer(this->type());
     if (std::holds_alternative<int>(_index)) {
@@ -111,12 +111,12 @@ namespace proxy {
   }
   
   
-  Slot Impl::StructField::materialize(Compiler &c) const {
+  Slot Impl::StructField::materialize(Builder &c) const {
     return getFieldSlot(_obj->materialize(c));
   }
 
   // Write an anonymous value to a slot at known offset
-  void Impl::StructField::write(Compiler &c, values::Literal src) const {
+  void Impl::StructField::write(Builder &c, values::Literal src) const {
     Slot const objSlot = _obj->materialize(c);
     Slot const fieldSlot = getFieldSlot(objSlot);
 
@@ -127,7 +127,7 @@ namespace proxy {
   }
 
   // Write a slot-proxy to a slot at known offset
-  void Impl::StructField::write(Compiler &c, SlotProxy src) const {
+  void Impl::StructField::write(Builder &c, SlotProxy src) const {
     Slot const srcSlot = src->materialize(c);
     Slot const objSlot = _obj->materialize(c);
     Slot const fieldSlot = getFieldSlot(objSlot);
@@ -138,33 +138,33 @@ namespace proxy {
     }
   }
 
-  Slot Impl::StructField::addressOf(Compiler &c) const {
+  Slot Impl::StructField::addressOf(Builder &c) const {
     Slot ptr = _obj->addressOf(c);
     ptr.type = TypeSystem::pointer(this->type());
     c.addAssign(ptr, values::i16(_fieldOffset));
     return ptr;
   }
   
-  Slot Impl::DereferencedPointer::materialize(Compiler &c) const {
+  Slot Impl::DereferencedPointer::materialize(Builder &c) const {
     Slot const ptrSlot = _ptr->materialize(c);
     Slot const destSlot = c.getTemp(this->type());
     c.dereferencePointerIntoSlot(ptrSlot, destSlot);
     return destSlot;
   }
 
-  void Impl::DereferencedPointer::write(Compiler &c, SlotProxy src) const {
+  void Impl::DereferencedPointer::write(Builder &c, SlotProxy src) const {
     Slot const ptrSlot = _ptr->materialize(c);
     Slot const srcSlot = src->materialize(c);
     c.writeSlotThroughDereferencedPointer(ptrSlot, srcSlot);
   }
 
-  void Impl::DereferencedPointer::write(Compiler &c, values::Literal src) const {
+  void Impl::DereferencedPointer::write(Builder &c, values::Literal src) const {
     Slot const ptrSlot = _ptr->materialize(c);
     Slot const srcSlot = c.getTemp(src);
     c.writeSlotThroughDereferencedPointer(ptrSlot, srcSlot);
   }
 
-  Slot Impl::DereferencedPointer::addressOf(Compiler &c) const {
+  Slot Impl::DereferencedPointer::addressOf(Builder &c) const {
     return _ptr->materialize(c);
   }
   

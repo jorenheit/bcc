@@ -441,10 +441,12 @@ inline bftest::TestCase expectLoopingOutput(std::string name,
   };
 }
 
-#include "../include/bfc/compiler.h"
+#include "../include/acus/builder.h"
+using namespace acus;
+
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
-#define TEST_BEGIN Compiler c; c.setEntryPoint("main"); c.begin();
+#define TEST_BEGIN Builder c; c.setEntryPoint("main"); c.begin();
 #define TEST_END c.end(); return c.dumpBrainfuck();
 
 static std::vector<bftest::TestCase> buildTests() {

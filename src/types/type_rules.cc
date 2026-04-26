@@ -1,6 +1,7 @@
-#include "bfc/types/type_rules.h"
+#include "acus/types/type_rules.h"
+#include "acus/types/types.h"
 
-#include "bfc/types/types.h"
+using namespace acus;
 
 namespace {
 

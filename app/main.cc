@@ -1,10 +1,11 @@
 #include <iostream>
-#include "bfc/compiler/compiler.h"
+#include "acus/builder/builder.h"
+using namespace acus;
 
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
 int main() try {
-  Compiler c;
+  Builder c;
   c.setEntryPoint("main");
 
   c.begin(); {

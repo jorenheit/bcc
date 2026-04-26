@@ -1,4 +1,5 @@
-#include "bfc/types/types.h"
+#include "acus/types/types.h"
+using namespace acus;
 
 std::unique_ptr<types::VoidType> TypeSystem::_void;
 std::unique_ptr<types::IntegerType> TypeSystem::_i8;

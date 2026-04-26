@@ -1,8 +1,8 @@
 #include <utility>
 
-#include "bfc/types/operators.h"
+#include "acus/types/operators.h"
 
-std::string binOpStr(BinOp op) {
+std::string acus::binOpStr(BinOp op) {
   switch (op) {
   case BinOp::Add:  return "+";
   case BinOp::Sub:  return "-";

@@ -1,6 +1,7 @@
-#include "bfc/core/slot.h"
+#include "acus/core/slot.h"
+#include "acus/types/types.h"
 
-#include "bfc/types/types.h"
+using namespace acus;
 
 int Slot::size() const { return type->size(); }
 
