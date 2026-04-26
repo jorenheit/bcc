@@ -32,7 +32,7 @@ b.begin(); {
        b.returnFromFunction();
     } b.endBlock();
   
-  } bf.endFunction();
+  } b.endFunction();
   
   b.beginFunction("hello"); {
   
@@ -41,9 +41,9 @@ b.begin(); {
       b.returnFromFunction();
     b.endBlock();
     
-  } bf.endFunction();
+  } b.endFunction();
 
-} bf.end();
+} b.end();
 ```
 
 Most public functions carry an internal source-location/context argument used for diagnostics. That argument is omitted from the signatures below.
