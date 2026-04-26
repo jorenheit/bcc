@@ -11,7 +11,7 @@
 #include "bfc/core/proxy.h"
 #include "bfc/core/program.h"
 #include "bfc/core/data.h"
-#include "bfc/core/expression_result.h"
+#include "bfc/core/expression.h"
 #include "bfc/types/operators.h"
 #include "bfc/types/struct_field.h"
 #include "bfc/types/types.h"
@@ -72,60 +72,64 @@ public:
 
 #undef FUNCTION_CALL_OBJECT
 #undef STRUCT_DEFINE_OBJECT
+
+  Expression expr(auto const &obj, API_FUNC);
+  Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
+
+  Expression structField(auto const &obj, std::string const &field, API_FUNC);
+  Expression structField(auto const &obj, int fieldIndex, API_FUNC);
+  Expression dereferencePointer(auto const &ptr, API_FUNC);
+  Expression arrayElement(auto const &arr, int index, API_FUNC);  
+  Expression arrayElement(auto const &arr, auto const &index, API_FUNC);
+
+    // TODO: implement lnot
+  Expression lnotAssign(auto const &rhs, API_FUNC);
+  Expression lnot(auto const &rhs, API_FUNC);
+
+  Expression binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
+  Expression binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
+
+  Expression addAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression subAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression mulAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression divAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression modAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+
+  Expression add(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression sub(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression mul(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression div(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression mod(auto const &lhs, auto const &rhs, API_FUNC);  
   
-  ExpressionResult assign(auto const &lhs, auto const &rhs, API_FUNC);
-
-  ExpressionResult structField(auto const &obj, std::string const &field, API_FUNC);
-  ExpressionResult structField(auto const &obj, int fieldIndex, API_FUNC);
-  ExpressionResult dereferencePointer(auto const &ptr, API_FUNC);
-  ExpressionResult arrayElement(auto const &arr, int index, API_FUNC);  
-  ExpressionResult arrayElement(auto const &arr, auto const &index, API_FUNC);
-
-  ExpressionResult addAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult subAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult mulAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult divAssign(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult modAssign(auto const &lhs, auto const &rhs, API_FUNC);  
-
-  ExpressionResult add(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult sub(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult mul(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult div(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult mod(auto const &lhs, auto const &rhs, API_FUNC);  
-
-  // TODO: implement lnot
-  ExpressionResult lnotAssign(auto const &rhs, API_FUNC);
-  ExpressionResult lnot(auto const &rhs, API_FUNC);
+  Expression landAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression lnandAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression lorAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression lnorAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression lxorAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression lxnorAssign(auto const &lhs, auto const &rhs, API_FUNC);  
   
-  ExpressionResult landAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult lnandAssign(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult lorAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult lnorAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult lxorAssign(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult lxnorAssign(auto const &lhs, auto const &rhs, API_FUNC);  
-  
-  ExpressionResult land(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult lnand(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult lor(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult lnor(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult lxor(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult lxnor(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression land(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression lnand(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression lor(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression lnor(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression lxor(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression lxnor(auto const &lhs, auto const &rhs, API_FUNC);
 
-  ExpressionResult eqAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult neqAssign(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult ltAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult leAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult gtAssign(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult geAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression eqAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression neqAssign(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression ltAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression leAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression gtAssign(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression geAssign(auto const &lhs, auto const &rhs, API_FUNC);  
 
-  ExpressionResult eq(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult neq(auto const &lhs, auto const &rhs, API_FUNC);  
-  ExpressionResult lt(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult le(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult gt(auto const &lhs, auto const &rhs, API_FUNC);
-  ExpressionResult ge(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression eq(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression neq(auto const &lhs, auto const &rhs, API_FUNC);  
+  Expression lt(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression le(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression gt(auto const &lhs, auto const &rhs, API_FUNC);
+  Expression ge(auto const &lhs, auto const &rhs, API_FUNC);  
 
-  ExpressionResult addressOf(auto const &obj, API_FUNC);
+  Expression addressOf(auto const &obj, API_FUNC);
 
   void writeOut(auto const &val, API_FUNC);
   void branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
@@ -188,34 +192,34 @@ private:
   int currentScopeDepth() const;
   
   // Normalize to RValue or LValue (compiler_rlvalue.cc)
-  ExpressionResult rValue(ExpressionResult const &val, API_CTX) const;
-  ExpressionResult rValue(std::string const &var, API_CTX) const;
-  ExpressionResult rValue(SlotProxy const &slot, API_CTX) const;
-  ExpressionResult rValue(values::Literal const &val, API_CTX) const;
+  Expression rValue(Expression const &val, API_CTX) const;
+  Expression rValue(std::string const &var, API_CTX) const;
+  Expression rValue(SlotProxy const &slot, API_CTX) const;
+  Expression rValue(values::Literal const &val, API_CTX) const;
 
-  ExpressionResult lValue(ExpressionResult const &val, API_CTX) const;
-  ExpressionResult lValue(std::string const &var, API_CTX) const;  
-  ExpressionResult lValue(SlotProxy const &slot, API_CTX) const;
+  Expression lValue(Expression const &val, API_CTX) const;
+  Expression lValue(std::string const &var, API_CTX) const;  
+  Expression lValue(SlotProxy const &slot, API_CTX) const;
 
   // Implementation functions for public interface
   void setNextBlockImpl(int index);
   void setNextBlockImpl(std::string const &f, std::string const &b);
-  types::TypeHandle defineStructImpl(std::string const& name, StructFields const &fields, API_CTX);
+  types::TypeHandle defineStructImpl(std::string const& name, std::vector<NameTypePair> const &fields, API_CTX);
 
   void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-			std::optional<ExpressionResult> const &returnSlot, std::vector<ExpressionResult> const &args, API_CTX);
-  void returnFromFunctionImpl(std::optional<ExpressionResult> const &ret, API_CTX);
-  ExpressionResult structFieldImpl(ExpressionResult const &obj, std::string const &field, API_CTX);
-  ExpressionResult structFieldImpl(ExpressionResult const &obj, int fieldIndex, API_CTX);
-  ExpressionResult arrayElementImpl(ExpressionResult const &arr, int index, API_CTX);
-  ExpressionResult arrayElementImpl(ExpressionResult const &arr, ExpressionResult const &index, API_CTX);
-  ExpressionResult dereferencePointerImpl(ExpressionResult const &ptr, API_CTX);
+			std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
+  void returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX);
+  Expression structFieldImpl(Expression const &obj, std::string const &field, API_CTX);
+  Expression structFieldImpl(Expression const &obj, int fieldIndex, API_CTX);
+  Expression arrayElementImpl(Expression const &arr, int index, API_CTX);
+  Expression arrayElementImpl(Expression const &arr, Expression const &index, API_CTX);
+  Expression dereferencePointerImpl(Expression const &ptr, API_CTX);
 
-  ExpressionResult addressOfImpl(ExpressionResult const &obj, API_CTX);
-  ExpressionResult assignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX);
+  Expression addressOfImpl(Expression const &obj, API_CTX);
+  Expression assignImpl(Expression const &lhs, Expression const &rhs, API_CTX);
   
-  void branchIfImpl(ExpressionResult const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
-  void writeOutImpl(ExpressionResult const &rhs, API_CTX); 
+  void branchIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
+  void writeOutImpl(Expression const &rhs, API_CTX); 
   
   // Binary operators implementation
   template <typename Fold>
@@ -238,10 +242,10 @@ private:
   static const Cop eqSpec, neqSpec, ltSpec, leSpec, gtSpec, geSpec;
   
   template <typename SpecType>
-  ExpressionResult opAssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &spec, API_CTX);
+  Expression opAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
 
   template <typename SpecType>  
-  ExpressionResult opImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &spec, API_CTX);
+  Expression opImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
   
   // Slot operations
   Slot local(std::string const& name, bool globalReference = false) const;
@@ -432,7 +436,7 @@ private:
   void setSeekMarker();
   void resetSeekMarker();
   void moveToPreviousFrame(Payload const &payload = {});  
-  void initializeArguments(std::string const &functionName, std::vector<ExpressionResult> const &args, API_CTX);  
+  void initializeArguments(std::string const &functionName, std::vector<Expression> const &args, API_CTX);  
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
   void moveToPointee(Slot const &ptrSlot);
@@ -474,7 +478,7 @@ private:
 
     // Post processing
   void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
-				  std::vector<ExpressionResult> const &args, API_CTX);
+				  std::vector<Expression> const &args, API_CTX);
   void functionCallTypeChecks();
 
   void deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX);
@@ -512,12 +516,17 @@ private:
 class Compiler::FunctionCall {
 public:
   void operator()(auto const&... args) && {
-    std::vector<ExpressionResult> argList;
+    std::vector<Expression> argList;
     (argList.emplace_back(_compiler.rValue(std::forward<decltype(args)>(args), API_FWD)), ...);
-    _compiler.callFunctionImpl(_functionName, _nextBlockName, _return, argList, API_FWD);
     _called = true;
+    _compiler.callFunctionImpl(_functionName, _nextBlockName, _return, argList, API_FWD);    
   }
 
+  void operator()(std::vector<Expression> const &argList) && {
+    _called = true;
+    _compiler.callFunctionImpl(_functionName, _nextBlockName, _return, argList, API_FWD);        
+  }
+  
   ~FunctionCall() noexcept(false) {
     API_REQUIRE(_called, "operator() must be called on result of callFunction(); e.g. callFunction(\"foo\", \"after_foo\")(\"x\", \"y\");");
   }
@@ -527,12 +536,12 @@ private:
   Compiler& _compiler;
   std::string _functionName;
   std::string _nextBlockName;
-  std::optional<ExpressionResult> _return;
+  std::optional<Expression> _return;
   api::Context API_CTX_NAME;
   bool _called = false;
 
   FunctionCall(Compiler &c, std::string const &functionName, std::string const &nextBlockName,
-	       std::optional<ExpressionResult> ret, api::Context const &ctx):
+	       std::optional<Expression> ret, api::Context const &ctx):
     _compiler(c),
     _functionName(functionName),
     _nextBlockName(nextBlockName),
@@ -553,10 +562,10 @@ class Compiler::StructDefinition {
 public:
   types::TypeHandle operator()(auto const&... args) && {
     static_assert(sizeof ... (args) % 2 == 0);
-    std::vector<StructField> fields;
+    std::vector<NameTypePair> fields;
 
     auto addField = [&]<typename ... Rest>(auto&& self, std::string const &name, types::TypeHandle type, Rest&& ... rest) -> void {
-      fields.push_back(StructField{name, type});
+      fields.push_back(NameTypePair{name, type});
       if constexpr (sizeof ... (Rest) == 0) return;
       else self(self, std::forward<Rest>(rest)...);
     };
@@ -566,6 +575,12 @@ public:
     return _compiler.defineStructImpl(_structName, fields, API_FWD);
   }
 
+  types::TypeHandle operator()(std::vector<NameTypePair> const &fields) && {
+    _called = true;
+    return _compiler.defineStructImpl(_structName, fields, API_FWD);
+  }
+
+  
   ~StructDefinition() noexcept(false) {
     API_REQUIRE(_called, "operator() must be called on result of defineStruct(); e.g. defineStruct(\"Point\")(\"x\", i8, \"y\", i8);");
   }

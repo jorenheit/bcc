@@ -1,7 +1,7 @@
 #include "compiler.ih"
 
 template <typename SpecType>
-ExpressionResult Compiler::opAssignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &spec, API_CTX) {
+Expression Compiler::opAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
@@ -46,7 +46,7 @@ ExpressionResult Compiler::opAssignImpl(ExpressionResult const &lhs, ExpressionR
 }
 
 template <typename SpecType>
-ExpressionResult Compiler::opImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, SpecType const &spec, API_CTX) {
+Expression Compiler::opImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
@@ -58,24 +58,24 @@ ExpressionResult Compiler::opImpl(ExpressionResult const &lhs, ExpressionResult 
     int const x = values::cast<types::IntegerType>(lhs.literal())->value();
     int const y = values::cast<types::IntegerType>(rhs.literal())->value();
     auto const result = spec.fold(x, y);
-    if (types::isI8(opResult.type))  return ExpressionResult{values::i8(result)};
-    if (types::isI16(opResult.type)) return ExpressionResult{values::i16(result)};
+    if (types::isI8(opResult.type))  return Expression{values::i8(result)};
+    if (types::isI16(opResult.type)) return Expression{values::i16(result)};
     std::unreachable();
   }
 
   Slot result = getTemp(lhs.type());
-  assignImpl(ExpressionResult{result}, lhs, API_FWD);
-  opAssignImpl(ExpressionResult{result}, rhs, spec, API_FWD);
+  assignImpl(Expression{result}, lhs, API_FWD);
+  opAssignImpl(Expression{result}, rhs, spec, API_FWD);
 
   result.type = opResult.type;
-  return ExpressionResult{result};
+  return Expression{result};
 }
 
 // Explicit instantiations for Mop, Cop and Lop
-template ExpressionResult Compiler::opImpl<Compiler::Mop>(ExpressionResult const&, ExpressionResult const&, Compiler::Mop const&, API_CTX);
-template ExpressionResult Compiler::opImpl<Compiler::Lop>(ExpressionResult const&, ExpressionResult const&, Compiler::Lop const&, API_CTX);
-template ExpressionResult Compiler::opImpl<Compiler::Cop>(ExpressionResult const&, ExpressionResult const&, Compiler::Cop const&, API_CTX);
+template Expression Compiler::opImpl<Compiler::Mop>(Expression const&, Expression const&, Compiler::Mop const&, API_CTX);
+template Expression Compiler::opImpl<Compiler::Lop>(Expression const&, Expression const&, Compiler::Lop const&, API_CTX);
+template Expression Compiler::opImpl<Compiler::Cop>(Expression const&, Expression const&, Compiler::Cop const&, API_CTX);
 
-template ExpressionResult Compiler::opAssignImpl<Compiler::Mop>(ExpressionResult const&, ExpressionResult const&, Compiler::Mop const&, API_CTX);
-template ExpressionResult Compiler::opAssignImpl<Compiler::Lop>(ExpressionResult const&, ExpressionResult const&, Compiler::Lop const&, API_CTX);
-template ExpressionResult Compiler::opAssignImpl<Compiler::Cop>(ExpressionResult const&, ExpressionResult const&, Compiler::Cop const&, API_CTX);
+template Expression Compiler::opAssignImpl<Compiler::Mop>(Expression const&, Expression const&, Compiler::Mop const&, API_CTX);
+template Expression Compiler::opAssignImpl<Compiler::Lop>(Expression const&, Expression const&, Compiler::Lop const&, API_CTX);
+template Expression Compiler::opAssignImpl<Compiler::Cop>(Expression const&, Expression const&, Compiler::Cop const&, API_CTX);

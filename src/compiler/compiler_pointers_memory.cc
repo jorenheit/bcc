@@ -1,6 +1,6 @@
 #include "compiler.ih"
 
-ExpressionResult Compiler::addressOfImpl(ExpressionResult const &obj, API_CTX) {
+Expression Compiler::addressOfImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   assert(not obj.isLiteral());
@@ -10,7 +10,7 @@ ExpressionResult Compiler::addressOfImpl(ExpressionResult const &obj, API_CTX) {
     API_REQUIRE(slot.kind != Slot::Temp, "Cannot take the address of a temporary value.");
   }
   
-  return ExpressionResult(obj.slot()->addressOf(*this));
+  return Expression(obj.slot()->addressOf(*this));
 }
 
 
@@ -210,7 +210,7 @@ void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
   else if (types::isArray(slot.type) || types::isString(slot.type)) {
     // recursive call for each element
     for (int i = 0; i != types::cast<types::ArrayLike>(val->type())->length(); ++i) {
-      ExpressionResult elem = arrayElement(slot, i);
+      Expression elem = arrayElement(slot, i);
       assert(elem.hasSlot());
       elem.slot()->write(*this, values::cast<types::ArrayLike>(val)->element(i));
     }
@@ -218,7 +218,7 @@ void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
   else if (types::isStruct(slot.type)) {
     // recursive call for each field	
     for (int i = 0; i != types::cast<types::StructType>(val->type())->fieldCount(); ++i) {
-      ExpressionResult field = structField(slot, i);
+      Expression field = structField(slot, i);
       assert(field.hasSlot());
       field.slot()->write(*this, values::cast<types::StructType>(val)->field(i));
     }
@@ -230,7 +230,7 @@ void Compiler::assignSlot(Slot const &slot, values::Literal const &val) {
 }
 
 
-ExpressionResult Compiler::assignImpl(ExpressionResult const &lhs, ExpressionResult const &rhs, API_CTX) {
+Expression Compiler::assignImpl(Expression const &lhs, Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_ASSIGNABLE(lhs.type(), rhs.type());
@@ -246,7 +246,7 @@ ExpressionResult Compiler::assignImpl(ExpressionResult const &lhs, ExpressionRes
 }
 
 // TODO: factor out into a writeSlot? That's more consistent with the other API functions
-void Compiler::writeOutImpl(ExpressionResult const &rhs, API_CTX) {
+void Compiler::writeOutImpl(Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 

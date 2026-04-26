@@ -8,7 +8,7 @@ Compiler::StructDefinition Compiler::defineStruct(std::string const& name, API_F
   return StructDefinition { *this, name, API_FWD };
 }
 
-types::TypeHandle Compiler::defineStructImpl(std::string const& name, StructFields const &fields, API_CTX) {
+types::TypeHandle Compiler::defineStructImpl(std::string const& name, std::vector<NameTypePair> const &fields, API_CTX) {
   types::TypeHandle sType = TypeSystem::defineStruct(name, std::move(fields));
   API_REQUIRE(sType != nullptr, "conficting struct declaration: '", name, "' previously defined.");
   return sType;

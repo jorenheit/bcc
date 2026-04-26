@@ -4,15 +4,15 @@
 #include <variant>
 #include "bfc/core/proxy.h"
 
-class ExpressionResult {
+class Expression {
   std::variant<SlotProxy, values::Literal> _val;
   types::TypeHandle _type;
     
 public:
-  explicit ExpressionResult(Slot const &s): _val(s), _type(s.type) {}
-  explicit ExpressionResult(SlotProxy const &s): _val(s), _type(s->type()) {}
-  explicit ExpressionResult(values::Literal const &v): _val(v), _type(v->type()) {}
-  ExpressionResult(ExpressionResult const &) = default;
+  explicit Expression(Slot const &s): _val(s), _type(s.type) {}
+  explicit Expression(SlotProxy const &s): _val(s), _type(s->type()) {}
+  explicit Expression(values::Literal const &v): _val(v), _type(v->type()) {}
+  Expression(Expression const &) = default;
 
   bool hasSlot() const   { return std::holds_alternative<SlotProxy>(_val); }
   bool isLiteral() const { return std::holds_alternative<values::Literal>(_val); }

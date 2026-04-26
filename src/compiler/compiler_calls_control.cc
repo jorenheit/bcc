@@ -7,7 +7,7 @@ Compiler::FunctionCall Compiler::callFunction(std::string const& functionName, s
 
 
 void Compiler::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
-				std::optional<ExpressionResult> const &returnSlot, std::vector<ExpressionResult> const &args, API_CTX) {
+				std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -35,7 +35,7 @@ void Compiler::callFunctionImpl(std::string const& functionName, std::string con
 
 void Compiler::deferFunctionCallTypeCheck(std::string const &caller,
 					  std::string const &callee,
-					  std::vector<ExpressionResult> const &args, API_CTX) {
+					  std::vector<Expression> const &args, API_CTX) {
   auto const getHandles = [&](){
     std::vector<types::TypeHandle> result;
     for (auto const &arg: args) {
@@ -90,7 +90,7 @@ void Compiler::returnFromFunction(API_FUNC) {
   returnFromFunctionImpl({}, API_FWD);
 }
 
-void Compiler::returnFromFunctionImpl(std::optional<ExpressionResult> const &ret, API_CTX) {
+void Compiler::returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   
@@ -116,7 +116,7 @@ void Compiler::returnFromFunctionImpl(std::optional<ExpressionResult> const &ret
 }
 
 
-void Compiler::branchIfImpl(ExpressionResult const &obj, std::string const &trueLabel,
+void Compiler::branchIfImpl(Expression const &obj, std::string const &trueLabel,
 			    std::string const &falseLabel, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();

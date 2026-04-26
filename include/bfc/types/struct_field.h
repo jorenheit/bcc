@@ -11,3 +11,8 @@ struct StructField {
 };
 
 using StructFields = std::vector<StructField>;
+
+struct NameTypePair {
+  std::string name;
+  types::TypeHandle type;
+};

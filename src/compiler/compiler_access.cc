@@ -1,6 +1,6 @@
 #include "compiler.ih"
 
-ExpressionResult Compiler::structFieldImpl(ExpressionResult const &obj, int fieldIndex, API_CTX) {
+Expression Compiler::structFieldImpl(Expression const &obj, int fieldIndex, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
@@ -10,7 +10,7 @@ ExpressionResult Compiler::structFieldImpl(ExpressionResult const &obj, int fiel
   return structFieldImpl(obj, structType->fieldName(fieldIndex), API_FWD);
 }
 
-ExpressionResult Compiler::structFieldImpl(ExpressionResult const &obj, std::string const &fieldName, API_CTX) {
+Expression Compiler::structFieldImpl(Expression const &obj, std::string const &fieldName, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
@@ -18,13 +18,13 @@ ExpressionResult Compiler::structFieldImpl(ExpressionResult const &obj, std::str
 
   if (obj.isLiteral()) {
     auto structVal = values::cast<types::StructType>(obj.literal());
-    return ExpressionResult{structVal->field(fieldName)};
+    return Expression{structVal->field(fieldName)};
   }
   
-  return ExpressionResult{proxy::structField(obj.slot(), fieldName)};
+  return Expression{proxy::structField(obj.slot(), fieldName)};
 }
 
-ExpressionResult Compiler::arrayElementImpl(ExpressionResult const &arr, int index, API_CTX) {
+Expression Compiler::arrayElementImpl(Expression const &arr, int index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
@@ -32,13 +32,13 @@ ExpressionResult Compiler::arrayElementImpl(ExpressionResult const &arr, int ind
 
   if (arr.isLiteral()) {
     auto arrVal = values::cast<types::ArrayLike>(arr.literal());
-    return ExpressionResult{arrVal->element(index)};
+    return Expression{arrVal->element(index)};
   }
   
-  return ExpressionResult{proxy::arrayElement(arr.slot(), index)};  
+  return Expression{proxy::arrayElement(arr.slot(), index)};  
 }  
 
-ExpressionResult Compiler::arrayElementImpl(ExpressionResult const &arr, ExpressionResult const &index, API_CTX) {
+Expression Compiler::arrayElementImpl(Expression const &arr, Expression const &index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
@@ -52,18 +52,18 @@ ExpressionResult Compiler::arrayElementImpl(ExpressionResult const &arr, Express
   if (arr.isLiteral()) {
     Slot const tmp = getTemp(arr.type());
     assignSlot(tmp, arr.literal());
-    return ExpressionResult{proxy::arrayElement(tmp, index.slot())};
+    return Expression{proxy::arrayElement(tmp, index.slot())};
   }
   
-  return ExpressionResult{proxy::arrayElement(arr.slot(), index.slot())};
+  return Expression{proxy::arrayElement(arr.slot(), index.slot())};
 }
 
-ExpressionResult Compiler::dereferencePointerImpl(ExpressionResult const &ptr, API_CTX) {
+Expression Compiler::dereferencePointerImpl(Expression const &ptr, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_POINTER(ptr);
   assert(not ptr.isLiteral());
   
-  return ExpressionResult{proxy::dereferencedPointer(ptr.slot())};
+  return Expression{proxy::dereferencedPointer(ptr.slot())};
 }
 

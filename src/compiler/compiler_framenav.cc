@@ -128,7 +128,7 @@ void Compiler::moveToPreviousFrame(Payload const &payload) {
 }
 
 
-void Compiler::initializeArguments(std::string const &functionName, std::vector<ExpressionResult> const &args, API_CTX) {
+void Compiler::initializeArguments(std::string const &functionName, std::vector<Expression> const &args, API_CTX) {
 
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
@@ -166,7 +166,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
     }
   };
   
-  auto const constructInNextFrame = [&](auto&& self, int &offset, ExpressionResult const &arg) -> void {
+  auto const constructInNextFrame = [&](auto&& self, int &offset, Expression const &arg) -> void {
 
     if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
       Slot slot = arg.slot()->materialize(*this);
@@ -255,7 +255,7 @@ void Compiler::initializeArguments(std::string const &functionName, std::vector<
 
   pushPtr();
   int offset = 0;
-  for (ExpressionResult const &arg: args) {
+  for (Expression const &arg: args) {
     constructInNextFrame(constructInNextFrame, offset, arg);
   }      
   popPtr();

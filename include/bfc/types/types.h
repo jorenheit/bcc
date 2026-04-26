@@ -88,11 +88,10 @@ namespace types {
 
   struct StructType: Type {
     std::string _name;
-    StructFields _fields;
+    std::vector<NameTypePair> _fields;
     int _size;
 
-    template <typename ... Args>
-    StructType(std::string const &name, StructFields const &fields):
+    StructType(std::string const &name, std::vector<NameTypePair> const &fields):
       _name(name),
       _fields(fields),
       _size(0)
@@ -258,13 +257,12 @@ public:
     return nullptr; // no struct by this name exists
   }
     
-  template <typename ... Args> 
-  static types::TypeHandle defineStruct(std::string const &name, Args&& ... args){
+  static types::TypeHandle defineStruct(std::string const &name, std::vector<NameTypePair> const &fields){
     if (structT(name) != nullptr) return nullptr; // already defined a struct with this name
-    _structTypes.emplace_back(std::make_unique<types::StructType>(name, std::forward<Args>(args)...));
+    _structTypes.emplace_back(std::make_unique<types::StructType>(name, fields));
     return _structTypes.back().get();
   }
-
+  
   static types::TypeHandle pointer(types::TypeHandle pointee) {
     for (auto const &ptr: _pointerTypes) {
       if (ptr->pointeeType() == pointee) {
