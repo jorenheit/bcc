@@ -8,19 +8,13 @@ Builder::FunctionCall Builder::callFunction(std::string const &functionName, std
 
 Builder::FunctionCall Builder::callFunctionPointer(auto const &functionPointer, std::string const& nextBlockName, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-
-  Expression fPtr = rValue(functionPointer, API_FWD);
-  API_REQUIRE_IS_FUNCTION_POINTER(fPtr);
-  return FunctionCall { *this, fPtr, nextBlockName, {}, API_FWD };
+  return FunctionCall { *this, rValue(functionPointer, API_FWD), nextBlockName, {}, API_FWD };
 }
 
 Builder::FunctionCall Builder::callFunctionPointer(auto const &functionPointer, std::string const& nextBlockName,
 						   auto const &returnSlot, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-
-  Expression fPtr = rValue(functionPointer, API_FWD);
-  API_REQUIRE_IS_FUNCTION_POINTER(fPtr);
-  return FunctionCall { *this, fPtr, nextBlockName, lValue(returnSlot, API_FWD), API_FWD };
+  return FunctionCall { *this, rValue(functionPointer, API_FWD), nextBlockName, lValue(returnSlot, API_FWD), API_FWD };
 }
 
 void Builder::returnFromFunction(auto const &rhs, API_FUNC_SOURCE) {

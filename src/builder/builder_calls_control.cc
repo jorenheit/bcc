@@ -1,18 +1,54 @@
 #include "builder.ih"
-#include <iostream> // debug
-
 
 Builder::FunctionCall Builder::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
   API_FUNC_BEGIN();
   return FunctionCall { *this, functionName, nextBlockName, {}, API_FWD };
 }
 
-
-void Builder::callFunctionImpl(std::variant<std::string, Expression> const& function, std::string const& nextBlockName,
+void Builder::callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
 				std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
+  deferFunctionCallTypeCheck(functionName, args, API_FWD);
+  deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
+
+  // Sync globals
+  syncLocalToGlobal();
+
+  // Schedule metablock
+  std::string const metaBlockName = std::string("__ret_meta_")
+    + _currentFunction->name + "_"
+    + std::to_string(_metaBlocks.size());
+
+  _metaBlocks.push_back(MetaBlock{
+      .name = metaBlockName,
+      .caller = _currentFunction->name,
+      .callee = functionName,
+      .returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
+      .nextBlockName = nextBlockName,
+    });
+
+  setNextBlockImpl(_currentFunction->name, metaBlockName);
+
+  // Prepare frame (set target, copy args) and push next frame onto the stack  
+  prepareNextFrame(functionName, args, API_FWD);
+  pushFrame();
+
+  API_EXPECT_NEXT("endBlock");
+}
+
+void Builder::callFunctionImpl(Expression const &fPtr, std::string const& nextBlockName,
+			       std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_FUNCTION_POINTER(fPtr);
+
+  auto functionType = types::cast<types::FunctionPointerType>(fPtr.type())->functionType();  
+  functionCallTypeCheck(functionType, args, API_FWD);
+  deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
+
+  // Sync Globals
   syncLocalToGlobal();
 
   // Schedule metablock
@@ -21,90 +57,74 @@ void Builder::callFunctionImpl(std::variant<std::string, Expression> const& func
     + std::to_string(_metaBlocks.size());
   setNextBlockImpl(_currentFunction->name, metaBlockName);
 
-  if (std::holds_alternative<std::string>(function)) {
-    std::string functionName = std::get<std::string>(function);
-  
-    _metaBlocks.push_back(MetaBlock{
-	.name = metaBlockName,
-	.caller = _currentFunction->name,
-	.callee = functionName,
-	.returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
-	.nextBlockName = nextBlockName,
-      });
+  // Build MetaBlock
+  _metaBlocks.push_back(MetaBlock{
+      .name = metaBlockName,
+      .caller = _currentFunction->name,
+      .callee = functionType,
+      .returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
+      .nextBlockName = nextBlockName,
+    });
 
-    deferFunctionCallTypeCheck(functionName, args, API_FWD);
-    deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
-    //    initializeArguments(functionName, args, API_FWD); // TODO: rename
-    prepareNextFrame(functionName, args, API_FWD); // TODO: rename    
-    pushFrame();
-    //    setNextBlockImpl(functionName, "");
-  }
-  else {
-    auto funcExpr = std::get<Expression>(function);
-    auto functionType = types::cast<types::FunctionPointerType>(funcExpr.type())->functionType();
-
-    _metaBlocks.push_back(MetaBlock{
-	.name = metaBlockName,
-	.caller = _currentFunction->name,
-	.callee = functionType,
-	.returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
-	.nextBlockName = nextBlockName,
-      });
-
-    // Function type check can be done immediately
-    // TODO: factor out to share with deferred checks
-    auto const &paramTypes = functionType->paramTypes();
-    API_REQUIRE(paramTypes.size() == args.size(),
-		"invalid number of arguments in function-call through function-pointer '", funcExpr.str(), "': "
-		"expected ", paramTypes.size(), ", got ", args.size(), ".");
-    for (size_t i = 0; i != args.size(); ++i) {
-      API_REQUIRE_ASSIGNABLE(paramTypes[i], args[i].type());
-    }
-
-    deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
-    prepareNextFrame(funcExpr, args, API_FWD); // TODO: rename
-    pushFrame();
-
-    // PROBLEM: funcExpr lives in the previous Frame. Before pushFrame I need to make sure the next block is set in the next frame.
-    // SOLUTION: rename initializeArguments to prepareNextFrame and let that handle setting the targetBlock.
-    //    setNextBlockImpl(funcExpr);    
-  }
+  // Prepare frame (set target, copy args) and push next frame onto the stack
+  prepareNextFrame(fPtr, args, API_FWD);
+  pushFrame();
 
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::deferFunctionCallTypeCheck( std::string const &callee, std::vector<Expression> const &args, API_CTX) {
-  auto const getTypeHandles = [&](){
-    std::vector<types::TypeHandle> result;
-    for (auto const &arg: args) {
-      result.push_back(arg.type());
-    }
-    return result;
-  };
+void Builder::functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX) {
+  auto const &paramTypes = functionType->paramTypes();
+  API_REQUIRE(paramTypes.size() == args.size(),
+	      "invalid number of arguments in function-call through function-pointer: " 
+	      "expected ", paramTypes.size(), ", got ", args.size(), ".");
+  for (size_t i = 0; i != args.size(); ++i) {
+    API_REQUIRE_ASSIGNABLE(paramTypes[i], args[i].type());
+  }
+}
 
-  _deferredFunctionCallTypeChecks.emplace_back(FunctionCallInfo {
+void Builder::deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX) {
+    _deferredFunctionCallTypeChecks.emplace_back(FunctionCallInfo {
       .API_CTX_NAME = API_FWD,
       .callee = callee,
-      .args = getTypeHandles()
+      .args = args
     });
 }
 
-void Builder::functionCallTypeChecks() {
+void Builder::deferredFunctionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
   for (auto const &[API_CTX_NAME, callee, args]: _deferredFunctionCallTypeChecks) {
     API_REQUIRE(_program.isFunctionDefined(callee), "function '", callee, "' not defined.");
-
-    auto const &paramTypes = _program.function(callee).type->paramTypes();
-    API_REQUIRE(paramTypes.size() == args.size(),
-		"invalid number of arguments in function-call to '", callee, "': "
-		"expected ", paramTypes.size(), ", got ", args.size(), ".");
-    for (size_t i = 0; i != args.size(); ++i) {
-      API_REQUIRE_ASSIGNABLE(paramTypes[i], args[i]);
-    }
+    functionCallTypeCheck(_program.function(callee).type, args, API_FWD);
   }
 
   _deferredFunctionCallTypeChecks.clear();
+}
+
+
+void Builder::blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX) {
+  API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");
+  API_REQUIRE(_program.function(functionName).isBlockDefined(blockName),
+	      "block '", blockName, "' not defined inside function '", functionName, "'.");
+}
+
+void Builder::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
+  _deferredBlockNameChecks.emplace_back( BlockNameCheck {
+      .API_CTX_NAME = API_FWD,
+      .functionName = f,
+      .blockName = b
+    });
+}
+
+void Builder::deferredBlockNameChecks() {
+  assert(_currentFunction == nullptr);
+
+  for (auto const &[API_CTX_NAME, functionName, blockName]: _deferredBlockNameChecks) {
+    blockNameCheck(functionName, blockName, API_FWD);
+  }
+
+  _deferredBlockNameChecks.clear();
 }
 
 void Builder::abortProgram(API_FUNC) {
@@ -155,7 +175,7 @@ void Builder::returnFromFunctionImpl(std::optional<Expression> const &ret, API_C
 void Builder::initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramStart,
 				  std::vector<Expression> const &args, API_CTX) {
 
-  auto const copyLeafToNextFrame = [&](int &offset, Slot const &slot) {
+  auto const copySlotToNextFrame = [&](Slot const &slot, int &offset) {
     for (int i = 0; i != slot.type->size(); ++i) {
       int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
       primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
@@ -186,12 +206,12 @@ void Builder::initializeArguments(primitive::DInt const currentFrameSize, primit
       case types::I16:
       case types::STRING:
       case types::FUNCTION_POINTER: {
-	copyLeafToNextFrame(offset, slot);
+	copySlotToNextFrame(slot, offset);
 	break;
       }
       case types::POINTER: {
 	int const destOffset = offset;
-	copyLeafToNextFrame(offset, slot);
+	copySlotToNextFrame(slot, offset);
 	primitive::DInt const distance = currentFrameSize + paramStart + destOffset + MacroCell::Value0;
 	moveTo(0, MacroCell::Value0);
 	emit<primitive::MovePointerRelative>(distance);
@@ -265,7 +285,7 @@ void Builder::initializeArguments(primitive::DInt const currentFrameSize, primit
 	emit<primitive::ChangeBy>([functionName](primitive::Context const &ctx) -> int {
 	  return (ctx.getBlockIndex(functionName) >> 8) & 0xff;
 	});
-	switchField(MacrOCell::Value0);
+	switchField(MacroCell::Value0);
 	emit<primitive::MovePointerRelative>(-diff);
 	offset += MacroCell::FieldCount;
       }

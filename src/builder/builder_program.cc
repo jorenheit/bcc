@@ -1,5 +1,4 @@
 #include "builder.ih"
-#include <iostream> // debug
 
 void Builder::setEntryPoint(std::string functionName, API_FUNC) {
   API_FUNC_BEGIN();
@@ -27,8 +26,8 @@ void Builder::end(API_FUNC) {
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
   API_REQUIRE(_program.functions.size() > 0, "a program should contain at least one function.");
       
-  functionCallTypeChecks();
-  blockNameChecks();
+  deferredFunctionCallTypeChecks();
+  deferredBlockNameChecks();
   
   // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
   constructMetaBlocks();
@@ -189,17 +188,6 @@ void Builder::setNextBlock(std::string const &b, API_FUNC) {
 
 
 void Builder::setNextBlockImpl(std::string const &f, std::string const &b) {
-  // TODO: I think this first part can just be left out. It's an unneccessary optimization.
-  
-  // It is possible that the function or block name has not been
-  // defined yet. So we need to check for this first.
-  if (_program.isFunctionDefined(f)) {
-    Function const &func = _program.function(f);
-    if (func.isBlockDefined(b)) {
-      // both defined -> use global block index
-      return setNextBlockImpl(func.block(b).globalBlockIndex);
-    }
-  }
 
   pushPtr();
   
@@ -253,22 +241,4 @@ void Builder::setNextBlockImpl(Expression const &obj) {
   _nextBlockIsSet = true;  
 }
 
-void Builder::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
-  _deferredBlockNameChecks.emplace_back( BlockNameCheck {
-      .API_CTX_NAME = API_FWD,
-      .functionName = f,
-      .blockName = b
-    });
-}
 
-void Builder::blockNameChecks() {
-  assert(_currentFunction == nullptr);
-
-  for (auto const &[API_CTX_NAME, functionName, blockName]: _deferredBlockNameChecks) {
-    API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");
-    API_REQUIRE(_program.function(functionName).isBlockDefined(blockName),
-		"block '", blockName, "' not defined inside function '", functionName, "'.");
-  }
-
-  _deferredBlockNameChecks.clear();
-}

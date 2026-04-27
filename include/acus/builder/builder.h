@@ -174,7 +174,7 @@ private:
   struct FunctionCallInfo {
     api::Context API_CTX_NAME;
     std::string callee;
-    std::vector<types::TypeHandle> args;
+    std::vector<Expression> args;
   };
   std::vector<FunctionCallInfo> _deferredFunctionCallTypeChecks;
 
@@ -213,7 +213,9 @@ private:
 
   types::TypeHandle defineStructImpl(std::string const& name, std::vector<NameTypePair> const &fields, API_CTX);
 
-  void callFunctionImpl(std::variant<std::string, Expression> const &function, std::string const& nextBlockName,
+  void callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
+			std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
+  void callFunctionImpl(Expression const &functionPointer, std::string const& nextBlockName,
 			std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
   void returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX);
   Expression structFieldImpl(Expression const &obj, std::string const &field, API_CTX);
@@ -487,15 +489,16 @@ private:
   primitive::Sequence compilePrimitives() const;
   static std::string simplifyProgram(std::string const &bf);
 
-    // Post processing
-  void deferFunctionCallTypeCheck( std::string const &callee, std::vector<Expression> const &args, API_CTX);
-  void functionCallTypeChecks();
+  // Function call and block name checks
+  void functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX);
+  void deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX);
+  void deferredFunctionCallTypeChecks();
 
+  void blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX);
   void deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX);
-  void blockNameChecks();
-  
-  
-  // General helpers (inline definitions) // TODO: remove those tags. Never used
+  void deferredBlockNameChecks();
+
+  // General helpers (inline definitions) TODO: move definition to builder_private.tpp
   static inline std::string defaultOpenTag() {
     static int count = 0;
     return std::string("open_loop_") + std::to_string(count++);
@@ -528,13 +531,17 @@ public:
   void operator()(auto const&... args) && {
     std::vector<Expression> argList;
     (argList.emplace_back(_builder.rValue(std::forward<decltype(args)>(args), API_FWD)), ...);
-    _called = true;
-    _builder.callFunctionImpl(_function, _nextBlockName, _return, argList, API_FWD);    
+    std::move(*this)(argList);
   }
 
   void operator()(std::vector<Expression> const &argList) && {
+    if (std::holds_alternative<std::string>(_function)) {
+      _builder.callFunctionImpl(std::get<std::string>(_function), _nextBlockName, _return, argList, API_FWD);
+    } else {
+      _builder.callFunctionImpl(std::get<Expression>(_function), _nextBlockName, _return, argList, API_FWD);
+    }
+
     _called = true;
-    _builder.callFunctionImpl(_function, _nextBlockName, _return, argList, API_FWD);        
   }
   
   ~FunctionCall() noexcept(false) {

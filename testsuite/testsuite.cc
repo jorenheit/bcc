@@ -1109,6 +1109,66 @@ tests.push_back(expectOutput("Logical XOR",
 #include "tests/comparison_not_equal.cc"
 			      }));
 
+ tests.push_back(expectOutput("Function Pointer Direct",
+			      "foo2foo1", []() {
+#include "tests/function_pointer_direct.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Assign",
+			      "AB", []() {
+#include "tests/function_pointer_assign.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Args",
+			      "LARB", []() {
+#include "tests/function_pointer_args.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Return Value",
+			      "BA", []() {
+#include "tests/function_pointer_return_value.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Returned Pointer",
+			      "TF", []() {
+#include "tests/function_pointer_returned_pointer.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Array Static",
+			      "BA", []() {
+#include "tests/function_pointer_array_static.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Array Dynamic",
+			      "AB", []() {
+#include "tests/function_pointer_array_dynamic.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Struct Field",
+			      "AB", []() {
+#include "tests/function_pointer_struct_field.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Returned By Pointer Call",
+			      "SATB", []() {
+#include "tests/function_pointer_returned_by_pointer_call.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Passed Through Frames",
+			      "Z", []() {
+#include "tests/function_pointer_passed_through_frames.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Array Dynamic Loop",
+			      "ABAB", []() {
+#include "tests/function_pointer_array_dynamic_loop.cc"
+			      }));
+
+ tests.push_back(expectOutput("Function Pointer Second Order Dispatch",
+			      "XY", []() {
+#include "tests/function_pointer_second_order_dispatch.cc"
+			      }));
+ 
  return tests;
 }
 
