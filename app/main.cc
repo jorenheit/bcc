@@ -60,59 +60,114 @@ int main() try {
       
     // } c.endFunction();
 
+
     auto i8 = TypeSystem::i8();
-    
+    auto voidT = TypeSystem::voidT();
+    auto fooType = TypeSystem::function(voidT);
+    auto fooPtr = TypeSystem::function_pointer(fooType);
+					    
     c.beginFunction("main"); {
-      c.declareLocal("f", i8);
+      c.declareLocal("fptr", fooPtr);
       
       c.beginBlock("entry"); {
-	c.callFunction("fib", "end", "f")(values::i8(12));
+	c.callFunction("getPtr", "next", "fptr")(values::i8(0));
+      } c.endBlock();
+
+      c.beginBlock("next"); {
+	c.callFunctionPointer("fptr", "end")();
       } c.endBlock();
 
       c.beginBlock("end"); {
-	c.writeOut("f");
 	c.returnFromFunction();
       } c.endBlock();
-
-    } c.endFunction();
-
-
-    // fib(n: i8) -> i8
-    auto fibType = TypeSystem::function(i8, i8);
-
-    c.beginFunction("fib", fibType, {"n"}); {
-      c.declareLocal("f1", i8);
-      c.declareLocal("f2", i8);
       
+    } c.endFunction();
+
+
+    auto getPtrType = TypeSystem::function(fooPtr, {i8});
+    c.beginFunction("getPtr", getPtrType, {"x"}); {
+
       c.beginBlock("entry"); {
-	// if (n <= 1) return n;
-	c.branchIf(c.le("n", values::i8(1)), "done", "recurse");
+	c.branchIf("x", "true", "false");
       } c.endBlock();
 
-
-      c.beginBlock("done"); {
-	c.returnFromFunction("n");
+      c.beginBlock("true"); {
+	c.returnFromFunction(values::function_pointer(fooType, "foo1"));
       } c.endBlock();
 
-
-      c.beginBlock("recurse"); {
-	// fib(n - 1)
-	auto n_minus_1 = c.sub("n", values::i8(1));
-	c.callFunction("fib", "recurse2", "f1")(n_minus_1);
-      } c.endBlock();
-
-      c.beginBlock("recurse2"); {
-	// fib(n - 2)
-	auto n_minus_2 = c.sub("n", values::i8(2));
-	c.callFunction("fib", "end", "f2")(n_minus_2);
-      } c.endBlock();
-
-      c.beginBlock("end"); {
-	// return fib(n-1) + fib(n-2)
-	c.returnFromFunction(c.add("f1", "f2"));
+      c.beginBlock("false"); {
+	c.returnFromFunction(values::function_pointer(fooType, "foo2"));
       } c.endBlock();
 
     } c.endFunction();
+
+    c.beginFunction("foo1"); {
+      c.beginBlock("entry"); {
+	c.writeOut(values::string("foo1"));
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+
+    c.beginFunction("foo2"); {
+      c.beginBlock("entry"); {
+	c.writeOut(values::string("foo2"));
+	c.returnFromFunction();
+      } c.endBlock();
+    } c.endFunction();
+    
+
+    // auto i8 = TypeSystem::i8();
+    // auto fibType = TypeSystem::function(i8, {i8});
+					    
+    // c.beginFunction("main"); {
+    //   c.declareLocal("f", i8);
+    //   c.declareLocal("fibPtr", fibPtr);
+      
+    //   c.beginBlock("entry"); {
+    // 	c.callFunction("fib", "end", "f")(values::i8(12));
+    //   } c.endBlock();
+
+    //   c.beginBlock("end"); {
+    // 	c.writeOut("f");
+    // 	c.returnFromFunction();
+    //   } c.endBlock();
+
+    // } c.endFunction();
+
+
+    // c.beginFunction("fib", fibType, {"n"}); {
+    //   c.declareLocal("f1", i8);
+    //   c.declareLocal("f2", i8);
+      
+    //   c.beginBlock("entry"); {
+    // 	// if (n <= 1) return n;
+    // 	c.branchIf(c.le("n", values::i8(1)), "done", "recurse");
+    //   } c.endBlock();
+
+
+    //   c.beginBlock("done"); {
+    // 	c.returnFromFunction("n");
+    //   } c.endBlock();
+
+
+    //   c.beginBlock("recurse"); {
+    // 	// fib(n - 1)
+    // 	auto n_minus_1 = c.sub("n", values::i8(1));
+    // 	c.callFunction("fib", "recurse2", "f1")(n_minus_1);
+    //   } c.endBlock();
+
+    //   c.beginBlock("recurse2"); {
+    // 	// fib(n - 2)
+    // 	auto n_minus_2 = c.sub("n", values::i8(2));
+    // 	c.callFunction("fib", "end", "f2")(n_minus_2);
+    //   } c.endBlock();
+
+    //   c.beginBlock("end"); {
+    // 	// return fib(n-1) + fib(n-2)
+    // 	c.returnFromFunction(c.add("f1", "f2"));
+    //   } c.endBlock();
+
+    // } c.endFunction();
 
 
   } c.end();

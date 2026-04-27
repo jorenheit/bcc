@@ -1,4 +1,6 @@
 #include "builder.ih"
+#include <iostream> // debug
+
 
 Builder::FunctionCall Builder::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
   API_FUNC_BEGIN();
@@ -6,37 +8,73 @@ Builder::FunctionCall Builder::callFunction(std::string const& functionName, std
 }
 
 
-void Builder::callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
+void Builder::callFunctionImpl(std::variant<std::string, Expression> const& function, std::string const& nextBlockName,
 				std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
   syncLocalToGlobal();
 
-  std::string const metaBlockName = std::string("__ret_meta_") + _currentFunction->name + "_" + std::to_string(_metaBlocks.size());
-
+  // Schedule metablock
+  std::string const metaBlockName = std::string("__ret_meta_")
+    + _currentFunction->name + "_"
+    + std::to_string(_metaBlocks.size());
   setNextBlockImpl(_currentFunction->name, metaBlockName);
-  _metaBlocks.push_back(MetaBlock{
-      .name = metaBlockName,
-      .caller = _currentFunction->name,
-      .callee = functionName,
-      .returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
-      .nextBlockName = nextBlockName,
-    });
 
-  deferFunctionCallTypeCheck(_currentFunction->name, functionName, args, API_FWD);
-  deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);
-  initializeArguments(functionName, args, API_FWD);
-  pushFrame();
+  if (std::holds_alternative<std::string>(function)) {
+    std::string functionName = std::get<std::string>(function);
+  
+    _metaBlocks.push_back(MetaBlock{
+	.name = metaBlockName,
+	.caller = _currentFunction->name,
+	.callee = functionName,
+	.returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
+	.nextBlockName = nextBlockName,
+      });
 
-  setNextBlockImpl(functionName, "");
+    deferFunctionCallTypeCheck(functionName, args, API_FWD);
+    deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
+    //    initializeArguments(functionName, args, API_FWD); // TODO: rename
+    prepareNextFrame(functionName, args, API_FWD); // TODO: rename    
+    pushFrame();
+    //    setNextBlockImpl(functionName, "");
+  }
+  else {
+    auto funcExpr = std::get<Expression>(function);
+    auto functionType = types::cast<types::FunctionPointerType>(funcExpr.type())->functionType();
+
+    _metaBlocks.push_back(MetaBlock{
+	.name = metaBlockName,
+	.caller = _currentFunction->name,
+	.callee = functionType,
+	.returnSlot = returnSlot ? std::optional<SlotProxy>(returnSlot->slot()) : std::nullopt,
+	.nextBlockName = nextBlockName,
+      });
+
+    // Function type check can be done immediately
+    // TODO: factor out to share with deferred checks
+    auto const &paramTypes = functionType->paramTypes();
+    API_REQUIRE(paramTypes.size() == args.size(),
+		"invalid number of arguments in function-call through function-pointer '", funcExpr.str(), "': "
+		"expected ", paramTypes.size(), ", got ", args.size(), ".");
+    for (size_t i = 0; i != args.size(); ++i) {
+      API_REQUIRE_ASSIGNABLE(paramTypes[i], args[i].type());
+    }
+
+    deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
+    prepareNextFrame(funcExpr, args, API_FWD); // TODO: rename
+    pushFrame();
+
+    // PROBLEM: funcExpr lives in the previous Frame. Before pushFrame I need to make sure the next block is set in the next frame.
+    // SOLUTION: rename initializeArguments to prepareNextFrame and let that handle setting the targetBlock.
+    //    setNextBlockImpl(funcExpr);    
+  }
+
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::deferFunctionCallTypeCheck(std::string const &caller,
-					  std::string const &callee,
-					  std::vector<Expression> const &args, API_CTX) {
-  auto const getHandles = [&](){
+void Builder::deferFunctionCallTypeCheck( std::string const &callee, std::vector<Expression> const &args, API_CTX) {
+  auto const getTypeHandles = [&](){
     std::vector<types::TypeHandle> result;
     for (auto const &arg: args) {
       result.push_back(arg.type());
@@ -46,16 +84,15 @@ void Builder::deferFunctionCallTypeCheck(std::string const &caller,
 
   _deferredFunctionCallTypeChecks.emplace_back(FunctionCallInfo {
       .API_CTX_NAME = API_FWD,
-      .caller = caller,
       .callee = callee,
-      .args = getHandles()
+      .args = getTypeHandles()
     });
 }
 
 void Builder::functionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
-  for (auto const &[API_CTX_NAME, caller, callee, args]: _deferredFunctionCallTypeChecks) {
+  for (auto const &[API_CTX_NAME, callee, args]: _deferredFunctionCallTypeChecks) {
     API_REQUIRE(_program.isFunctionDefined(callee), "function '", callee, "' not defined.");
 
     auto const &paramTypes = _program.function(callee).type->paramTypes();
@@ -115,6 +152,253 @@ void Builder::returnFromFunctionImpl(std::optional<Expression> const &ret, API_C
   API_EXPECT_NEXT("endBlock");
 }
 
+void Builder::initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramStart,
+				  std::vector<Expression> const &args, API_CTX) {
+
+  auto const copyLeafToNextFrame = [&](int &offset, Slot const &slot) {
+    for (int i = 0; i != slot.type->size(); ++i) {
+      int const varIndex0 = getFieldIndex(slot + i, MacroCell::Value0);
+      primitive::DInt const paramIndex0 = currentFrameSize + paramStart + offset + MacroCell::Value0;
+      primitive::DInt const scratchIndex = paramIndex0 + (MacroCell::Scratch0 - MacroCell::Value0);
+
+      moveTo(slot + i, MacroCell::Value0);
+      emit<primitive::CopyData>(varIndex0, paramIndex0, scratchIndex);
+      moveTo(slot + i, MacroCell::Value1);
+      if (slot.type->usesValue1()) {
+	int const varIndex1 = getFieldIndex(slot + i, MacroCell::Value1);
+	primitive::DInt const paramIndex1 = currentFrameSize + paramStart + offset + MacroCell::Value1;
+	emit<primitive::CopyData>(varIndex1, paramIndex1, scratchIndex);
+      }
+      else {
+	emit<primitive::ZeroCell>();
+      }
+      offset += MacroCell::FieldCount;
+    }
+  };
+
+
+  auto const constructInNextFrame = [&](auto&& self, int &offset, Expression const &arg) -> void {
+
+    if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
+      Slot slot = arg.slot()->materialize(*this);
+      switch (slot.type->tag()) {
+      case types::I8:
+      case types::I16:
+      case types::STRING:
+      case types::FUNCTION_POINTER: {
+	copyLeafToNextFrame(offset, slot);
+	break;
+      }
+      case types::POINTER: {
+	int const destOffset = offset;
+	copyLeafToNextFrame(offset, slot);
+	primitive::DInt const distance = currentFrameSize + paramStart + destOffset + MacroCell::Value0;
+	moveTo(0, MacroCell::Value0);
+	emit<primitive::MovePointerRelative>(distance);
+	inc();
+	emit<primitive::MovePointerRelative>(-distance);
+	break;
+      }	
+      case types::ARRAY: {
+	auto arrayType = types::cast<types::ArrayType>(slot.type);
+	auto elementType = arrayType->elementType();
+	
+	for (int i = 0; i != arrayType->length(); ++i) {
+	  Slot const elementSlot {
+	    .name = "dummy",
+	    .type = elementType,
+	    .kind = Slot::Dummy,
+	    .offset = slot.offset + i * elementType->size()
+	  };
+	  self(self, offset, rValue(elementSlot, API_FWD));
+	}
+	break;
+      }
+      case types::STRUCT: {
+	auto structType = types::cast<types::StructType>(slot.type);
+	for (int i = 0; i != structType->fieldCount(); ++i) {
+	  auto fieldType = structType->fieldType(i);
+	  Slot const fieldSlot {
+	    .name = "dummy",
+	    .type = fieldType,
+	    .kind = Slot::Dummy,
+	    .offset = slot.offset + structType->fieldOffset(i)
+	  };
+	  self(self, offset, rValue(fieldSlot, API_FWD));
+	}
+	break;
+      }
+      default: {
+	assert(false && "What type is this?");
+	std::unreachable();
+      }
+      } // switch (tag)
+    }
+    else { // anonymous value -> construct in-place
+      types::TypeHandle argType = arg.type();
+      switch(argType->tag()) {
+      case types::I8:
+      case types::I16: {
+	// Construct integer
+	int const value = values::cast<types::IntegerType>(arg.literal())->value();
+	moveTo(0, MacroCell::Value0);
+	primitive::DInt const diff = currentFrameSize + paramStart + offset;
+	emit<primitive::MovePointerRelative>(diff);
+	setToValue(value & 0xff);
+	switchField(MacroCell::Value1);
+	setToValue(argType->usesValue1() ? ((value >> 8) & 0xff) : 0);
+	switchField(MacroCell::Value0);
+	emit<primitive::MovePointerRelative>(-diff);
+	offset += MacroCell::FieldCount;
+	break;
+      }
+      case types::FUNCTION_POINTER: {
+	std::string const &functionName = values::cast<types::FunctionPointerType>(arg.literal())->functionName();
+	primitive::DInt const diff = currentFrameSize + paramStart + offset;
+	emit<primitive::MovePointerRelative>(diff);
+	zeroCell();
+	emit<primitive::ChangeBy>([functionName](primitive::Context const &ctx) -> int {
+	  return ctx.getBlockIndex(functionName) & 0xff;
+	});
+	switchField(MacroCell::Value1);
+	zeroCell();
+	emit<primitive::ChangeBy>([functionName](primitive::Context const &ctx) -> int {
+	  return (ctx.getBlockIndex(functionName) >> 8) & 0xff;
+	});
+	switchField(MacrOCell::Value0);
+	emit<primitive::MovePointerRelative>(-diff);
+	offset += MacroCell::FieldCount;
+      }
+      case types::ARRAY:
+      case types::STRING: {
+	// recursive call for each element
+	for (int i = 0; i != types::cast<types::ArrayLike>(argType)->length(); ++i)
+	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.literal())->element(i), API_FWD));
+	break;
+      }
+      case types::POINTER: {
+	assert(false && "there should not be anonymous pointers"); 
+      }
+      default: assert(false && "passing this type as arg is not supported yet"); 
+      }
+    }
+  };
+
+  pushPtr();
+  
+  // Copy arguments
+  int offset = 0;
+  for (Expression const &arg: args) {
+    constructInNextFrame(constructInNextFrame, offset, arg);
+  }
+  
+  popPtr();
+}
+
+
+void Builder::prepareNextFrame(std::string const &functionName, std::vector<Expression> const &args, API_CTX) {
+
+  primitive::DInt const paramStart = [callee = functionName](primitive::Context const &ctx) {
+    return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
+  };
+
+  primitive::DInt const currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
+    return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
+  };
+  
+  initializeArguments(currentFrameSize, paramStart, args, API_FWD);
+
+  // Set target block in next frame
+  emit<primitive::MovePointerRelative>(currentFrameSize); 
+  setNextBlockImpl(functionName, "");
+  emit<primitive::MovePointerRelative>(-currentFrameSize);
+}
+
+void Builder::prepareNextFrame(Expression const &fptr, std::vector<Expression> const &args, API_CTX) {
+
+  auto functionPointerType = types::cast<types::FunctionPointerType>(fptr.type());
+  auto functionType = types::cast<types::FunctionType>(functionPointerType->functionType());
+  auto returnType = functionType->returnType();
+  
+  int const paramStart = (FrameLayout::ReturnValueStart + returnType->size()) * MacroCell::FieldCount;
+
+  primitive::DInt const currentFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx){
+    return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
+  };
+
+  initializeArguments(currentFrameSize, paramStart, args, API_FWD);
+  
+  
+  // Set target block
+  Slot const fptrSlot = (fptr.hasSlot())
+    ? fptr.slot()->materialize(*this)
+    :  getTemp(fptr.literal());
+
+
+  primitive::DInt const sourceCell0 = getFieldIndex(fptrSlot, MacroCell::Value0);
+  primitive::DInt const sourceCell1 = getFieldIndex(fptrSlot, MacroCell::Value1);
+  primitive::DInt const targetCell0 = getFieldIndex(FrameLayout::TargetBlock, MacroCell::Value0) + currentFrameSize;
+  primitive::DInt const targetCell1 = getFieldIndex(FrameLayout::TargetBlock, MacroCell::Value1) + currentFrameSize;
+  primitive::DInt const scratchCell = getFieldIndex(FrameLayout::TargetBlock, MacroCell::Scratch0) + currentFrameSize;
+
+  pushPtr();
+  moveTo(fptrSlot, MacroCell::Value0);
+  emit<primitive::CopyData>(sourceCell0, targetCell0, scratchCell);
+  switchField(MacroCell::Value1);   
+  emit<primitive::CopyData>(sourceCell1, targetCell1, scratchCell);
+  popPtr();
+  
+}
+
+
+
+
+void Builder::fetchReturnData() {
+  assert(_currentSeq != nullptr);  
+  assert(_currentFunction != nullptr);
+
+  primitive::DInt const stackFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
+    return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
+  };
+
+  pushPtr();
+  
+  // Get run-state
+  moveTo(FrameLayout::RunState);
+  emit<primitive::MovePointerRelative>(stackFrameSize);
+  emit<primitive::MoveData>(-stackFrameSize);
+  emit<primitive::MovePointerRelative>(-stackFrameSize);
+
+  popPtr();
+}
+
+
+
+void Builder::fetchReturnData(Slot const &returnSlot) {
+
+  primitive::DInt const stackFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
+    return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
+  };
+
+  pushPtr();
+  for (int i = 0; i != returnSlot.type->size(); ++i) {
+    primitive::DInt const diff = stackFrameSize - (returnSlot - FrameLayout::ReturnValueStart) * MacroCell::FieldCount;
+    
+    moveTo(returnSlot + i, MacroCell::Value0);
+    emit<primitive::MovePointerRelative>(diff);
+    emit<primitive::MoveData>(-diff);
+    emit<primitive::MovePointerRelative>(-diff);
+
+    if (returnSlot.type->usesValue1()) {
+      moveTo(returnSlot + i, MacroCell::Value1);
+      emit<primitive::MovePointerRelative>(diff);
+      emit<primitive::MoveData>(-diff);
+      emit<primitive::MovePointerRelative>(-diff);
+    }
+  }
+  fetchReturnData(); // fetch the rest
+  popPtr();
+}
 
 void Builder::branchIfImpl(Expression const &obj, std::string const &trueLabel,
 			    std::string const &falseLabel, API_CTX) {

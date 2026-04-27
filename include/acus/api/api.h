@@ -179,6 +179,12 @@ namespace acus::api {
 		  "expected a function-type in call to '", (API_CTX_NAME).apiName(), "', but got '", \
 		  #fType, "' of type '", (fType)->str(), "'.")
 
+#define API_REQUIRE_IS_FUNCTION_POINTER(obj)					\
+  error::throw_if(not types::isFunctionPointer((obj).type()),		\
+		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
+		  "expected a function-pointer in call to '", (API_CTX_NAME).apiName(), "', but got '", \
+		  (obj).str(), "' of type '", (obj).type()->str(), "'.")
+
 #define API_REQUIRE_FIELD_INDEX_IN_BOUNDS(obj, fieldIndex)		\
   error::throw_if((fieldIndex) < 0 ||					\
 		  (fieldIndex) >= types::cast<types::StructType>((obj).type())->fieldCount(), \

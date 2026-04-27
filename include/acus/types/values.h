@@ -21,8 +21,8 @@ namespace acus::values {
       virtual types::TypeHandle type() const { return _type; }      
       virtual std::shared_ptr<Base> clone() const = 0;
       virtual std::string str() const = 0;
-      virtual bool isRef() const { return false; }
-      virtual std::string varName() const { assert(false); std::unreachable(); }
+      virtual bool isRef() const { return false; } // TODO: this can be deleted right?
+      virtual std::string varName() const { assert(false); std::unreachable(); } // TODO : this as well, right?
     };
 
     using Literal = std::shared_ptr<Base>;
@@ -247,6 +247,30 @@ namespace acus::values {
       }
     }; // array
 
+    
+    struct FunctionPointer: Base {
+      std::string _functionName;
+      
+      FunctionPointer(types::FunctionType const *functionType, std::string const &fname):
+	Base(TypeSystem::function_pointer(functionType)),
+	_functionName(fname)
+      {}
+
+      FunctionPointer(FunctionPointer const &other) = default;
+      
+      virtual std::shared_ptr<Base> clone() const override {
+	return std::make_shared<FunctionPointer>(*this);
+      }
+      
+      virtual std::string str() const override {
+	return "fptr<" + _functionName + ">";
+      }
+
+      std::string const &functionName() const {
+	return _functionName;
+      }
+    };
+    
     template <typename V> requires std::derived_from<V, Base>
     auto cast(Literal const &v) {
       auto ptr = std::dynamic_pointer_cast<V>(v);
@@ -275,6 +299,9 @@ namespace acus::values {
     }
     else if constexpr (std::is_same_v<T, types::StructType>) {
       return impl::cast<impl::structT>(v);
+    }
+    else if constexpr (std::is_same_v<T, types::FunctionPointerType>) {
+      return impl::cast<impl::FunctionPointer>(v);
     }
     else {
       static_assert(false, "invalid cast type");
@@ -310,6 +337,9 @@ namespace acus::values {
     return std::make_shared<impl::array>(elementType, std::forward<decltype(elems)>(elems)...);
   }
 
+  inline Literal function_pointer(types::FunctionType const *fType, std::string const &fName) {
+    return std::make_shared<impl::FunctionPointer>(fType, fName);
+  }
   
 } // namespace acus::values
 

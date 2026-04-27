@@ -1,4 +1,5 @@
 #include "builder.ih"
+#include <iostream> // debug
 
 void Builder::setEntryPoint(std::string functionName, API_FUNC) {
   API_FUNC_BEGIN();
@@ -164,16 +165,6 @@ void Builder::endBlock(API_FUNC) {
   _currentBlock = nullptr;
 }
 
-// void Builder::setNextBlock(int index, API_FUNC) {
-//   API_FUNC_BEGIN("setNextBlock");
-//   API_CHECK_EXPECTED();
-//   API_REQUIRE_INSIDE_CODE_BLOCK();
-
-//   setNextBlockImpl(index, API_CTX);
-
-//   API_EXPECT_NEXT("endBlock");
-// }
-
 void Builder::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
@@ -198,6 +189,8 @@ void Builder::setNextBlock(std::string const &b, API_FUNC) {
 
 
 void Builder::setNextBlockImpl(std::string const &f, std::string const &b) {
+  // TODO: I think this first part can just be left out. It's an unneccessary optimization.
+  
   // It is possible that the function or block name has not been
   // defined yet. So we need to check for this first.
   if (_program.isFunctionDefined(f)) {
@@ -210,14 +203,13 @@ void Builder::setNextBlockImpl(std::string const &f, std::string const &b) {
 
   pushPtr();
   
-  
   // Could not determine block index yet -> postpone until actual code generation
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   zeroCell();
   emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
     return ctx.getBlockIndex(f, b) & 0xff;
   });
-
+  
   moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
   zeroCell();
   emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
@@ -236,6 +228,30 @@ void Builder::setNextBlockImpl(int index) {
   _nextBlockIsSet = true;
 }
 
+void Builder::setNextBlockImpl(Expression const &obj) {
+  assert(types::isFunctionPointer(obj.type()));
+  
+  Slot const targetSlot {
+    .name = "target_block",
+    .type = obj.type(),
+    .kind = Slot::Dummy,
+    .offset = FrameLayout::TargetBlock
+  };
+  
+  if (obj.hasSlot()) {
+    Slot const ptrSlot = obj.slot()->materialize(*this);
+    assignSlot(targetSlot, ptrSlot);
+  } else {
+    assignSlot(targetSlot, obj.literal());
+  }
+
+  pushPtr();
+  moveTo(FrameLayout::TargetBlock);
+  emit<primitive::Out>();
+  popPtr();
+  
+  _nextBlockIsSet = true;  
+}
 
 void Builder::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
   _deferredBlockNameChecks.emplace_back( BlockNameCheck {

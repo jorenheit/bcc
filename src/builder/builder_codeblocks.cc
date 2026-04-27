@@ -53,18 +53,20 @@ void Builder::constructMetaBlocks() {
 
   for (size_t idx = 0; idx != _metaBlocks.size(); ++idx) {
     MetaBlock const &m = _metaBlocks[idx];
-    Function const *callee = &_program.function(m.callee);
+    types::TypeHandle returnType = std::holds_alternative<std::string>(m.callee)
+      ? _program.function(std::get<std::string>(m.callee)).type->returnType()
+      : std::get<types::FunctionType const *>(m.callee)->returnType();
 
     // Set current function to caller (owner of metablock) and construct block
     _currentFunction = &_program.function(m.caller);    
     beginBlock(m.name); {
 
-      if (callee->type->returnType() == TypeSystem::voidT() || not m.returnSlot){
+      if (returnType == TypeSystem::voidT() || not m.returnSlot){
 	fetchReturnData();
       }
       else {
 	SlotProxy returnSlot = *m.returnSlot;
-	assert(callee->type->returnType() == returnSlot->type());	
+	assert(returnType == returnSlot->type());	
 
 	if (returnSlot->direct()) {
 	  Slot const ret = returnSlot->materialize(*this);
@@ -74,7 +76,7 @@ void Builder::constructMetaBlocks() {
 	  }
 	}
 	else {
-	  Slot const ret = getTemp(callee->type->returnType());
+	  Slot const ret = getTemp(returnType);
 	  fetchReturnData(ret);
 	  returnSlot->write(*this, ret);
 	}

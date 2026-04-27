@@ -11,6 +11,7 @@ std::vector<std::unique_ptr<types::StringType>> TypeSystem::_stringTypes;
 std::vector<std::unique_ptr<types::StructType>> TypeSystem::_structTypes;
 std::vector<std::unique_ptr<types::PointerType>> TypeSystem::_pointerTypes;
 std::vector<std::unique_ptr<types::FunctionType>> TypeSystem::_functionTypes;
+std::vector<std::unique_ptr<types::FunctionPointerType>> TypeSystem::_functionPointerTypes;
 
 void TypeSystem::init() {
   static bool initialized = false;

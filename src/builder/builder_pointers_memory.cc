@@ -223,6 +223,19 @@ void Builder::assignSlot(Slot const &slot, values::Literal const &val) {
       field.slot()->write(*this, values::cast<types::StructType>(val)->field(i));
     }
   }
+  else if (types::isFunctionPointer(slot.type)) {
+    std::string const &functionName = values::cast<types::FunctionPointerType>(val)->functionName();
+
+    moveTo(slot, MacroCell::Value0); zeroCell();
+    emit<primitive::ChangeBy>([functionName](primitive::Context const &ctx) -> int {
+      return ctx.getBlockIndex(functionName) & 0xff;
+    });
+
+    moveTo(slot, MacroCell::Value1); zeroCell();
+    emit<primitive::ChangeBy>([functionName](primitive::Context const &ctx) -> int {
+      return (ctx.getBlockIndex(functionName) >> 8) & 0xff;
+    });
+  }
   else {
     assert(false && "not implemented");
   }

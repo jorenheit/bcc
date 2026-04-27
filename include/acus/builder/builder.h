@@ -23,7 +23,7 @@
 namespace acus {
 
 // ============================================================
-// Compiler
+// Builder
 // ============================================================
 
 class Builder {
@@ -70,6 +70,8 @@ public:
 
   FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);
   FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
+  FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, API_FUNC);  
+  FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);  
   STRUCT_DEFINE_OBJECT defineStruct(std::string const& name, API_FUNC);
 
 #undef FUNCTION_CALL_OBJECT
@@ -161,7 +163,8 @@ private:
   struct MetaBlock {
     std::string name;
     std::string caller;
-    std::string callee;
+    std::variant<std::string, types::FunctionType const *> callee;
+    types::TypeHandle returnType;
     std::optional<SlotProxy> returnSlot;
     std::string nextBlockName;
   };
@@ -170,7 +173,7 @@ private:
 
   struct FunctionCallInfo {
     api::Context API_CTX_NAME;
-    std::string caller, callee;
+    std::string callee;
     std::vector<types::TypeHandle> args;
   };
   std::vector<FunctionCallInfo> _deferredFunctionCallTypeChecks;
@@ -206,9 +209,11 @@ private:
   // Implementation functions for public interface
   void setNextBlockImpl(int index);
   void setNextBlockImpl(std::string const &f, std::string const &b);
+  void setNextBlockImpl(Expression const &obj);
+
   types::TypeHandle defineStructImpl(std::string const& name, std::vector<NameTypePair> const &fields, API_CTX);
 
-  void callFunctionImpl(std::string const& functionName, std::string const& nextBlockName,
+  void callFunctionImpl(std::variant<std::string, Expression> const &function, std::string const& nextBlockName,
 			std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
   void returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX);
   Expression structFieldImpl(Expression const &obj, std::string const &field, API_CTX);
@@ -438,7 +443,11 @@ private:
   void setSeekMarker();
   void resetSeekMarker();
   void moveToPreviousFrame(Payload const &payload = {});  
-  void initializeArguments(std::string const &functionName, std::vector<Expression> const &args, API_CTX);  
+  void initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramOffset, std::vector<Expression> const &args, API_CTX);
+  void prepareNextFrame(std::string const &functionName, std::vector<Expression> const &args, API_CTX);
+  void prepareNextFrame(Expression const &fptr, std::vector<Expression> const &args, API_CTX);
+  
+  //  void initializeArguments(Expression const &fptr, std::vector<Expression> const &args, API_CTX);
   void fetchReturnData();
   void fetchReturnData(Slot const &returnSlot);
   void moveToPointee(Slot const &ptrSlot);
@@ -479,8 +488,7 @@ private:
   static std::string simplifyProgram(std::string const &bf);
 
     // Post processing
-  void deferFunctionCallTypeCheck(std::string const &caller, std::string const &callee,
-				  std::vector<Expression> const &args, API_CTX);
+  void deferFunctionCallTypeCheck( std::string const &callee, std::vector<Expression> const &args, API_CTX);
   void functionCallTypeChecks();
 
   void deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX);
@@ -521,12 +529,12 @@ public:
     std::vector<Expression> argList;
     (argList.emplace_back(_builder.rValue(std::forward<decltype(args)>(args), API_FWD)), ...);
     _called = true;
-    _builder.callFunctionImpl(_functionName, _nextBlockName, _return, argList, API_FWD);    
+    _builder.callFunctionImpl(_function, _nextBlockName, _return, argList, API_FWD);    
   }
 
   void operator()(std::vector<Expression> const &argList) && {
     _called = true;
-    _builder.callFunctionImpl(_functionName, _nextBlockName, _return, argList, API_FWD);        
+    _builder.callFunctionImpl(_function, _nextBlockName, _return, argList, API_FWD);        
   }
   
   ~FunctionCall() noexcept(false) {
@@ -536,16 +544,16 @@ public:
 private:
   friend class Builder;  
   Builder& _builder;
-  std::string _functionName;
+  std::variant<std::string, Expression> _function;
   std::string _nextBlockName;
   std::optional<Expression> _return;
   api::Context API_CTX_NAME;
   bool _called = false;
 
-  FunctionCall(Builder &b, std::string const &functionName, std::string const &nextBlockName,
+  FunctionCall(Builder &b, auto const &function, std::string const &nextBlockName,
 	       std::optional<Expression> ret, api::Context const &ctx):
     _builder(b),
-    _functionName(functionName),
+    _function(function),
     _nextBlockName(nextBlockName),
     _return(std::move(ret)),
     API_CTX_NAME(ctx)
