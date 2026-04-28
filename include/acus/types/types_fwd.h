@@ -14,6 +14,3 @@ namespace acus::types {
   using TypeHandle = Type const *;
 }
 
-namespace acus {
-  class TypeSystem;
-}

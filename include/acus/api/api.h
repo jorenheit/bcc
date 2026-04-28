@@ -28,7 +28,7 @@
 #ifndef API_H_INCLUDED
 #define API_H_INCLUDED
 
-namespace acus::api {
+namespace acus::api::impl {
   struct ExpResult {
     bool expected;
     std::string msg;
@@ -43,26 +43,30 @@ namespace acus::api {
 #define API_FUNC_HEADER std::source_location API_LOC = std::source_location::current()
 #define API_FUNC_SOURCE std::source_location API_LOC
 #define API_CTX_NAME api_ctx
-#define API_CTX api::Context const & API_CTX_NAME
+#define API_CTX api::impl::Context const & API_CTX_NAME
+#define API_CTX_IGNORE api::impl::Context const &
 #define API_FWD API_CTX_NAME
 
 #define API_FUNC_BEGIN()				\
-  api::Context API_CTX_NAME{*this, __func__, API_LOC};
+  api::impl::Context API_CTX_NAME{*this, __func__, API_LOC};
 
-#define API_EXPECT_NEXT(name) api::expectNext((name));			
+#define API_FUNC_BEGIN_FREE()			\
+  api::impl::Context API_CTX_NAME{__func__, API_LOC};
+
+#define API_EXPECT_NEXT(name) api::impl::expectNext((name));			
 
 #define API_CHECK_EXPECTED_IMPL(strict) do {				\
     std::string const apiName = (API_CTX_NAME).apiName();		\
-    auto expResult = api::isExpected(apiName, strict);			\
+    auto expResult = api::impl::isExpected(apiName, strict);			\
     error::throw_if(not expResult.expected,				\
 		    (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
 		    expResult.msg);					\
-    if (api::expected() == apiName) api::clearExpected();		\
+    if (api::impl::expected() == apiName) api::impl::clearExpected();		\
   } while (false);
 
 #define API_CHECK_EXPECTED() API_CHECK_EXPECTED_IMPL(false);
 #define API_CHECK_EXPECTED_STRICT() API_CHECK_EXPECTED_IMPL(true);
-#define API_CLEAR_EXPECTED() api::clearExpected();
+#define API_CLEAR_EXPECTED() api::impl::clearExpected();
 
 #define API_REQUIRE(condition, ...)					\
   error::throw_if(not (condition),					\

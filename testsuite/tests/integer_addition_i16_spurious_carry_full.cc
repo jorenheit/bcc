@@ -4,16 +4,16 @@
 TEST_BEGIN
 
 c.beginFunction("main"); {
-  c.declareLocal("x", TypeSystem::i16());
-  c.declareLocal("z", TypeSystem::i16());
+  c.declareLocal("x", ts::i16());
+  c.declareLocal("z", ts::i16());
 
   c.beginBlock("entry"); {
-    c.assign("x", values::i16(CAT('A', 'C')));
+    c.assign("x", literal::i16(CAT('A', 'C')));
 
     c.writeOut("x");                       // AC
-    c.addAssign("x", values::i16(1));      // x = BC
+    c.addAssign("x", literal::i16(1));      // x = BC
     c.writeOut("x");                       // BC
-    c.assign("z", c.add("x", values::i16(1))); // z = CC
+    c.assign("z", c.add("x", literal::i16(1))); // z = CC
     c.writeOut("z");                       // CC
 
     c.returnFromFunction();

@@ -1,5 +1,5 @@
 #include "acus/types/type_rules.h"
-#include "acus/types/types.h"
+#include "acus/types/typesystem.h"
 
 using namespace acus;
 
@@ -25,11 +25,11 @@ namespace {
 
     if (types::isArrayLike(pointeeType)) {
       auto arrayType = types::cast<types::ArrayLike>(pointeeType);
-      return pointerCanDecayInto(target, TypeSystem::pointer(arrayType->elementType()));
+      return pointerCanDecayInto(target, ts::pointer(arrayType->elementType()));
     }
     if (types::isStruct(pointeeType)) {
       auto structType = types::cast<types::StructType>(pointeeType);
-      return pointerCanDecayInto(target, TypeSystem::pointer(structType->fieldType(0)));
+      return pointerCanDecayInto(target, ts::pointer(structType->fieldType(0)));
     }
     return false;
   }
@@ -91,7 +91,7 @@ OpResult types::rules::binOpResult(BinOp op, TypeHandle lhs, TypeHandle rhs) {
   }
 
   if ((isLogical(op) || isComparison(op)) && bothIntegers(lhs, rhs)) {
-    return ok(TypeSystem::i8());
+    return ok(ts::i8());
   }
   
   // For all other operators, require both to be integers and return promoted type

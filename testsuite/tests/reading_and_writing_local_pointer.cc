@@ -4,8 +4,8 @@
 
 TEST_BEGIN
 
-auto i8  = TypeSystem::i8();
-auto i8p = TypeSystem::pointer(i8);
+auto i8  = ts::i8();
+auto i8p = ts::pointer(i8);
 
 c.beginFunction("main"); {
   c.declareLocal("p", i8p);
@@ -13,8 +13,8 @@ c.beginFunction("main"); {
   c.declareLocal("y", i8);
 
   c.beginBlock("entry"); {
-    c.assign("p", c.addressOf("x")); //values::pointer(i8, "x"));
-    c.assign("x", values::i8('X'));
+    c.assign("p", c.addressOf("x")); //literal::pointer(i8, "x"));
+    c.assign("x", literal::i8('X'));
 
     auto pDeref = c.dereferencePointer("p");
     c.assign("y", pDeref);
@@ -22,7 +22,7 @@ c.beginFunction("main"); {
     c.writeOut("x");
     c.writeOut("y");
 
-    c.assign(pDeref, values::i8('Y'));
+    c.assign(pDeref, literal::i8('Y'));
 
     c.writeOut("x");
     c.writeOut("y");

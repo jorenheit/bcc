@@ -14,8 +14,8 @@
 #include "acus/core/expression.h"
 #include "acus/types/operators.h"
 #include "acus/types/struct_field.h"
-#include "acus/types/types.h"
-#include "acus/types/values_fwd.h"
+#include "acus/types/typesystem.h"
+#include "acus/types/literal_fwd.h"
 
 #define API_HEADER
 #include "acus/api/api.h"
@@ -28,7 +28,7 @@ namespace acus {
 
 class Builder {
 public:
-  inline Builder() { TypeSystem::init(); }
+  inline Builder() { ts::init(); }
 
   // TODO: API_FUNC 
   std::string dumpPrimitives() const;
@@ -55,6 +55,7 @@ public:
   void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
 
   void referGlobals(std::vector<std::string> const &names, API_FUNC);
+  // TODO: these should return Expression
   Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
   Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
 
@@ -63,19 +64,13 @@ public:
   void abortProgram(API_FUNC);
 
   struct FunctionCall;
-  struct StructDefinition;
   
 #define FUNCTION_CALL_OBJECT [[nodiscard("call the returned FunctionCall object with arguments, e.g. callFunction(...)(args...)")]] FunctionCall
-#define STRUCT_DEFINE_OBJECT [[nodiscard("call the returned StructDefinition object with arguments, e.g. defineStruct(...)(args...)")]] StructDefinition
-
   FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);
   FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
   FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, API_FUNC);  
-  FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);  
-  STRUCT_DEFINE_OBJECT defineStruct(std::string const& name, API_FUNC);
-
+  FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);
 #undef FUNCTION_CALL_OBJECT
-#undef STRUCT_DEFINE_OBJECT
 
   Expression expr(auto const &obj, API_FUNC);
   Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
@@ -139,22 +134,21 @@ public:
   void branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
   
 private:
-  friend class proxy::Impl::Direct;
-  friend class proxy::Impl::ArrayElement;
-  friend class proxy::Impl::StructField;
-  friend class proxy::Impl::DereferencedPointer;
-  friend class api::Context;
+  friend class proxy::impl::Direct;
+  friend class proxy::impl::ArrayElement;
+  friend class proxy::impl::StructField;
+  friend class proxy::impl::DereferencedPointer;
+  friend class api::impl::Context;
 
   Program _program;
   Function* _currentFunction = nullptr;
   Function::Block* _currentBlock = nullptr;
   Function::Scope* _currentScope = nullptr;
   primitive::Sequence* _currentSeq = nullptr; 
-  bool _nextBlockIsSet = false;
 
   struct {
     bool begun = false;
-    bool allowGlobalDefinitions = true; // TODO: rename to allowGlobalDeclarations
+    bool allowGlobalDeclarations = true;
   } _state;
 
   std::stack<Cell> _ptrStack;
@@ -172,14 +166,14 @@ private:
 
 
   struct FunctionCallInfo {
-    api::Context API_CTX_NAME;
+    api::impl::Context API_CTX_NAME;
     std::string callee;
     std::vector<Expression> args;
   };
   std::vector<FunctionCallInfo> _deferredFunctionCallTypeChecks;
 
   struct BlockNameCheck {
-    api::Context API_CTX_NAME;
+    api::impl::Context API_CTX_NAME;
     std::string functionName, blockName;
   };
   std::vector<BlockNameCheck> _deferredBlockNameChecks;
@@ -200,7 +194,7 @@ private:
   Expression rValue(Expression const &val, API_CTX) const;
   Expression rValue(std::string const &var, API_CTX) const;
   Expression rValue(SlotProxy const &slot, API_CTX) const;
-  Expression rValue(values::Literal const &val, API_CTX) const;
+  Expression rValue(literal::Literal const &val, API_CTX) const;
 
   Expression lValue(Expression const &val, API_CTX) const;
   Expression lValue(std::string const &var, API_CTX) const;  
@@ -211,7 +205,7 @@ private:
   void setNextBlockImpl(std::string const &f, std::string const &b);
   void setNextBlockImpl(Expression const &obj);
 
-  types::TypeHandle defineStructImpl(std::string const& name, std::vector<NameTypePair> const &fields, API_CTX);
+  types::TypeHandle defineStructImpl(std::string const& name, std::vector<types::NameTypePair> const &fields, API_CTX);
 
   void callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
 			std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
@@ -259,7 +253,7 @@ private:
   // Slot operations
   Slot local(std::string const& name, bool globalReference = false) const;
   void assignSlot(Slot const &dest, Slot const &src);
-  void assignSlot(Slot const &slot, values::Literal const &val);
+  void assignSlot(Slot const &slot, literal::Literal const &val);
   void addSlotToSlot(Slot const &lhs, Slot const &rhs);
   void addConstToSlot(Slot const &lhs, int delta);
   void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
@@ -461,7 +455,7 @@ private:
   void freeScope(Function::Scope const *scope);
   Slot allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind);
   Slot getTemp(types::TypeHandle type);
-  Slot getTemp(values::Literal const &val);
+  Slot getTemp(literal::Literal const &val);
   void swapLocalWithTemp(Slot const &local, Slot const &tmp);
   Slot declareGlobalReference(Slot const &globalSlot);
   
@@ -498,34 +492,22 @@ private:
   void deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX);
   void deferredBlockNameChecks();
 
-  // General helpers (inline definitions) TODO: move definition to builder_private.tpp
-  static inline std::string defaultOpenTag() {
-    static int count = 0;
-    return std::string("open_loop_") + std::to_string(count++);
-  } 
-  static inline std::string defaultCloseTag() {
-    static int count = 0;
-    return std::string("close_loop_") + std::to_string(count++);
-  }
-  
+  // General helpers (inline definitions, builder_private.tpp)
   template <typename Primitive, typename ... Args>
   void emit(Args&& ... args);
 
-  inline int getFieldIndex(int offset, int field) {
-    return offset * MacroCell::FieldCount + field;
-  }
-
-  inline int getFieldIndex(Cell cell) {
-    return getFieldIndex(cell.offset, cell.field);
-  }
-
+  inline int getFieldIndex(int offset, int field);
+  inline int getFieldIndex(Cell cell);
+  
   template <typename... Args> requires ((std::convertible_to<Args, Cell>) && ...)
   auto getFieldIndices(Args... args);
+
+  static inline std::string defaultOpenTag();
+  static inline std::string defaultCloseTag();  
 };
 
 
 // Builder objects for calls and struct definitions
-
 class Builder::FunctionCall {
 public:
   void operator()(auto const&... args) && {
@@ -545,7 +527,8 @@ public:
   }
   
   ~FunctionCall() noexcept(false) {
-    API_REQUIRE(_called, "operator() must be called on result of callFunction(); e.g. callFunction(\"foo\", \"after_foo\")(\"x\", \"y\");");
+    API_REQUIRE(_called, "operator() must be called on result of callFunction(); "
+		"e.g. callFunction(\"foo\", \"after_foo\")(\"x\", \"y\");");
   }
 
 private:
@@ -554,11 +537,11 @@ private:
   std::variant<std::string, Expression> _function;
   std::string _nextBlockName;
   std::optional<Expression> _return;
-  api::Context API_CTX_NAME;
+  api::impl::Context API_CTX_NAME;
   bool _called = false;
 
   FunctionCall(Builder &b, auto const &function, std::string const &nextBlockName,
-	       std::optional<Expression> ret, api::Context const &ctx):
+	       std::optional<Expression> ret, api::impl::Context const &ctx):
     _builder(b),
     _function(function),
     _nextBlockName(nextBlockName),
@@ -570,59 +553,9 @@ private:
   FunctionCall(FunctionCall &&) = delete;
   FunctionCall& operator=(FunctionCall const&) = delete;
   FunctionCall& operator=(FunctionCall &&) = delete;
-  
-  
 };
 
-
-class Builder::StructDefinition {
-public:
-  types::TypeHandle operator()(auto const&... args) && {
-    static_assert(sizeof ... (args) % 2 == 0);
-    std::vector<NameTypePair> fields;
-
-    auto addField = [&]<typename ... Rest>(auto&& self, std::string const &name, types::TypeHandle type, Rest&& ... rest) -> void {
-      fields.push_back(NameTypePair{name, type});
-      if constexpr (sizeof ... (Rest) == 0) return;
-      else self(self, std::forward<Rest>(rest)...);
-    };
-
-    addField(addField, std::forward<decltype(args)>(args)...);
-    _called = true;
-    return _builder.defineStructImpl(_structName, fields, API_FWD);
-  }
-
-  types::TypeHandle operator()(std::vector<NameTypePair> const &fields) && {
-    _called = true;
-    return _builder.defineStructImpl(_structName, fields, API_FWD);
-  }
-
   
-  ~StructDefinition() noexcept(false) {
-    API_REQUIRE(_called, "operator() must be called on result of defineStruct(); e.g. defineStruct(\"Point\")(\"x\", i8, \"y\", i8);");
-  }
-
-private:
-  friend class Builder;
-  Builder& _builder;
-  std::string _structName;
-  api::Context API_CTX_NAME;
-  bool _called = false;
-  
-  StructDefinition(Builder &b, std::string const &structName, api::Context const &ctx):
-    _builder(b),
-    _structName(structName),
-    API_CTX_NAME(ctx)
-  {}
-  
-  StructDefinition(StructDefinition const&) = delete;
-  StructDefinition(StructDefinition&&) = delete;
-  StructDefinition& operator=(StructDefinition const&) = delete;
-  StructDefinition& operator=(StructDefinition&&) = delete;
-    
-};
-  
-
 #include "acus/builder/builder_private.tpp"
 #include "acus/builder/builder_public.tpp"
 

@@ -3,9 +3,9 @@
 
 TEST_BEGIN
 
-auto i16  = TypeSystem::i16();
-auto i16p = TypeSystem::pointer(i16);
-auto arrT = TypeSystem::array(i16, 3);
+auto i16  = ts::i16();
+auto i16p = ts::pointer(i16);
+auto arrT = ts::array(i16, 3);
 
 c.beginFunction("main"); {
   c.declareLocal("p", i16p);
@@ -13,17 +13,17 @@ c.beginFunction("main"); {
   c.declareLocal("arr", arrT);
 
   c.beginBlock("entry"); {
-    c.assign(c.arrayElement("arr", 0), values::i16(CAT('A', 'a')));
-    c.assign(c.arrayElement("arr", 1), values::i16(CAT('B', 'b')));
-    c.assign(c.arrayElement("arr", 2), values::i16(CAT('C', 'c')));
+    c.assign(c.arrayElement("arr", 0), literal::i16(CAT('A', 'a')));
+    c.assign(c.arrayElement("arr", 1), literal::i16(CAT('B', 'b')));
+    c.assign(c.arrayElement("arr", 2), literal::i16(CAT('C', 'c')));
 
     c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
     c.writeOut(c.dereferencePointer("p"));        // Aa
 
-    c.assign("q", c.add("p", values::i16(2)));
+    c.assign("q", c.add("p", literal::i16(2)));
     c.writeOut(c.dereferencePointer("q"));        // Cc
 
-    c.subAssign("q", values::i16(1));
+    c.subAssign("q", literal::i16(1));
     c.writeOut(c.dereferencePointer("q"));        // Bb
 
     c.returnFromFunction();

@@ -3,19 +3,18 @@
 
 TEST_BEGIN
 
-auto array4 = TypeSystem::array(TypeSystem::i8(), 4);
+auto array4 = ts::array(ts::i8(), 4);
 
 c.beginFunction("main"); {
   c.declareLocal("arr", array4);
-  c.declareLocal("idx", TypeSystem::i8());
+  c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    c.assign("arr", values::array(TypeSystem::i8(),
-				  values::i8('A'),
-				  values::i8('B'),
-				  values::i8('C'),
-				  values::i8('D')));
-    c.assign("idx", values::i8(2));
+    c.assign("arr", literal::array(ts::i8())( literal::i8('A'),
+						     literal::i8('B'),
+						     literal::i8('C'),
+						     literal::i8('D')));
+    c.assign("idx", literal::i8(2));
 
     auto elem = c.arrayElement("arr", "idx");
     c.callFunction("printChar", "return")(elem);
@@ -26,7 +25,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+auto sig = ts::function(ts::voidT())(ts::i8());
 c.beginFunction("printChar", sig, {"ch"}); {
   c.beginBlock("entry"); {
     c.writeOut("ch");

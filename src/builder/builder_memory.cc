@@ -51,7 +51,7 @@ Slot Builder::allocSlot(std::string const &name, types::TypeHandle type, Slot::K
 	if (diff > 0) {
 	  frame.locals.emplace_back(Slot{
 	      .name = dummyName(),
-	      .type = TypeSystem::raw(diff),
+	      .type = ts::raw(diff),
 	      .kind = Slot::Available,
 	      .offset = slot.offset + type->size(),
 	      .scope = nullptr
@@ -87,7 +87,7 @@ Slot Builder::allocSlot(std::string const &name, types::TypeHandle type, Slot::K
 
 void Builder::freeSlot(Slot &slot) {
   slot.name = "";
-  slot.type = TypeSystem::raw(slot.type->size());
+  slot.type = ts::raw(slot.type->size());
   slot.kind = Slot::Available;
   slot.scope = nullptr;
 }
@@ -111,7 +111,7 @@ Slot Builder::getTemp(types::TypeHandle type) {
   return allocSlot("__tmp", type, Slot::Temp);
 }
 
-Slot Builder::getTemp(values::Literal const &value) {
+Slot Builder::getTemp(literal::Literal const &value) {
   Slot tmp = getTemp(value->type());
   assignSlot(tmp, value);
   return tmp;

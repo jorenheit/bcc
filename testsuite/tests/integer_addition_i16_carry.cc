@@ -4,13 +4,13 @@
 TEST_BEGIN
 
 c.beginFunction("main"); {
-  c.declareLocal("x", TypeSystem::i16());
-  c.declareLocal("y", TypeSystem::i16());
-  c.declareLocal("z", TypeSystem::i16());
+  c.declareLocal("x", ts::i16());
+  c.declareLocal("y", ts::i16());
+  c.declareLocal("z", ts::i16());
 
   c.beginBlock("entry"); {
-    c.assign("x", values::i16(CAT('E', 'A'))); // low='D', high='A'
-    c.assign("y", values::i16(254));
+    c.assign("x", literal::i16(CAT('E', 'A'))); // low='D', high='A'
+    c.assign("y", literal::i16(254));
 
     c.writeOut("x");                    // EA
     c.addAssign("x", "y");              // EA + 254 -> CB

@@ -17,7 +17,7 @@ Expression Builder::structFieldImpl(Expression const &obj, std::string const &fi
   API_REQUIRE_IS_FIELD(obj, fieldName);
 
   if (obj.isLiteral()) {
-    auto structVal = values::cast<types::StructType>(obj.literal());
+    auto structVal = literal::cast<types::StructType>(obj.literal());
     return Expression{structVal->field(fieldName)};
   }
   
@@ -31,7 +31,7 @@ Expression Builder::arrayElementImpl(Expression const &arr, int index, API_CTX) 
   API_REQUIRE_INDEX_IN_BOUNDS(arr, index);
 
   if (arr.isLiteral()) {
-    auto arrVal = values::cast<types::ArrayLike>(arr.literal());
+    auto arrVal = literal::cast<types::ArrayLike>(arr.literal());
     return Expression{arrVal->element(index)};
   }
   
@@ -45,7 +45,7 @@ Expression Builder::arrayElementImpl(Expression const &arr, Expression const &in
   API_REQUIRE_IS_INTEGER(index);
 
   if (index.isLiteral()) {
-    int const i = values::cast<types::IntegerType>(index.literal())->value();
+    int const i = literal::cast<types::IntegerType>(index.literal())->value();
     return arrayElementImpl(arr, i, API_FWD);
   }
 

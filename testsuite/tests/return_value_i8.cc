@@ -5,7 +5,7 @@ TEST_BEGIN
 
 // main: void
 c.beginFunction("main"); {
-  c.declareLocal("x", TypeSystem::i8());
+  c.declareLocal("x", ts::i8());
 
   c.beginBlock("entry"); {
     c.callFunction("foo", "after_foo", "x")();
@@ -19,11 +19,11 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 // foo: returns i8
-auto fooSig = TypeSystem::function(TypeSystem::i8());
+auto fooSig = ts::function(ts::i8())();
 c.beginFunction("foo", fooSig); {
 
   c.beginBlock("entry"); {
-    c.returnFromFunction(values::i8('X'));
+    c.returnFromFunction(literal::i8('X'));
   } c.endBlock();
 
 } c.endFunction();

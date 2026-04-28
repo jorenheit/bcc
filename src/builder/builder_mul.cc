@@ -12,7 +12,7 @@ void Builder::mulSlotByConst(Slot const &lhs, int factor) {
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   if (lhs.type->usesValue1()) {
-    Slot const tmp = getTemp(TypeSystem::raw(1));
+    Slot const tmp = getTemp(ts::raw(1));
     mul16Const(factor, Cell{lhs, MacroCell::Value1},
 	       Temps<8>::select(lhs, MacroCell::Scratch0,
 				lhs, MacroCell::Scratch1,

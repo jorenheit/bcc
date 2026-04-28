@@ -3,27 +3,25 @@
 
 TEST_BEGIN
 
-auto inner = TypeSystem::array(TypeSystem::i8(), 2);
-auto outer = TypeSystem::array(inner, 2);
+auto inner = ts::array(ts::i8(), 2);
+auto outer = ts::array(inner, 2);
 
 c.beginFunction("main"); {
   c.declareLocal("m", outer);
-  c.declareLocal("idx", TypeSystem::i8());
+  c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    auto ab = values::array(TypeSystem::i8(),
-			    values::i8('A'),
-			    values::i8('B'));
-    auto cd = values::array(TypeSystem::i8(),
-			    values::i8('C'),
-			    values::i8('D'));
-    c.assign("m", values::array(inner, ab, cd));
+    auto ab = literal::array(ts::i8())(literal::i8('A'),
+					      literal::i8('B'));
+    auto cd = literal::array(ts::i8())(literal::i8('C'),
+					      literal::i8('D'));
+    c.assign("m", literal::array(inner)(ab, cd));
 
-    c.assign("idx", values::i8(0));
+    c.assign("idx", literal::i8(0));
 
     auto row1 = c.arrayElement("m", 1);
     auto cell = c.arrayElement(row1, "idx");
-    c.assign(cell, values::i8('Q'));
+    c.assign(cell, literal::i8('Q'));
 
     c.writeOut("m");
     c.returnFromFunction();

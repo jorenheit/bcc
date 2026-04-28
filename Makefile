@@ -12,9 +12,10 @@ OBJDIR      := obj
 COMMON_SRCS := \
 	src/api/api.cc \
 	src/ir/primitive.cc \
-	src/types/types.cc \
+	src/types/typesystem.cc \
 	src/types/type_rules.cc \
 	src/types/operators.cc \
+	src/types/literal.cc \
 	src/core/proxy.cc \
 	src/core/slot.cc \
 	src/builder/builder_program.cc \

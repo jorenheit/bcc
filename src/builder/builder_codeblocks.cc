@@ -12,8 +12,6 @@ void Builder::blockOpen() {
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
 
-  // TODO: replace this with "equals"
-
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   compare16ToConstConstructive(/* value =    */ _currentBlock->globalBlockIndex,
 			       /* highByte = */ Cell{FrameLayout::TargetBlock, MacroCell::Value1},
@@ -61,7 +59,7 @@ void Builder::constructMetaBlocks() {
     _currentFunction = &_program.function(m.caller);    
     beginBlock(m.name); {
 
-      if (returnType == TypeSystem::voidT() || not m.returnSlot){
+      if (returnType == ts::voidT() || not m.returnSlot){
 	fetchReturnData();
       }
       else {

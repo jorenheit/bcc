@@ -5,9 +5,9 @@
 
 TEST_BEGIN
 
-auto i8   = TypeSystem::i8();
-auto i8p  = TypeSystem::pointer(i8);
-auto i8pa = TypeSystem::array(i8p, 2);
+auto i8   = ts::i8();
+auto i8p  = ts::pointer(i8);
+auto i8pa = ts::array(i8p, 2);
 
 c.beginFunction("main"); {
   c.declareLocal("p", i8pa);
@@ -15,8 +15,8 @@ c.beginFunction("main"); {
   c.declareLocal("b", i8);
 
   c.beginBlock("entry"); {
-    c.assign("a", values::i8('A'));
-    c.assign("b", values::i8('B'));
+    c.assign("a", literal::i8('A'));
+    c.assign("b", literal::i8('B'));
 
     c.assign(c.arrayElement("p", 0), c.addressOf("a"));
     c.assign(c.arrayElement("p", 1), c.addressOf("b"));
@@ -31,7 +31,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::voidT(), i8pa);
+auto sig = ts::function(ts::voidT())(i8pa);
 c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
@@ -40,8 +40,8 @@ c.beginFunction("foo", sig, {"p"}); {
     c.writeOut(p0Deref);
     c.writeOut(p1Deref);
 
-    c.assign(p0Deref, values::i8('X'));
-    c.assign(p1Deref, values::i8('Y'));
+    c.assign(p0Deref, literal::i8('X'));
+    c.assign(p1Deref, literal::i8('Y'));
 
     c.returnFromFunction();
   } c.endBlock();

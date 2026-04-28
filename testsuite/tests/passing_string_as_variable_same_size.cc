@@ -5,13 +5,13 @@
 TEST_BEGIN
 
 std::string str = "Hello World";
-auto string = TypeSystem::string(str.size());
+auto string = ts::string(str.size());
 
 c.beginFunction("main"); {
   c.declareLocal("s", string);
 
   c.beginBlock("entry"); {
-    c.assign("s", values::string(str));
+    c.assign("s", literal::string(str));
     c.callFunction("print", "return")("s");
   } c.endBlock();
 
@@ -21,7 +21,7 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-auto printSig = TypeSystem::function(TypeSystem::voidT(), string);
+auto printSig = ts::function(ts::voidT())(string);
 c.beginFunction("print", printSig, {"s"}); {
   c.beginBlock("entry"); {
     c.writeOut("s");

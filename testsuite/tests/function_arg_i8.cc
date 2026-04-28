@@ -4,12 +4,12 @@
 TEST_BEGIN
 
 c.beginFunction("main"); {
-  c.declareLocal("x", TypeSystem::i8());
-  c.declareLocal("y", TypeSystem::i8());
+  c.declareLocal("x", ts::i8());
+  c.declareLocal("y", ts::i8());
        
   c.beginBlock("entry"); {
-    c.assign("x", values::i8('A'));
-    c.callFunction("foo", "after_foo", "y")("x", values::i8('B'));
+    c.assign("x", literal::i8('A'));
+    c.callFunction("foo", "after_foo", "y")("x", literal::i8('B'));
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -19,7 +19,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::i8(), TypeSystem::i8(), TypeSystem::i8());
+auto fooSig = ts::function(ts::i8())(ts::i8(), ts::i8());
 c.beginFunction("foo", fooSig, {"arg1", "arg2"}); {
   c.beginBlock("entry"); {
     c.returnFromFunction("arg2");

@@ -3,13 +3,13 @@
 
 TEST_BEGIN
 
-c.declareGlobal("g", TypeSystem::i8());
+c.declareGlobal("g", ts::i8());
     
 c.beginFunction("main"); {
   c.referGlobals({"g"});
       
   c.beginBlock("entry"); {
-    c.assign("g", values::i8('G'));
+    c.assign("g", literal::i8('G'));
     c.callFunction("foo", "after_foo")("g");
   } c.endBlock();
 
@@ -19,11 +19,11 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+auto fooSig = ts::function(ts::voidT())(ts::i8());
 c.beginFunction("foo", fooSig, {"arg1"}); {
   c.beginBlock("entry"); {
     c.writeOut("arg1");
-    c.assign("arg1", values::i8('H'));
+    c.assign("arg1", literal::i8('H'));
     c.writeOut("arg1");
     c.returnFromFunction();
   } c.endBlock();

@@ -4,17 +4,17 @@
 
 TEST_BEGIN
 
-auto i8  = TypeSystem::i8();
-auto i8p = TypeSystem::pointer(i8);
+auto i8  = ts::i8();
+auto i8p = ts::pointer(i8);
 
-auto holder = c.defineStruct("Holder")("p", i8p);
+auto holder = ts::defineStruct("Holder")("p", i8p);
 
 c.beginFunction("main"); {
   c.declareLocal("s", holder);
   c.declareLocal("x", i8);
 
   c.beginBlock("entry"); {
-    c.assign("x", values::i8('A'));
+    c.assign("x", literal::i8('A'));
     c.assign(c.structField("s", "p"), c.addressOf("x"));
 
     c.callFunction("foo", "after")("s");
@@ -26,14 +26,14 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::voidT(), holder);
+auto sig = ts::function(ts::voidT())(holder);
 c.beginFunction("foo", sig, {"s"}); {
   c.beginBlock("entry"); {
     auto p = c.structField("s", "p");
     auto pDeref = c.dereferencePointer(p);
 
     c.writeOut(pDeref);
-    c.assign(pDeref, values::i8('X'));
+    c.assign(pDeref, literal::i8('X'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

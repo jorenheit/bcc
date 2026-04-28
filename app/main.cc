@@ -1,6 +1,7 @@
 #include <iostream>
-#include "acus/builder/builder.h"
-using namespace acus;
+#include "acus.h"
+
+using namespace acus::api;
 
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
@@ -10,16 +11,25 @@ int main() try {
 
   c.begin(); {
 
-    auto i8 = TypeSystem::i8();
-    auto voidT = TypeSystem::voidT();
-    auto fooType = TypeSystem::function(voidT);
-    auto fooPtr = TypeSystem::function_pointer(fooType);
-					    
+    
+    auto i8 = ts::i8();
+    auto i16 = ts::i16();
+    auto voidT = ts::voidT();
+    auto fooType = ts::function(voidT)();
+    auto fooPtr = ts::function_pointer(fooType);
+
+    std::vector<types::NameTypePair> fields;
+    fields.emplace_back("x", i8);
+    fields.emplace_back("y", i8);
+    auto point = ts::defineStruct("Point")(fields);
+    auto val = literal::structT(point)(literal::i8(1), literal::i8(2));
+    
+    
     c.beginFunction("main"); {
       c.declareLocal("fptr", fooPtr);
       
       c.beginBlock("entry"); {
-	c.callFunction("getPtr", "next", "fptr")(values::i8(0));
+	c.callFunction("getPtr", "next", "fptr")(literal::i8(0));
       } c.endBlock();
 
       c.beginBlock("next"); {
@@ -33,7 +43,7 @@ int main() try {
     } c.endFunction();
 
 
-    auto getPtrType = TypeSystem::function(fooPtr, {i8});
+    auto getPtrType = ts::function(fooPtr)(i8);
     c.beginFunction("getPtr", getPtrType, {"x"}); {
 
       c.beginBlock("entry"); {
@@ -41,25 +51,25 @@ int main() try {
       } c.endBlock();
 
       c.beginBlock("true"); {
-	c.returnFromFunction(values::function_pointer(fooType, "foo1"));
+	c.returnFromFunction(literal::function_pointer(fooType, "foo1"));
       } c.endBlock();
 
       c.beginBlock("false"); {
-	c.returnFromFunction(values::function_pointer(fooType, "foo2"));
+	c.returnFromFunction(literal::function_pointer(fooType, "foo2"));
       } c.endBlock();
 
     } c.endFunction();
 
     c.beginFunction("foo1"); {
       c.beginBlock("entry"); {
-	c.writeOut(values::string("foo1"));
+	c.writeOut(literal::string("foo1"));
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();
 
     c.beginFunction("foo2"); {
       c.beginBlock("entry"); {
-	c.writeOut(values::string("foo2"));
+	c.writeOut(literal::string("foo2"));
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

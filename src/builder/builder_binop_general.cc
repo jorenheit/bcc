@@ -13,7 +13,7 @@ Expression Builder::opAssignImpl(Expression const &lhs, Expression const &rhs, S
   Slot const lhsBase = lhs.slot()->materialize(*this);
   Slot targetSlot = lhsBase;
   if (types::isPointer(lhs.type())) {
-    targetSlot = lhsBase.sub(TypeSystem::i16(), RuntimePointer::Offset);
+    targetSlot = lhsBase.sub(ts::i16(), RuntimePointer::Offset);
     stride = types::cast<types::PointerType>(lhs.type())->pointeeType()->size();
   }
   
@@ -32,7 +32,7 @@ Expression Builder::opAssignImpl(Expression const &lhs, Expression const &rhs, S
     (this->*spec.applyWithSlot)(targetSlot, operandSlot);
   }
   else {
-    int const delta = values::cast<types::IntegerType>(rhs.literal())->value();
+    int const delta = literal::cast<types::IntegerType>(rhs.literal())->value();
     (this->*spec.applyWithConst)(targetSlot, stride * delta);
   }
   
@@ -55,11 +55,11 @@ Expression Builder::opImpl(Expression const &lhs, Expression const &rhs, SpecTyp
   assert(opResult);
 
   if (lhs.isLiteral() && rhs.isLiteral()) {
-    int const x = values::cast<types::IntegerType>(lhs.literal())->value();
-    int const y = values::cast<types::IntegerType>(rhs.literal())->value();
+    int const x = literal::cast<types::IntegerType>(lhs.literal())->value();
+    int const y = literal::cast<types::IntegerType>(rhs.literal())->value();
     auto const result = spec.fold(x, y);
-    if (types::isI8(opResult.type))  return Expression{values::i8(result)};
-    if (types::isI16(opResult.type)) return Expression{values::i16(result)};
+    if (types::isI8(opResult.type))  return Expression{literal::i8(result)};
+    if (types::isI16(opResult.type)) return Expression{literal::i16(result)};
     std::unreachable();
   }
 

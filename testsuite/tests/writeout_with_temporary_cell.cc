@@ -5,7 +5,7 @@ TEST_BEGIN
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('A'));
+    c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

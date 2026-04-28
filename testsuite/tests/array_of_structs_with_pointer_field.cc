@@ -4,11 +4,11 @@
 
 TEST_BEGIN
 
-auto i8  = TypeSystem::i8();
-auto i8p = TypeSystem::pointer(i8);
+auto i8  = ts::i8();
+auto i8p = ts::pointer(i8);
 
-auto holder = c.defineStruct("Holder")("p", i8p);
-auto holders = TypeSystem::array(holder, 2);
+auto holder = ts::defineStruct("Holder")("p", i8p);
+auto holders = ts::array(holder, 2);
 
 c.beginFunction("main"); {
   c.declareLocal("arr", holders);
@@ -16,8 +16,8 @@ c.beginFunction("main"); {
   c.declareLocal("b", i8);
 
   c.beginBlock("entry"); {
-    c.assign("a", values::i8('A'));
-    c.assign("b", values::i8('B'));
+    c.assign("a", literal::i8('A'));
+    c.assign("b", literal::i8('B'));
 
     c.assign(c.structField(c.arrayElement("arr", 0), "p"), c.addressOf("a"));
     c.assign(c.structField(c.arrayElement("arr", 1), "p"), c.addressOf("b"));
@@ -33,7 +33,7 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 
-auto sig = TypeSystem::function(TypeSystem::voidT(), holders);
+auto sig = ts::function(ts::voidT())(holders);
 c.beginFunction("foo", sig, {"arr"}); {
   c.beginBlock("entry"); {
     auto p0 = c.structField(c.arrayElement("arr", 0), "p");
@@ -45,8 +45,8 @@ c.beginFunction("foo", sig, {"arr"}); {
     c.writeOut(d0);
     c.writeOut(d1);
 
-    c.assign(d0, values::i8('X'));
-    c.assign(d1, values::i8('Y'));
+    c.assign(d0, literal::i8('X'));
+    c.assign(d1, literal::i8('Y'));
 
     c.returnFromFunction();
   } c.endBlock();

@@ -6,18 +6,18 @@
 
 TEST_BEGIN
 
-auto voidT = TypeSystem::voidT();
-auto actionType = TypeSystem::function(voidT);
-auto actionPtr = TypeSystem::function_pointer(actionType);
-auto selectorType = TypeSystem::function(actionPtr);
-auto selectorPtr = TypeSystem::function_pointer(selectorType);
+auto voidT = ts::voidT();
+auto actionType = ts::function(voidT)();
+auto actionPtr = ts::function_pointer(actionType);
+auto selectorType = ts::function(actionPtr)();
+auto selectorPtr = ts::function_pointer(selectorType);
 
 c.beginFunction("main"); {
   c.declareLocal("selector", selectorPtr);
   c.declareLocal("action", actionPtr);
 
   c.beginBlock("entry"); {
-    c.assign("selector", values::function_pointer(selectorType, "selectA"));
+    c.assign("selector", literal::function_pointer(selectorType, "selectA"));
     c.callFunctionPointer("selector", "callA", "action")();
   } c.endBlock();
 
@@ -26,7 +26,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 
   c.beginBlock("selectB"); {
-    c.assign("selector", values::function_pointer(selectorType, "selectB"));
+    c.assign("selector", literal::function_pointer(selectorType, "selectB"));
     c.callFunctionPointer("selector", "callB", "action")();
   } c.endBlock();
 
@@ -41,28 +41,28 @@ c.beginFunction("main"); {
 
 c.beginFunction("selectA", selectorType); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('S'));
-    c.returnFromFunction(values::function_pointer(actionType, "printA"));
+    c.writeOut(literal::i8('S'));
+    c.returnFromFunction(literal::function_pointer(actionType, "printA"));
   } c.endBlock();
 } c.endFunction();
 
 c.beginFunction("selectB", selectorType); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('T'));
-    c.returnFromFunction(values::function_pointer(actionType, "printB"));
+    c.writeOut(literal::i8('T'));
+    c.returnFromFunction(literal::function_pointer(actionType, "printB"));
   } c.endBlock();
 } c.endFunction();
 
 c.beginFunction("printA"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('A'));
+    c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
 c.beginFunction("printB"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('B'));
+    c.writeOut(literal::i8('B'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

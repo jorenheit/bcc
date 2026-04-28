@@ -18,7 +18,7 @@ Slot Builder::addressOfSlot(Slot const &slot) {
   assert(slot.kind != Slot::Temp && "taking address of temp");
 
   types::TypeHandle const pointeeType = slot.type;
-  types::TypeHandle const pointerType = TypeSystem::pointer(pointeeType);
+  types::TypeHandle const pointerType = ts::pointer(pointeeType);
 
   int offset = slot.offset;
   bool localPointer = true;
@@ -61,7 +61,7 @@ void Builder::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, 
   pushPtr();
 
   // TODO: use constructive version when I have it
-  Slot const scaledIndexSlot = getTemp(TypeSystem::i8());
+  Slot const scaledIndexSlot = getTemp(ts::i8());
   assignSlot(scaledIndexSlot, indexSlot);
   moveTo(scaledIndexSlot, MacroCell::Value0);
   mulConst(elementType->size(),
@@ -104,7 +104,7 @@ void Builder::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot
 
   pushPtr();
 
-  Slot const scaledIndexSlot = getTemp(TypeSystem::i8());
+  Slot const scaledIndexSlot = getTemp(ts::i8());
   assignSlot(scaledIndexSlot, indexSlot);
   moveTo(scaledIndexSlot, MacroCell::Value0);
   mulConst(elementType->size(),
@@ -193,10 +193,10 @@ void Builder::assignSlot(Slot const &dest, Slot const &src) {
   popPtr();
 }
 
-void Builder::assignSlot(Slot const &slot, values::Literal const &val) {
+void Builder::assignSlot(Slot const &slot, literal::Literal const &val) {
   pushPtr();
   if (types::isInteger(slot.type)) {
-    int const x = values::cast<types::IntegerType>(val)->value();
+    int const x = literal::cast<types::IntegerType>(val)->value();
     moveTo(slot, MacroCell::Value0);
     setToValue(x & 0xff);
     moveTo(slot, MacroCell::Value1);    
@@ -212,7 +212,7 @@ void Builder::assignSlot(Slot const &slot, values::Literal const &val) {
     for (int i = 0; i != types::cast<types::ArrayLike>(val->type())->length(); ++i) {
       Expression elem = arrayElement(slot, i);
       assert(elem.hasSlot());
-      elem.slot()->write(*this, values::cast<types::ArrayLike>(val)->element(i));
+      elem.slot()->write(*this, literal::cast<types::ArrayLike>(val)->element(i));
     }
   }
   else if (types::isStruct(slot.type)) {
@@ -220,11 +220,11 @@ void Builder::assignSlot(Slot const &slot, values::Literal const &val) {
     for (int i = 0; i != types::cast<types::StructType>(val->type())->fieldCount(); ++i) {
       Expression field = structField(slot, i);
       assert(field.hasSlot());
-      field.slot()->write(*this, values::cast<types::StructType>(val)->field(i));
+      field.slot()->write(*this, literal::cast<types::StructType>(val)->field(i));
     }
   }
   else if (types::isFunctionPointer(slot.type)) {
-    std::string const &functionName = values::cast<types::FunctionPointerType>(val)->functionName();
+    std::string const &functionName = literal::cast<types::FunctionPointerType>(val)->functionName();
 
     moveTo(slot, MacroCell::Value0); zeroCell();
     emit<primitive::ChangeBy>([functionName](primitive::Context const &ctx) -> int {
@@ -409,9 +409,6 @@ void Builder::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot cons
   syncGlobalToLocal(true);
 }
 
-
-
-// TODO: factor common code with write
 void Builder::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
   assert(types::isPointer(ptrSlot.type));
   assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
@@ -446,7 +443,7 @@ void Builder::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefS
     derefSlot.type->usesValue1() ? Payload::Width::Double : Payload::Width::Single
   };
 
-  seek(MacroCell::FrameMarker, primitive::Left, payload, true); // TODO: this can become false again now that the padding was added to the global frame
+  seek(MacroCell::FrameMarker, primitive::Left, payload, false);
   seek(MacroCell::SeekMarker, primitive::Right, payload, false);
   resetSeekMarker();
   

@@ -3,19 +3,19 @@
 
 TEST_BEGIN
 
-auto pairT = c.defineStruct("Pair16")("x", TypeSystem::i16(),
-                                    "y", TypeSystem::i16());
+auto pairT = ts::defineStruct("Pair16")("x", ts::i16(),
+                                    "y", ts::i16());
 
 c.beginFunction("main"); {
   c.declareLocal("p", pairT);
-  c.declareLocal("z", TypeSystem::i16());
+  c.declareLocal("z", ts::i16());
 
   c.beginBlock("entry"); {
     auto x = c.structField("p", "x");
     auto y = c.structField("p", "y");
 
-    c.assign(x, values::i16(CAT('G', 'A')));
-    c.assign(y, values::i16(3));
+    c.assign(x, literal::i16(CAT('G', 'A')));
+    c.assign(y, literal::i16(3));
 
     c.writeOut(x);              // GA
     c.subAssign(x, y);          // p.x -= p.y

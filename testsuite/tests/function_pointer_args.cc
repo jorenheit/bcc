@@ -4,24 +4,24 @@
 
 TEST_BEGIN
 
-auto i8 = TypeSystem::i8();
-auto voidT = TypeSystem::voidT();
-auto fnType = TypeSystem::function(voidT, i8);
-auto fnPtr = TypeSystem::function_pointer(fnType);
+auto i8 = ts::i8();
+auto voidT = ts::voidT();
+auto fnType = ts::function(voidT)(i8);
+auto fnPtr = ts::function_pointer(fnType);
 
 c.beginFunction("main"); {
   c.declareLocal("fptr", fnPtr);
   c.declareLocal("v", i8);
 
   c.beginBlock("entry"); {
-    c.assign("v", values::i8('A'));
-    c.assign("fptr", values::function_pointer(fnType, "leftEcho"));
+    c.assign("v", literal::i8('A'));
+    c.assign("fptr", literal::function_pointer(fnType, "leftEcho"));
     c.callFunctionPointer("fptr", "second")("v");
   } c.endBlock();
 
   c.beginBlock("second"); {
-    c.assign("v", values::i8('B'));
-    c.assign("fptr", values::function_pointer(fnType, "rightEcho"));
+    c.assign("v", literal::i8('B'));
+    c.assign("fptr", literal::function_pointer(fnType, "rightEcho"));
     c.callFunctionPointer("fptr", "end")("v");
   } c.endBlock();
 
@@ -32,7 +32,7 @@ c.beginFunction("main"); {
 
 c.beginFunction("leftEcho", fnType, {"x"}); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('L'));
+    c.writeOut(literal::i8('L'));
     c.writeOut("x");
     c.returnFromFunction();
   } c.endBlock();
@@ -40,7 +40,7 @@ c.beginFunction("leftEcho", fnType, {"x"}); {
 
 c.beginFunction("rightEcho", fnType, {"x"}); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('R'));
+    c.writeOut(literal::i8('R'));
     c.writeOut("x");
     c.returnFromFunction();
   } c.endBlock();

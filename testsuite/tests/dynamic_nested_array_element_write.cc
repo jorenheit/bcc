@@ -3,29 +3,27 @@
 
 TEST_BEGIN
 
-auto array2 = TypeSystem::array(TypeSystem::i8(), 2);
-auto matrix2x2 = TypeSystem::array(array2, 2);
+auto array2 = ts::array(ts::i8(), 2);
+auto matrix2x2 = ts::array(array2, 2);
 
 c.beginFunction("main"); {
   c.declareLocal("m", matrix2x2);
-  c.declareLocal("row", TypeSystem::i8());
-  c.declareLocal("col", TypeSystem::i8());
+  c.declareLocal("row", ts::i8());
+  c.declareLocal("col", ts::i8());
 
   c.beginBlock("entry"); {
-    auto ab = values::array(TypeSystem::i8(),
-			    values::i8('A'),
-			    values::i8('B'));
-    auto cd = values::array(TypeSystem::i8(),
-			    values::i8('C'),
-			    values::i8('D'));
-    c.assign("m", values::array(array2, ab, cd));
+    auto ab = literal::array(ts::i8())(literal::i8('A'),
+					      literal::i8('B'));
+    auto cd = literal::array(ts::i8())(literal::i8('C'),
+					      literal::i8('D'));
+    c.assign("m", literal::array(array2)(ab, cd));
 
-    c.assign("row", values::i8(1));
-    c.assign("col", values::i8(0));
+    c.assign("row", literal::i8(1));
+    c.assign("col", literal::i8(0));
 
     auto rowRef = c.arrayElement("m", "row");
     auto cellRef = c.arrayElement(rowRef, "col");
-    c.assign(cellRef, values::i8('X'));
+    c.assign(cellRef, literal::i8('X'));
 
     c.writeOut("m");
     c.returnFromFunction();

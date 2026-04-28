@@ -5,24 +5,24 @@
 
 TEST_BEGIN
 
-auto voidT = TypeSystem::voidT();
-auto callbackType = TypeSystem::function(voidT);
-auto callbackPtr = TypeSystem::function_pointer(callbackType);
-auto outerType = TypeSystem::function(voidT, callbackPtr);
-auto outerPtr = TypeSystem::function_pointer(outerType);
+auto voidT = ts::voidT();
+auto callbackType = ts::function(voidT)();
+auto callbackPtr = ts::function_pointer(callbackType);
+auto outerType = ts::function(voidT)(callbackPtr);
+auto outerPtr = ts::function_pointer(outerType);
 
 c.beginFunction("main"); {
   c.declareLocal("outer", outerPtr);
   c.declareLocal("callback", callbackPtr);
 
   c.beginBlock("entry"); {
-    c.assign("outer", values::function_pointer(outerType, "callCallback"));
-    c.assign("callback", values::function_pointer(callbackType, "printX"));
+    c.assign("outer", literal::function_pointer(outerType, "callCallback"));
+    c.assign("callback", literal::function_pointer(callbackType, "printX"));
     c.callFunctionPointer("outer", "second")("callback");
   } c.endBlock();
 
   c.beginBlock("second"); {
-    c.assign("callback", values::function_pointer(callbackType, "printY"));
+    c.assign("callback", literal::function_pointer(callbackType, "printY"));
     c.callFunctionPointer("outer", "end")("callback");
   } c.endBlock();
 
@@ -43,14 +43,14 @@ c.beginFunction("callCallback", outerType, {"callback"}); {
 
 c.beginFunction("printX"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('X'));
+    c.writeOut(literal::i8('X'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
 c.beginFunction("printY"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('Y'));
+    c.writeOut(literal::i8('Y'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

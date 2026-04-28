@@ -3,15 +3,15 @@
 
 TEST_BEGIN
 
-auto array3 = TypeSystem::array(TypeSystem::i16(), 3);
+auto array3 = ts::array(ts::i16(), 3);
 
 c.beginFunction("main"); {
   c.declareLocal("arr", array3);
-  c.declareLocal("z", TypeSystem::i16());
+  c.declareLocal("z", ts::i16());
 
   c.beginBlock("entry"); {
-    c.assign(c.arrayElement("arr", 0), values::i16(CAT('G', 'A')));
-    c.assign(c.arrayElement("arr", 1), values::i16(3));
+    c.assign(c.arrayElement("arr", 0), literal::i16(CAT('G', 'A')));
+    c.assign(c.arrayElement("arr", 1), literal::i16(3));
 
     auto x = c.arrayElement("arr", 0);
     auto y = c.arrayElement("arr", 1);

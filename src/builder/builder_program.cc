@@ -16,7 +16,7 @@ void Builder::begin(API_FUNC) {
   _state.begun = true;
 
   // Globals should start at same frame offset as locals for consistency -> pad with raw
-  declareGlobal("__pad__", TypeSystem::raw(FrameLayout::ReturnValueStart)); 
+  declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart)); 
 }
 
 void Builder::end(API_FUNC) {
@@ -82,7 +82,7 @@ void Builder::beginFunction(std::string const &name, types::TypeHandle type, std
   auto fType = types::cast<types::FunctionType>(type);
   API_REQUIRE_PARAM_COUNT_MATCHES_FUNCTION(fType, params);
   
-  _state.allowGlobalDefinitions = false;
+  _state.allowGlobalDeclarations = false;
   _currentFunction = &_program.createFunction(name, fType);  
 
   std::unordered_set<std::string> paramSet;
@@ -95,7 +95,7 @@ void Builder::beginFunction(std::string const &name, types::TypeHandle type, std
 }
 
 void Builder::beginFunction(std::string const &name, API_FUNC) {
-  beginFunction(name, TypeSystem::function(TypeSystem::voidT()), std::vector<std::string>{});
+  beginFunction(name, ts::function(ts::voidT())(), std::vector<std::string>{});
 }
 
 void Builder::beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC) {
@@ -148,7 +148,6 @@ void Builder::beginBlock(std::string name, API_FUNC) {
 
   _currentBlock = &block;
   resetOrigin();
-  _nextBlockIsSet = false;
 
   setTargetSequence(&block.code);
   blockOpen();
@@ -204,7 +203,6 @@ void Builder::setNextBlockImpl(std::string const &f, std::string const &b) {
     return (ctx.getBlockIndex(f, b) >> 8) & 0xff;
   });
   
-  _nextBlockIsSet = true;
   popPtr();
 }
 
@@ -213,7 +211,6 @@ void Builder::setNextBlockImpl(int index) {
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
   popPtr();
-  _nextBlockIsSet = true;
 }
 
 void Builder::setNextBlockImpl(Expression const &obj) {
@@ -237,8 +234,6 @@ void Builder::setNextBlockImpl(Expression const &obj) {
   moveTo(FrameLayout::TargetBlock);
   emit<primitive::Out>();
   popPtr();
-  
-  _nextBlockIsSet = true;  
 }
 
 

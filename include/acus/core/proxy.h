@@ -6,16 +6,15 @@
 #include <optional>
 #include <variant>
 #include "acus/core/slot.h"
-#include "acus/types/values.h"
+#include "acus/types/literal.h"
 
 namespace acus {
   class Builder;
 }
 
-
 namespace acus::proxy {
 
-  namespace Impl {
+  namespace impl {
     class Base;
     using BasePtr = std::shared_ptr<Base>;
 
@@ -24,8 +23,6 @@ namespace acus::proxy {
       SlotProxy(Slot const &slot);
     };
 
-    // TODO: all members are const now, even when they semantically aren't const
-    // (modify the represented slot). Should they become non-const?
     class Base {
       types::TypeHandle _type;
     public:
@@ -36,7 +33,7 @@ namespace acus::proxy {
       virtual std::string name() const = 0;
       virtual Slot materialize(Builder &c) const = 0;
       virtual void write(Builder &c, SlotProxy src) const = 0;
-      virtual void write(Builder &c, values::Literal src) const = 0;
+      virtual void write(Builder &c, acus::literal::Literal src) const = 0;
       virtual Slot addressOf(Builder &c) const = 0;
       virtual bool direct() const = 0;
     };
@@ -49,7 +46,7 @@ namespace acus::proxy {
       Direct(Slot const &slot): Base(slot.type), _slot(slot) {}
       virtual Slot materialize(Builder&) const override;
       virtual void write(Builder &c, SlotProxy src) const override;
-      virtual void write(Builder &c, values::Literal src) const override;      
+      virtual void write(Builder &c, acus::literal::Literal src) const override;      
       virtual bool direct() const override { return true; }
       virtual Slot addressOf(Builder &c) const override;
 
@@ -99,7 +96,7 @@ namespace acus::proxy {
 	  : writeImpl(c, std::get<SlotProxy>(_index), src);
       }
 
-      virtual void write(Builder &c, values::Literal src) const override {
+      virtual void write(Builder &c, acus::literal::Literal src) const override {
 	return std::holds_alternative<int>(_index)
 	  ? writeImpl(c, std::get<int>(_index), src)
 	  : writeImpl(c, std::get<SlotProxy>(_index), src);
@@ -113,9 +110,9 @@ namespace acus::proxy {
       Slot materializeImpl(Builder &c, SlotProxy index) const;
 
       void writeImpl(Builder &c, int index, SlotProxy src) const;
-      void writeImpl(Builder &c, int index, values::Literal) const;
+      void writeImpl(Builder &c, int index, acus::literal::Literal) const;
       void writeImpl(Builder &c, SlotProxy index, SlotProxy src) const;
-      void writeImpl(Builder &c, SlotProxy index, values::Literal) const;
+      void writeImpl(Builder &c, SlotProxy index, acus::literal::Literal) const;
 
       Slot getElementSlot(Slot const &arrSlot, int index) const;
     }; // ArrayElement
@@ -139,7 +136,7 @@ namespace acus::proxy {
 
       virtual Slot materialize(Builder &c) const override;
       virtual void write(Builder &c, SlotProxy src) const override;
-      virtual void write(Builder &c, values::Literal src) const override;
+      virtual void write(Builder &c, acus::literal::Literal src) const override;
       virtual Slot addressOf(Builder &c) const override;
 
     private:
@@ -162,41 +159,40 @@ namespace acus::proxy {
       
       virtual Slot materialize(Builder &c) const;
       virtual void write(Builder &c, SlotProxy src) const;;
-      virtual void write(Builder &c, values::Literal src) const;
+      virtual void write(Builder &c, acus::literal::Literal src) const;
       virtual Slot addressOf(Builder &c) const override;      
       virtual bool direct() const { return false; }
     };
     
 
     
-  } // namespace Impl
+  } // namespace impl
       
-  using SlotProxy = Impl::SlotProxy;
+  using SlotProxy = impl::SlotProxy;
   
   inline SlotProxy direct(Slot const &slot) {
-    return SlotProxy(std::make_shared<Impl::Direct>(slot));
+    return SlotProxy(std::make_shared<impl::Direct>(slot));
   }
   
   inline SlotProxy arrayElement(SlotProxy arr, int index) {
-    return SlotProxy(std::make_shared<Impl::ArrayElement>(std::move(arr), index));
+    return SlotProxy(std::make_shared<impl::ArrayElement>(std::move(arr), index));
   }
 
   inline SlotProxy arrayElement(SlotProxy arr, SlotProxy index) {
-    return SlotProxy(std::make_shared<Impl::ArrayElement>(std::move(arr), std::move(index)));
+    return SlotProxy(std::make_shared<impl::ArrayElement>(std::move(arr), std::move(index)));
   }  
 
   inline SlotProxy structField(SlotProxy obj, std::string const &fieldName) {
-    return SlotProxy(std::make_shared<Impl::StructField>(std::move(obj), fieldName));
+    return SlotProxy(std::make_shared<impl::StructField>(std::move(obj), fieldName));
   }
 
   inline SlotProxy dereferencedPointer(SlotProxy ptr) {
-    return SlotProxy(std::make_shared<Impl::DereferencedPointer>(std::move(ptr)));
+    return SlotProxy(std::make_shared<impl::DereferencedPointer>(std::move(ptr)));
   }
-  
   
 } // namespace acus::proxy
   
 namespace acus {
-  using SlotProxy = proxy::Impl::SlotProxy;
+  using SlotProxy = proxy::impl::SlotProxy;
 }
   

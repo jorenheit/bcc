@@ -5,18 +5,18 @@
 TEST_BEGIN
 
 c.beginFunction("main"); {
-  c.declareLocal("x", TypeSystem::i16());
-  c.declareLocal("y", TypeSystem::i16());
-  c.declareLocal("z", TypeSystem::i16());
+  c.declareLocal("x", ts::i16());
+  c.declareLocal("y", ts::i16());
+  c.declareLocal("z", ts::i16());
 
   c.beginBlock("entry"); {
-    c.assign("x", values::i16(0x7070));
-    c.assign("y", values::i16(0x5050));
+    c.assign("x", literal::i16(0x7070));
+    c.assign("y", literal::i16(0x5050));
 
     c.modAssign("x", "y");           // 0x7070 % 0x5050 = 0x2020 -> two spaces
     c.writeOut("x");                 // "  "
 
-    c.assign("x", values::i16(0x7171));
+    c.assign("x", literal::i16(0x7171));
     c.assign("z", c.mod("x", "y"));  // 0x7171 % 0x5050 = 0x2121 -> !!
     c.writeOut("z");                 // !!
 

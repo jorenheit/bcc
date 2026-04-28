@@ -2,7 +2,7 @@
 // Expect: ABCDABCD
 
 TEST_BEGIN
-auto array2 = TypeSystem::array(TypeSystem::i16(), 2);
+auto array2 = ts::array(ts::i16(), 2);
 
 c.beginFunction("main"); {
   c.declareLocal("x", array2);
@@ -11,8 +11,8 @@ c.beginFunction("main"); {
     auto x0 = c.arrayElement("x", 0);
     auto x1 = c.arrayElement("x", 1);
 
-    c.assign(x0, values::i16(CAT('A', 'B')));
-    c.assign(x1, values::i16(CAT('C', 'D')));
+    c.assign(x0, literal::i16(CAT('A', 'B')));
+    c.assign(x1, literal::i16(CAT('C', 'D')));
 
     c.writeOut("x");
     c.callFunction("foo", "after_foo")("x");
@@ -23,7 +23,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::voidT(), array2);
+auto fooSig = ts::function(ts::voidT())(array2);
 c.beginFunction("foo", fooSig, {"x"}); {
   c.beginBlock("entry"); {
     c.writeOut("x");

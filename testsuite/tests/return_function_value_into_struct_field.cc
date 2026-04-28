@@ -3,8 +3,8 @@
 
 TEST_BEGIN
 
-auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
-				     "y", TypeSystem::i8());
+auto point = ts::defineStruct("Point")("x", ts::i8(),
+				     "y", ts::i8());
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);
@@ -13,7 +13,7 @@ c.beginFunction("main"); {
     auto x = c.structField("s", "x");
     auto y = c.structField("s", "y");
 
-    c.assign(x, values::i8('A'));
+    c.assign(x, literal::i8('A'));
     c.callFunction("makeZ", "after_makeZ", y)();
   } c.endBlock();
 
@@ -23,10 +23,10 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::i8());
+auto sig = ts::function(ts::i8())();
 c.beginFunction("makeZ", sig); {
   c.beginBlock("entry"); {
-    c.returnFromFunction(values::i8('Z'));
+    c.returnFromFunction(literal::i8('Z'));
   } c.endBlock();
 } c.endFunction();
 

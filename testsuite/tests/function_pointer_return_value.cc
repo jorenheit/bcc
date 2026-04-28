@@ -4,23 +4,23 @@
 
 TEST_BEGIN
 
-auto i8 = TypeSystem::i8();
-auto fnType = TypeSystem::function(i8, i8);
-auto fnPtr = TypeSystem::function_pointer(fnType);
+auto i8 = ts::i8();
+auto fnType = ts::function(i8)(i8);
+auto fnPtr = ts::function_pointer(fnType);
 
 c.beginFunction("main"); {
   c.declareLocal("fptr", fnPtr);
   c.declareLocal("r", i8);
 
   c.beginBlock("entry"); {
-    c.assign("fptr", values::function_pointer(fnType, "inc"));
-    c.callFunctionPointer("fptr", "second", "r")(values::i8('A'));
+    c.assign("fptr", literal::function_pointer(fnType, "inc"));
+    c.callFunctionPointer("fptr", "second", "r")(literal::i8('A'));
   } c.endBlock();
 
   c.beginBlock("second"); {
     c.writeOut("r");
-    c.assign("fptr", values::function_pointer(fnType, "dec"));
-    c.callFunctionPointer("fptr", "end", "r")(values::i8('B'));
+    c.assign("fptr", literal::function_pointer(fnType, "dec"));
+    c.callFunctionPointer("fptr", "end", "r")(literal::i8('B'));
   } c.endBlock();
 
   c.beginBlock("end"); {
@@ -31,13 +31,13 @@ c.beginFunction("main"); {
 
 c.beginFunction("inc", fnType, {"x"}); {
   c.beginBlock("entry"); {
-    c.returnFromFunction(c.add("x", values::i8(1)));
+    c.returnFromFunction(c.add("x", literal::i8(1)));
   } c.endBlock();
 } c.endFunction();
 
 c.beginFunction("dec", fnType, {"x"}); {
   c.beginBlock("entry"); {
-    c.returnFromFunction(c.sub("x", values::i8(1)));
+    c.returnFromFunction(c.sub("x", literal::i8(1)));
   } c.endBlock();
 } c.endFunction();
 

@@ -4,8 +4,8 @@
 
 TEST_BEGIN
 
-auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
-				     "y", TypeSystem::i8());
+auto point = ts::defineStruct("Point")("x", ts::i8(),
+				     "y", ts::i8());
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);
@@ -15,8 +15,8 @@ c.beginFunction("main"); {
     auto x = c.structField("s", "x");
     auto y = c.structField("s", "y");
       
-    c.assign(x, values::i8('A'));
-    c.assign(y, values::i8('B'));
+    c.assign(x, literal::i8('A'));
+    c.assign(y, literal::i8('B'));
 
     c.writeOut(x);
     c.writeOut(y);

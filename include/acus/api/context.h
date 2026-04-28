@@ -6,15 +6,16 @@ namespace acus {
   class Builder;
 }
 
-namespace acus::api {
+namespace acus::api::impl {
 
   class Context {
-    Builder const *_builder;
+    Builder const *_builder = nullptr;
     std::string _name;
     std::source_location _loc;
     
   public:
     Context() = default;
+    Context(std::string const &name, std::source_location loc);    
     Context(Builder const &c, std::string const &name, std::source_location loc);
 
     bool programStarted() const;
@@ -33,4 +34,4 @@ namespace acus::api {
     inline auto column() const { return _loc.column(); }
   };
   
-} // namespace api
+} // namespace api::impl

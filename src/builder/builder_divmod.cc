@@ -18,7 +18,7 @@ void Builder::divSlotByConst(Slot const &lhs, int denom) {
 
   pushPtr();
   if (lhs.type->usesValue1()) {
-    Slot const tmp = getTemp(TypeSystem::raw(2));
+    Slot const tmp = getTemp(ts::raw(2));
     moveTo(lhs, MacroCell::Value0);    
     divMod16Const(denom, Cell{lhs, MacroCell::Value1},
 		  Cell{lhs, MacroCell::Payload0},
@@ -37,7 +37,7 @@ void Builder::divSlotByConst(Slot const &lhs, int denom) {
     zeroCell();
     
   } else {
-    Slot const tmp = getTemp(TypeSystem::raw(1));
+    Slot const tmp = getTemp(ts::raw(1));
     moveTo(lhs, MacroCell::Value0);    
     divModConst(denom, Cell{lhs, MacroCell::Scratch0},
 		Temps<5>::select(lhs, MacroCell::Scratch1,
@@ -102,7 +102,7 @@ void Builder::modSlotByConst(Slot const &lhs, int denom) {
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   if (lhs.type->usesValue1()) {
-    Slot const tmp = getTemp(TypeSystem::raw(2));
+    Slot const tmp = getTemp(ts::raw(2));
     divMod16Const(denom, Cell{lhs, MacroCell::Value1},
 		  Cell{lhs, MacroCell::Payload0},
 		  Cell{lhs, MacroCell::Payload1},
@@ -120,7 +120,7 @@ void Builder::modSlotByConst(Slot const &lhs, int denom) {
     moveTo(lhs, MacroCell::Payload1);
     moveField(Cell{lhs, MacroCell::Value1});
   } else {
-    Slot const tmp = getTemp(TypeSystem::raw(1));
+    Slot const tmp = getTemp(ts::raw(1));
     divModConst(denom, Cell{lhs, MacroCell::Payload0},
 		Temps<5>::select(lhs, MacroCell::Scratch0,
 				 lhs, MacroCell::Scratch1,

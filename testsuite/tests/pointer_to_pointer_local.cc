@@ -3,9 +3,9 @@
 
 TEST_BEGIN
 
-auto i8   = TypeSystem::i8();
-auto i8p  = TypeSystem::pointer(i8);
-auto i8pp = TypeSystem::pointer(i8p);
+auto i8   = ts::i8();
+auto i8p  = ts::pointer(i8);
+auto i8pp = ts::pointer(i8p);
 
 c.beginFunction("main"); {
   c.declareLocal("x", i8);
@@ -13,7 +13,7 @@ c.beginFunction("main"); {
   c.declareLocal("pp", i8pp);
 
   c.beginBlock("entry"); {
-    c.assign("x", values::i8('A'));
+    c.assign("x", literal::i8('A'));
     c.assign("p", c.addressOf("x"));
     c.assign("pp", c.addressOf("p"));
 
@@ -22,7 +22,7 @@ c.beginFunction("main"); {
 
     c.writeOut(xFromPp);                 // A
 
-    c.assign(xFromPp, values::i8('Z'));
+    c.assign(xFromPp, literal::i8('Z'));
 
     c.writeOut("x");                     // Z
     c.writeOut(c.dereferencePointer("p"));// Z

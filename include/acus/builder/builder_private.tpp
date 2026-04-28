@@ -31,6 +31,25 @@ inline void Builder::syncLocalToGlobal(bool onlyAliasedGlobals) {
   syncGlobals<&Builder::putGlobal>(onlyAliasedGlobals);
 }
 
+
+inline std::string Builder::defaultOpenTag() {
+  static int count = 0;
+  return std::string("open_loop_") + std::to_string(count++);
+} 
+
+inline std::string Builder::defaultCloseTag() {
+  static int count = 0;
+  return std::string("close_loop_") + std::to_string(count++);
+}
+
+inline int Builder::getFieldIndex(int offset, int field) {
+  return offset * MacroCell::FieldCount + field;
+}
+
+inline int Builder::getFieldIndex(Cell cell) {
+  return getFieldIndex(cell.offset, cell.field);
+}
+
 template <typename Primitive, typename ... Args>
 void Builder::emit(Args&& ... args) {
   assert(_currentSeq != nullptr);

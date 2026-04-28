@@ -2,8 +2,8 @@
 // Expected: "QR"
 
 TEST_BEGIN
-auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
-				     "y", TypeSystem::i8());
+auto point = ts::defineStruct("Point")("x", ts::i8(),
+				     "y", ts::i8());
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);
@@ -18,15 +18,15 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 			    
-auto sig = TypeSystem::function(point);
+auto sig = ts::function(point)();
 c.beginFunction("makePoint", sig); {
   c.declareLocal("p", point);
   c.beginBlock("entry"); {
     auto x = c.structField("p", "x");
     auto y = c.structField("p", "y");
 
-    c.assign(x, values::i8('Q'));
-    c.assign(y, values::i8('R'));
+    c.assign(x, literal::i8('Q'));
+    c.assign(y, literal::i8('R'));
     c.returnFromFunction("p");
   } c.endBlock();
 } c.endFunction();

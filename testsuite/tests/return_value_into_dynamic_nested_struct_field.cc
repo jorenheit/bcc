@@ -3,20 +3,20 @@
 
 TEST_BEGIN
 
-auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
-				     "y", TypeSystem::i8());
-auto pointArray2 = TypeSystem::array(point, 2);
+auto point = ts::defineStruct("Point")("x", ts::i8(),
+				     "y", ts::i8());
+auto pointArray2 = ts::array(point, 2);
 
 c.beginFunction("main"); {
   c.declareLocal("pts", pointArray2);
-  c.declareLocal("idx", TypeSystem::i8());
+  c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    auto p0 = values::structT(point, values::i8('M'), values::i8('N'));
-    auto p1 = values::structT(point, values::i8('O'), values::i8('P'));
-    c.assign("pts", values::array(point, p0, p1));
+    auto p0 = literal::structT(point)(literal::i8('M'), literal::i8('N'));
+    auto p1 = literal::structT(point)(literal::i8('O'), literal::i8('P'));
+    c.assign("pts", literal::array(point)(p0, p1));
 
-    c.assign("idx", values::i8(1));
+    c.assign("idx", literal::i8(1));
 
     auto selectedPoint = c.arrayElement("pts", "idx");
     auto dest = c.structField(selectedPoint, "y");
@@ -29,10 +29,10 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::i8());
+auto sig = ts::function(ts::i8())();
 c.beginFunction("makeQ", sig); {
   c.beginBlock("entry"); {
-    c.returnFromFunction(values::i8('Q'));
+    c.returnFromFunction(literal::i8('Q'));
   } c.endBlock();
 } c.endFunction();
 

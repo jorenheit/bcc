@@ -3,10 +3,10 @@
 
 TEST_BEGIN
 c.beginFunction("main"); {
-  c.declareLocal("r", TypeSystem::i8());
+  c.declareLocal("r", ts::i8());
 
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo", "r")(values::i8('Z'));
+    c.callFunction("foo", "after_foo", "r")(literal::i8('Z'));
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -15,9 +15,9 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::i8(), TypeSystem::i8());
+auto fooSig = ts::function(ts::i8())(ts::i8());
 c.beginFunction("foo", fooSig, {"x"}); {
-  c.declareLocal("tmp", TypeSystem::i8());
+  c.declareLocal("tmp", ts::i8());
 
   c.beginBlock("entry"); {
     c.callFunction("bar", "after_bar", "tmp")("x");
@@ -28,7 +28,7 @@ c.beginFunction("foo", fooSig, {"x"}); {
   } c.endBlock();
 } c.endFunction();
 
-auto barSig = TypeSystem::function(TypeSystem::i8(), TypeSystem::i8());
+auto barSig = ts::function(ts::i8())(ts::i8());
 c.beginFunction("bar", barSig, {"y"}); {
   c.beginBlock("entry"); {
     c.returnFromFunction("y");

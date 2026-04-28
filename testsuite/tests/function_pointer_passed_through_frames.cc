@@ -4,16 +4,16 @@
 
 TEST_BEGIN
 
-auto voidT = TypeSystem::voidT();
-auto actionType = TypeSystem::function(voidT);
-auto actionPtr = TypeSystem::function_pointer(actionType);
-auto passType = TypeSystem::function(voidT, actionPtr);
+auto voidT = ts::voidT();
+auto actionType = ts::function(voidT)();
+auto actionPtr = ts::function_pointer(actionType);
+auto passType = ts::function(voidT)(actionPtr);
 
 c.beginFunction("main"); {
   c.declareLocal("fp", actionPtr);
 
   c.beginBlock("entry"); {
-    c.assign("fp", values::function_pointer(actionType, "printZ"));
+    c.assign("fp", literal::function_pointer(actionType, "printZ"));
     c.callFunction("pass1", "end")("fp");
   } c.endBlock();
 
@@ -54,7 +54,7 @@ c.beginFunction("pass3", passType, {"fp"}); {
 
 c.beginFunction("printZ"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('Z'));
+    c.writeOut(literal::i8('Z'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

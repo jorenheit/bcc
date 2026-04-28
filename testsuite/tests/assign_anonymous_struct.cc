@@ -2,16 +2,15 @@
 // Expected: "AB"
 
 TEST_BEGIN
-auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
-				     "y", TypeSystem::i8());
+auto point = ts::defineStruct("Point")("x", ts::i8(),
+				     "y", ts::i8());
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);
 
   c.beginBlock("entry"); {
-    c.assign("s", values::structT(point,
-				  values::i8('A'),
-				  values::i8('B')));
+    c.assign("s", literal::structT(point)(literal::i8('A'),
+					 literal::i8('B')));
     c.writeOut("s");
     c.returnFromFunction();
   } c.endBlock();

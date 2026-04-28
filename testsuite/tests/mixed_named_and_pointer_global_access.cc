@@ -5,8 +5,8 @@
 
 TEST_BEGIN
 
-auto i8  = TypeSystem::i8();
-auto i8p = TypeSystem::pointer(i8);
+auto i8  = ts::i8();
+auto i8p = ts::pointer(i8);
 
 c.declareGlobal("g", i8);
 
@@ -15,7 +15,7 @@ c.beginFunction("main"); {
   c.declareLocal("p", i8p);
 
   c.beginBlock("entry"); {
-    c.assign("g", values::i8('A'));
+    c.assign("g", literal::i8('A'));
     c.assign("p", c.addressOf("g"));
 
     c.callFunction("foo", "after")("p");
@@ -27,13 +27,13 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::voidT(), i8p);
+auto sig = ts::function(ts::voidT())(i8p);
 c.beginFunction("foo", sig, {"p"}); {
   c.referGlobals({"g"});
   c.beginBlock("entry"); {
     auto pDeref = c.dereferencePointer("p");
     c.writeOut(pDeref);
-    c.assign(pDeref, values::i8('X'));
+    c.assign(pDeref, literal::i8('X'));
     c.writeOut("g");
     c.returnFromFunction();
   } c.endBlock();

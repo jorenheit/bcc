@@ -3,8 +3,8 @@
 
 TEST_BEGIN
 
-types::TypeHandle i8 = TypeSystem::i8();
-types::TypeHandle i8p = TypeSystem::pointer(TypeSystem::i8());
+types::TypeHandle i8 = ts::i8();
+types::TypeHandle i8p = ts::pointer(ts::i8());
   
 
 c.declareGlobal("g", i8);
@@ -16,13 +16,13 @@ c.beginFunction("main"); {
    
   c.beginBlock("entry"); {
     c.assign("pg", c.addressOf("g")); 
-    c.assign("g", values::i8('G'));
-    c.assign("x", values::i8('X'));
+    c.assign("g", literal::i8('G'));
+    c.assign("x", literal::i8('X'));
     c.callFunction("foo", "after1")("pg");
   } c.endBlock();
 
   c.beginBlock("after1"); {
-    c.assign("g", values::i8('H'));
+    c.assign("g", literal::i8('H'));
         
     c.callFunction("foo", "after2")("pg");
   } c.endBlock();
@@ -34,7 +34,7 @@ c.beginFunction("main"); {
 
 } c.endFunction();
 
-auto sig = TypeSystem::function(TypeSystem::voidT(), i8p);
+auto sig = ts::function(ts::voidT())(i8p);
 c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto pDeref = c.dereferencePointer("p");

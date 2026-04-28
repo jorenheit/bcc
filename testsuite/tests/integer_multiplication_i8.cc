@@ -5,13 +5,13 @@
 TEST_BEGIN
 
 c.beginFunction("main"); {
-  c.declareLocal("x", TypeSystem::i8());
-  c.declareLocal("y", TypeSystem::i8());
-  c.declareLocal("z", TypeSystem::i8());
+  c.declareLocal("x", ts::i8());
+  c.declareLocal("y", ts::i8());
+  c.declareLocal("z", ts::i8());
 
   c.beginBlock("entry"); {
-    c.assign("x", values::i8(5));
-    c.assign("y", values::i8(13));
+    c.assign("x", literal::i8(5));
+    c.assign("y", literal::i8(13));
 
     c.mulAssign("x", "y");           // 5 * 13 = 65 -> A
     c.writeOut("x");                 // A

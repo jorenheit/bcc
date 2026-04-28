@@ -3,26 +3,25 @@
 
 TEST_BEGIN
 
-auto inner = TypeSystem::array(TypeSystem::i8(), 3);
-auto holder = c.defineStruct("Holder")("tag", TypeSystem::i8(),
+auto inner = ts::array(ts::i8(), 3);
+auto holder = ts::defineStruct("Holder")("tag", ts::i8(),
 				      "data", inner);
 
 c.beginFunction("main"); {
   c.declareLocal("h", holder);
-  c.declareLocal("idx", TypeSystem::i8());
+  c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    auto data = values::array(TypeSystem::i8(),
-			      values::i8('B'),
-			      values::i8('C'),
-			      values::i8('D'));
+    auto data = literal::array(ts::i8())(literal::i8('B'),
+						literal::i8('C'),
+						literal::i8('D'));
     
-    c.assign("h", values::structT(holder, values::i8('A'), data));
-    c.assign("idx", values::i8(0));
+    c.assign("h", literal::structT(holder)(literal::i8('A'), data));
+    c.assign("idx", literal::i8(0));
 
     auto dataField = c.structField("h", "data");
     auto elem = c.arrayElement(dataField, "idx");
-    c.assign(elem, values::i8('Q'));
+    c.assign(elem, literal::i8('Q'));
 
     c.writeOut("h");
     c.returnFromFunction();

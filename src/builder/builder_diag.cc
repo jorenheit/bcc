@@ -17,7 +17,7 @@ bool Builder::declaredAsGlobal(std::string const &name) const {
 }
 
 bool Builder::globalDeclarationsAllowed() const {
-  return _state.allowGlobalDefinitions; // TODO: rename declarations
+  return _state.allowGlobalDeclarations;
 }
 
 bool Builder::inScope(std::string const &name) const {

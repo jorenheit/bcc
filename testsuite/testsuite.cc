@@ -441,8 +441,8 @@ inline bftest::TestCase expectLoopingOutput(std::string name,
   };
 }
 
-#include "../include/acus/builder.h"
-using namespace acus;
+#include "acus.h"
+using namespace acus::api;
 
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 

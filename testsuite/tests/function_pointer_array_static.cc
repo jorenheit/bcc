@@ -4,17 +4,17 @@
 
 TEST_BEGIN
 
-auto voidT = TypeSystem::voidT();
-auto fnType = TypeSystem::function(voidT);
-auto fnPtr = TypeSystem::function_pointer(fnType);
-auto fnArray = TypeSystem::array(fnPtr, 2);
+auto voidT = ts::voidT();
+auto fnType = ts::function(voidT)();
+auto fnPtr = ts::function_pointer(fnType);
+auto fnArray = ts::array(fnPtr, 2);
 
 c.beginFunction("main"); {
   c.declareLocal("arr", fnArray);
 
   c.beginBlock("entry"); {
-    c.assign(c.arrayElement("arr", 0), values::function_pointer(fnType, "printA"));
-    c.assign(c.arrayElement("arr", 1), values::function_pointer(fnType, "printB"));
+    c.assign(c.arrayElement("arr", 0), literal::function_pointer(fnType, "printA"));
+    c.assign(c.arrayElement("arr", 1), literal::function_pointer(fnType, "printB"));
     c.callFunctionPointer(c.arrayElement("arr", 1), "second")();
   } c.endBlock();
 
@@ -29,14 +29,14 @@ c.beginFunction("main"); {
 
 c.beginFunction("printA"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('A'));
+    c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
 c.beginFunction("printB"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i8('B'));
+    c.writeOut(literal::i8('B'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

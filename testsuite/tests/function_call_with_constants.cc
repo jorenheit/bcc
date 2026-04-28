@@ -4,14 +4,14 @@
 TEST_BEGIN
 
 c.beginFunction("main"); {
-  c.declareLocal("a", TypeSystem::i8());
-  c.declareLocal("b", TypeSystem::i8());
+  c.declareLocal("a", ts::i8());
+  c.declareLocal("b", ts::i8());
 
   c.beginBlock("entry"); {
-    c.assign("a", values::i8('Z'));
-    c.assign("b", values::i8('Y'));
+    c.assign("a", literal::i8('Z'));
+    c.assign("b", literal::i8('Y'));
 
-    c.callFunction("foo", "after_foo")(values::i8('A'), "a", values::i8('B'), "b");
+    c.callFunction("foo", "after_foo")(literal::i8('A'), "a", literal::i8('B'), "b");
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -19,7 +19,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8(), TypeSystem::i8(), TypeSystem::i8(), TypeSystem::i8());
+auto fooSig = ts::function(ts::voidT())(ts::i8(), ts::i8(), ts::i8(), ts::i8());
 c.beginFunction("foo", fooSig, {"p0", "p1", "p2", "p3"}); {
   c.beginBlock("entry"); {
     c.writeOut("p0");

@@ -2,15 +2,16 @@
 // Expect: ABCD
 
 TEST_BEGIN
-auto array4 = TypeSystem::array(TypeSystem::i8(), 4);
+auto array4 = ts::array(ts::i8(), 4);
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo")(values::array(TypeSystem::i8(),
-							   values::i8('A'),
-							   values::i8('B'),
-							   values::i8('C'),
-							   values::i8('D')));
+    auto arr = literal::array(ts::i8())(literal::i8('A'),
+					       literal::i8('B'),
+					       literal::i8('C'),
+					       literal::i8('D'));
+    
+    c.callFunction("foo", "after_foo")(arr);
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -18,7 +19,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::voidT(), array4);
+auto fooSig = ts::function(ts::voidT())(array4);
 c.beginFunction("foo", fooSig, {"arr"}); {
   c.beginBlock("entry"); {
     c.writeOut("arr");

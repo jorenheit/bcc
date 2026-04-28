@@ -106,7 +106,7 @@ void Builder::slotLessConst(Slot const &lhs, int val) {
 
   pushPtr();
 
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? values::i16(val) : values::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
   slotLessSlot(lhs, valSlot);
 
   popPtr();
@@ -152,7 +152,7 @@ void Builder::slotLessEqualConst(Slot const &lhs, int val) {
     popPtr();
   }
   
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? values::i16(val) : values::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
   slotLessEqualSlot(lhs, valSlot);
 
   popPtr();
@@ -203,7 +203,7 @@ void Builder::slotGreaterConst(Slot const &lhs, int val) {
     return;
   }
 
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? values::i16(val) : values::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
   slotGreaterSlot(lhs, valSlot);
 
   popPtr();
@@ -252,7 +252,7 @@ void Builder::slotGreaterEqualConst(Slot const &lhs, int val) {
     return;
   }
 
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? values::i16(val) : values::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
   slotGreaterEqualSlot(lhs, valSlot);
 
   popPtr();

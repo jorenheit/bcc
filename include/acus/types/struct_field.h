@@ -7,17 +7,17 @@
 
 namespace acus {
 
-// TODO: remove
-struct StructField {
-  std::string name;
-  types::TypeHandle type;
-};
+// // TODO: remove
+// struct StructField {
+//   std::string name;
+//   types::TypeHandle type;
+// };
 
-using StructFields = std::vector<StructField>;
+// using StructFields = std::vector<StructField>;
 
-struct NameTypePair {
-  std::string name;
-  types::TypeHandle type;
-};
+// struct NameTypePair {
+//   std::string name;
+//   types::TypeHandle type;
+// };
 
 } // namespace acus

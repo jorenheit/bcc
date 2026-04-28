@@ -6,19 +6,19 @@ namespace Impl {
 }
 
 
-std::string acus::api::expected() {
+std::string acus::api::impl::expected() {
   return Impl::expected;
 }
 
-void acus::api::clearExpected() {
+void acus::api::impl::clearExpected() {
   Impl::expected = "";
 }
 
-void acus::api::expectNext(std::string const &name) {
+void acus::api::impl::expectNext(std::string const &name) {
   Impl::expected = name;
 }
 
-acus::api::ExpResult acus::api::isExpected(std::string const &name, bool strict) {
+acus::api::impl::ExpResult acus::api::impl::isExpected(std::string const &name, bool strict) {
   std::string const &expected = Impl::expected;
 
   if (expected == name || (!strict && expected.empty())) {
@@ -38,53 +38,59 @@ acus::api::ExpResult acus::api::isExpected(std::string const &name, bool strict)
   };
 }
 
-acus::api::Context::Context(Builder const &b, std::string const &name, std::source_location loc):
+acus::api::impl::Context::Context(Builder const &b, std::string const &name, std::source_location loc):
   _builder(&b),
   _name(name),
   _loc(std::move(loc))
 {}
 
-bool acus::api::Context::programStarted() const {
+acus::api::impl::Context::Context(std::string const &name, std::source_location loc):
+  _builder(nullptr),
+  _name(name),
+  _loc(std::move(loc))
+{}
+
+bool acus::api::impl::Context::programStarted() const {
   assert(_builder);
   return _builder->programStarted();
 }
 
-std::string acus::api::Context::currentFunction() const {
+std::string acus::api::impl::Context::currentFunction() const {
   assert(_builder);
   return _builder->currentFunction();
 }
 
-std::string acus::api::Context::currentBlock() const {
+std::string acus::api::impl::Context::currentBlock() const {
   assert(_builder);
   return _builder->currentBlock();
 }
 
-int acus::api::Context::currentScopeDepth() const {
+int acus::api::impl::Context::currentScopeDepth() const {
   assert(_builder);
   return _builder->currentScopeDepth();
 }
 
-bool acus::api::Context::declaredAsGlobal(std::string const &name) const {
+bool acus::api::impl::Context::declaredAsGlobal(std::string const &name) const {
   assert(_builder);
   return _builder->declaredAsGlobal(name);
 }
 
-std::string acus::api::Context::apiName() const {
+std::string acus::api::impl::Context::apiName() const {
   assert(_builder);
   return _name;
 }
 
-bool acus::api::Context::globalDeclarationsAllowed() const {
+bool acus::api::impl::Context::globalDeclarationsAllowed() const {
   assert(_builder);
   return _builder->globalDeclarationsAllowed();
 }
 
-bool acus::api::Context::inScope(std::string const &name) const {
+bool acus::api::impl::Context::inScope(std::string const &name) const {
   assert(_builder);
   return _builder->inScope(name);
 }
 
-bool acus::api::Context::inCurrentScope(std::string const &name) const {
+bool acus::api::impl::Context::inCurrentScope(std::string const &name) const {
   assert(_builder);
   return _builder->inCurrentScope(name);
 }

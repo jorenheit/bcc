@@ -15,7 +15,7 @@ Expression Builder::rValue(SlotProxy const &slot, API_CTX) const {
   return Expression{slot};
 }
 
-Expression Builder::rValue(values::Literal const &val, API_CTX) const {
+Expression Builder::rValue(literal::Literal const &val, API_CTX) const {
   return Expression{val};
 }
 

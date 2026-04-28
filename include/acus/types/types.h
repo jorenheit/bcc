@@ -7,8 +7,11 @@
 #include <concepts>
 
 #include "acus/core/data.h"
-#include "acus/types/struct_field.h"
 
+#define API_HEADER
+#include "acus/api/api.h"
+
+// TODO: implementation to types.cc
 namespace acus::types {
 
   enum TypeTag {
@@ -26,6 +29,11 @@ namespace acus::types {
   using TypeHandle = Type const *;
   static constexpr TypeHandle null = nullptr;
 
+  struct NameTypePair {
+    std::string name;
+    types::TypeHandle type;
+  };
+  
   template <typename T> requires std::derived_from<T, Type>
   T const *cast(TypeHandle t) {
     T const *ptr = dynamic_cast<T const *>(t);
@@ -33,7 +41,6 @@ namespace acus::types {
     return ptr;
   }
 
-  
   struct RawType: Type {
     int const _size;
     RawType(int n): _size(n) {}
@@ -159,6 +166,7 @@ namespace acus::types {
     TypeHandle pointeeType() const { return _pointeeType; }    
   }; // struct PointerType
 
+  
   struct FunctionType: Type {
     TypeHandle _returnType;
     std::vector<TypeHandle> _paramTypes;
@@ -204,134 +212,17 @@ namespace acus::types {
     FunctionType const *functionType() const { return _functionType; }    
   };
   
-  
   // Convenience functions to check type categories
-  inline bool isI8(types::TypeHandle t) { return t->tag() == types::I8; }
-  inline bool isI16(types::TypeHandle t) { return t->tag() == types::I16; }
-  inline bool isInteger(TypeHandle t) { return isI8(t) || isI16(t); }
-  inline bool isArray(TypeHandle t)   { return t->tag() == ARRAY; }
-  inline bool isString(TypeHandle t)   { return t->tag() == STRING; }
-  inline bool isArrayLike(TypeHandle t) { return isArray(t) || isString(t); }
-  inline bool isStruct(TypeHandle t)   { return t->tag() == STRUCT; }
-  inline bool isPointer(TypeHandle t)   { return t->tag() == POINTER; }
-  inline bool isFunction(TypeHandle t)   { return t->tag() == FUNCTION; }
-  inline bool isFunctionPointer(TypeHandle t)   { return t->tag() == FUNCTION_POINTER; }
+  inline bool isI8(types::TypeHandle t)       { return t->tag() == types::I8; }
+  inline bool isI16(types::TypeHandle t)      { return t->tag() == types::I16; }
+  inline bool isInteger(TypeHandle t)         { return isI8(t) || isI16(t); }
+  inline bool isArray(TypeHandle t)           { return t->tag() == ARRAY; }
+  inline bool isString(TypeHandle t)          { return t->tag() == STRING; }
+  inline bool isArrayLike(TypeHandle t)       { return isArray(t) || isString(t); }
+  inline bool isStruct(TypeHandle t)          { return t->tag() == STRUCT; }
+  inline bool isPointer(TypeHandle t)         { return t->tag() == POINTER; }
+  inline bool isFunction(TypeHandle t)        { return t->tag() == FUNCTION; }
+  inline bool isFunctionPointer(TypeHandle t) { return t->tag() == FUNCTION_POINTER; }
 
 } // namespace acus::types
  
- 
-namespace acus {
-
-class TypeSystem {
-    
-  static std::unique_ptr<types::VoidType> _void;
-  static std::unique_ptr<types::IntegerType> _i8;
-  static std::unique_ptr<types::IntegerType> _i16;
-
-  static std::vector<std::unique_ptr<types::RawType>> _rawTypes;    
-  static std::vector<std::unique_ptr<types::ArrayType>> _arrayTypes;
-  static std::vector<std::unique_ptr<types::StringType>> _stringTypes;
-  static std::vector<std::unique_ptr<types::StructType>> _structTypes;
-  static std::vector<std::unique_ptr<types::PointerType>> _pointerTypes;
-  static std::vector<std::unique_ptr<types::FunctionType>> _functionTypes;
-  static std::vector<std::unique_ptr<types::FunctionPointerType>> _functionPointerTypes;
-
-public:
-  static void init();
-
-  // TODO: make these return specific pointers rather than base
-  
-  static types::TypeHandle voidT() { return _void.get(); }
-  static types::TypeHandle i8()    { return _i8.get(); }
-  static types::TypeHandle i16()   { return _i16.get(); }
-
-  static types::TypeHandle array(types::TypeHandle elem, int length) {
-    for (auto const &ptr: _arrayTypes) {
-      if (ptr->elementType() == elem && ptr->length() == length) return ptr.get();
-    }
-    _arrayTypes.emplace_back(std::make_unique<types::ArrayType>(elem, length));
-    return _arrayTypes.back().get();
-  }
-
-  static types::TypeHandle string(int maxLen) {
-    for (auto const &ptr: _stringTypes) {
-      if (ptr->size() == maxLen + 1) {
-	types::TypeHandle t = ptr.get();
-	return t;
-      }
-    }
-    _stringTypes.emplace_back(std::make_unique<types::StringType>(i8(), maxLen));
-    return _stringTypes.back().get();
-  }
-    
-  static types::TypeHandle raw(int n) {
-    for (auto const &ptr: _rawTypes) {
-      if (ptr->size() == n) return ptr.get();
-    }
-    _rawTypes.emplace_back(std::make_unique<types::RawType>(n));
-    return _rawTypes.back().get();
-  }
-
-
-  static types::TypeHandle structT(std::string const &name) {
-    for (auto const &s: _structTypes) {
-      if (s->str() == name) return s.get();
-    }
-    return nullptr; // no struct by this name exists
-  }
-    
-  static types::TypeHandle defineStruct(std::string const &name, std::vector<NameTypePair> const &fields){
-    if (structT(name) != nullptr) return nullptr; // already defined a struct with this name
-    _structTypes.emplace_back(std::make_unique<types::StructType>(name, fields));
-    return _structTypes.back().get();
-  }
-  
-  static types::TypeHandle pointer(types::TypeHandle pointee) {
-    for (auto const &ptr: _pointerTypes) {
-      if (ptr->pointeeType() == pointee) {
-	return ptr.get();
-      }
-    }
-    _pointerTypes.emplace_back(std::make_unique<types::PointerType>(pointee));
-    return _pointerTypes.back().get();
-  }
-
-
-  static types::FunctionType const *function(types::TypeHandle ret, std::vector<types::TypeHandle> const &paramTypes) {
-    for (auto const &ptr: _functionTypes) {
-      if (ret == ptr->returnType()) {
-	if (ptr->paramTypes().size() != paramTypes.size()) continue;
-
-	bool match = true;
-	if (paramTypes.size() == 0) break;
-	for (size_t i = 0; i != paramTypes.size(); ++i) {
-	  if (paramTypes[i] != ptr->paramTypes()[i]) {
-	    match = false;
-	    break;
-	  }
-	}
-	if (match) return ptr.get();
-      }
-    }
-    _functionTypes.emplace_back(std::make_unique<types::FunctionType>(ret, paramTypes));
-    return _functionTypes.back().get();
-  }
-
-  template <typename ... ParamTypes>
-  static types::FunctionType const *function(types::TypeHandle ret, ParamTypes ... params) {
-    std::vector<types::TypeHandle> paramTypes = { params ... };
-    return function(ret, paramTypes);
-  }
-
-  static types::TypeHandle function_pointer(types::FunctionType const *functionType) {
-    for (auto const &ptr: _functionPointerTypes) {
-      if (ptr->functionType() == functionType) {
-	return ptr.get();
-      }
-    }
-    _functionPointerTypes.emplace_back(std::make_unique<types::FunctionPointerType>(functionType));
-    return _functionPointerTypes.back().get();
-  }
-};  
-
-} // namepace acus

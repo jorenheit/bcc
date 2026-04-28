@@ -4,11 +4,11 @@
 TEST_BEGIN
 
 std::string str = "Hello World";
-auto string = TypeSystem::string(str.size());
+auto string = ts::string(str.size());
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("print", "return")(values::string(str));
+    c.callFunction("print", "return")(literal::string(str));
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -17,7 +17,7 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-auto printSig = TypeSystem::function(TypeSystem::voidT(), string);
+auto printSig = ts::function(ts::voidT())(string);
 c.beginFunction("print", printSig, {"s"}); {
   c.beginBlock("entry"); {
     c.writeOut("s");

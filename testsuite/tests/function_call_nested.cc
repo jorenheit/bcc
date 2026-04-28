@@ -4,7 +4,7 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo")(values::i8('A'));
+    c.callFunction("foo", "after_foo")(literal::i8('A'));
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -12,7 +12,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+auto fooSig = ts::function(ts::voidT())(ts::i8());
 c.beginFunction("foo", fooSig, {"x"}); {
   c.beginBlock("entry"); {
     c.callFunction("bar", "after_bar")("x");
@@ -23,7 +23,7 @@ c.beginFunction("foo", fooSig, {"x"}); {
   } c.endBlock();
 } c.endFunction();
 
-auto barSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8());
+auto barSig = ts::function(ts::voidT())(ts::i8());
 c.beginFunction("bar", barSig, {"y"}); {
   c.beginBlock("entry"); {
     c.writeOut("y");

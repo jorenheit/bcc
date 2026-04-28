@@ -137,7 +137,6 @@ void Builder::abortProgram(API_FUNC) {
 
   // Sync and pop
   popFrame();
-  _nextBlockIsSet = true; // TODO: shouldn't need this flag when macro's have been implemented
 
   API_EXPECT_NEXT("endBlock");
 }
@@ -168,7 +167,7 @@ void Builder::returnFromFunctionImpl(std::optional<Expression> const &ret, API_C
   
   syncLocalToGlobal();
   popFrame();
-  _nextBlockIsSet = true;
+
   API_EXPECT_NEXT("endBlock");
 }
 
@@ -260,7 +259,7 @@ void Builder::initializeArguments(primitive::DInt const currentFrameSize, primit
       case types::I8:
       case types::I16: {
 	// Construct integer
-	int const value = values::cast<types::IntegerType>(arg.literal())->value();
+	int const value = literal::cast<types::IntegerType>(arg.literal())->value();
 	moveTo(0, MacroCell::Value0);
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
@@ -273,7 +272,7 @@ void Builder::initializeArguments(primitive::DInt const currentFrameSize, primit
 	break;
       }
       case types::FUNCTION_POINTER: {
-	std::string const &functionName = values::cast<types::FunctionPointerType>(arg.literal())->functionName();
+	std::string const &functionName = literal::cast<types::FunctionPointerType>(arg.literal())->functionName();
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
 	zeroCell();
@@ -293,7 +292,7 @@ void Builder::initializeArguments(primitive::DInt const currentFrameSize, primit
       case types::STRING: {
 	// recursive call for each element
 	for (int i = 0; i != types::cast<types::ArrayLike>(argType)->length(); ++i)
-	  self(self, offset, rValue(values::cast<types::ArrayLike>(arg.literal())->element(i), API_FWD));
+	  self(self, offset, rValue(literal::cast<types::ArrayLike>(arg.literal())->element(i), API_FWD));
 	break;
       }
       case types::POINTER: {
@@ -429,7 +428,7 @@ void Builder::branchIfImpl(Expression const &obj, std::string const &trueLabel,
   if (obj.hasSlot()) {
     branchIfSlot(obj.slot()->materialize(*this), trueLabel, falseLabel);
   } else {  
-    bool const value = values::cast<types::IntegerType>(obj.literal())->value();
+    bool const value = literal::cast<types::IntegerType>(obj.literal())->value();
     setNextBlockImpl(_currentFunction->name, value ? trueLabel : falseLabel);
   }
 
@@ -443,7 +442,7 @@ void Builder::branchIfSlot(Slot const &slot, std::string const &trueLabel, std::
 
   pushPtr();
 
-  Slot const tmp = getTemp(TypeSystem::i8());
+  Slot const tmp = getTemp(ts::i8());
     
   moveTo(slot);
   if (slot.type->usesValue1()) {

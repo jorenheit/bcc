@@ -4,8 +4,8 @@
 
 TEST_BEGIN
 
-auto point = c.defineStruct("Point")("x", TypeSystem::i8(),
-				     "y", TypeSystem::i8());
+auto point = ts::defineStruct("Point")("x", ts::i8(),
+				     "y", ts::i8());
 
 c.declareGlobal("g", point);
 
@@ -16,8 +16,8 @@ c.beginFunction("main"); {
     auto gx = c.structField("g", "x");
     auto gy = c.structField("g", "y");
 
-    c.assign(gx, values::i8('A'));
-    c.assign(gy, values::i8('B'));
+    c.assign(gx, literal::i8('A'));
+    c.assign(gy, literal::i8('B'));
     c.writeOut("g");
 
     c.callFunction("foo", "after_foo")();
@@ -34,7 +34,7 @@ c.beginFunction("foo"); {
       
   c.beginBlock("entry"); {
     auto gy = c.structField("g", "y");
-    c.assign(gy, values::i8('C'));
+    c.assign(gy, literal::i8('C'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

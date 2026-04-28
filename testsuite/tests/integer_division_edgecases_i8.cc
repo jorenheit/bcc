@@ -4,7 +4,7 @@
 
 TEST_BEGIN
 
-auto i8 = TypeSystem::i8();
+auto i8 = ts::i8();
 
 c.beginFunction("main"); {
   c.declareLocal("x", i8);
@@ -12,26 +12,26 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     // x / 0 -> 0xff, mapped to 'A'
-    c.assign("x", values::i8(100));
-    c.assign("y", values::i8(0));
-    c.writeOut(c.add(c.div("x", "y"), values::i8(66)));
+    c.assign("x", literal::i8(100));
+    c.assign("y", literal::i8(0));
+    c.writeOut(c.add(c.div("x", "y"), literal::i8(66)));
 
     // 0 / 0 -> 0, mapped to 'B'
-    c.assign("x", values::i8(0));
-    c.assign("y", values::i8(0));
-    c.writeOut(c.add(c.div("x", "y"), values::i8(66)));
+    c.assign("x", literal::i8(0));
+    c.assign("y", literal::i8(0));
+    c.writeOut(c.add(c.div("x", "y"), literal::i8(66)));
 
     // x /= 0 -> 0xff, mapped to 'C'
-    c.assign("x", values::i8(100));
-    c.assign("y", values::i8(0));
+    c.assign("x", literal::i8(100));
+    c.assign("y", literal::i8(0));
     c.divAssign("x", "y");
-    c.writeOut(c.add("x", values::i8(68)));
+    c.writeOut(c.add("x", literal::i8(68)));
 
     // 0 /= 0 -> 0, mapped to 'D'
-    c.assign("x", values::i8(0));
-    c.assign("y", values::i8(0));
+    c.assign("x", literal::i8(0));
+    c.assign("y", literal::i8(0));
     c.divAssign("x", "y");
-    c.writeOut(c.add("x", values::i8(68)));
+    c.writeOut(c.add("x", literal::i8(68)));
 
     c.returnFromFunction();
   } c.endBlock();

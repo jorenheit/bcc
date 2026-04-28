@@ -4,7 +4,7 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.writeOut(values::i16(CAT('A', 'B')));
+    c.writeOut(literal::i16(CAT('A', 'B')));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

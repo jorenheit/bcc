@@ -3,19 +3,19 @@
 
 TEST_BEGIN
 
-auto pairT = c.defineStruct("Pair")("x", TypeSystem::i8(),
-                                    "y", TypeSystem::i8());
+auto pairT = ts::defineStruct("Pair")("x", ts::i8(),
+                                    "y", ts::i8());
 
 c.beginFunction("main"); {
   c.declareLocal("p", pairT);
-  c.declareLocal("z", TypeSystem::i8());
+  c.declareLocal("z", ts::i8());
 
   c.beginBlock("entry"); {
     auto x = c.structField("p", "x");
     auto y = c.structField("p", "y");
 
-    c.assign(x, values::i8('G'));
-    c.assign(y, values::i8(3));
+    c.assign(x, literal::i8('G'));
+    c.assign(y, literal::i8(3));
 
     c.writeOut(x);              // G
     c.subAssign(x, y);          // p.x -= p.y

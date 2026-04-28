@@ -2,11 +2,11 @@
 // Expect: ABCDEF
 
 TEST_BEGIN
-auto array3 = TypeSystem::array(TypeSystem::i8(), 3);
+auto array3 = ts::array(ts::i8(), 3);
 
 c.beginFunction("main"); {
-  c.declareLocal("a", TypeSystem::i8());
-  c.declareLocal("b", TypeSystem::i16());
+  c.declareLocal("a", ts::i8());
+  c.declareLocal("b", ts::i16());
   c.declareLocal("arr", array3);
 
   c.beginBlock("entry"); {
@@ -14,11 +14,11 @@ c.beginFunction("main"); {
     auto arr1 = c.arrayElement("arr", 1);
     auto arr2 = c.arrayElement("arr", 2);
 
-    c.assign("a",  values::i8('A'));
-    c.assign("b",  values::i16(CAT('B', 'C')));
-    c.assign(arr0, values::i8('D'));
-    c.assign(arr1, values::i8('E'));
-    c.assign(arr2, values::i8('F'));
+    c.assign("a",  literal::i8('A'));
+    c.assign("b",  literal::i16(CAT('B', 'C')));
+    c.assign(arr0, literal::i8('D'));
+    c.assign(arr1, literal::i8('E'));
+    c.assign(arr2, literal::i8('F'));
 
     c.callFunction("foo", "after_foo")("a", "b", "arr");
   } c.endBlock();
@@ -28,7 +28,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = TypeSystem::function(TypeSystem::voidT(), TypeSystem::i8(), TypeSystem::i16(), array3);
+auto fooSig = ts::function(ts::voidT())(ts::i8(), ts::i16(), array3);
 c.beginFunction("foo", fooSig, {"p0", "p1", "p2"}); {
   c.beginBlock("entry"); {
     c.writeOut("p0");
