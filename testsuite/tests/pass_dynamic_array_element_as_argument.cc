@@ -10,14 +10,11 @@ c.beginFunction("main"); {
   c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    c.assign("arr", literal::array(ts::i8())( literal::i8('A'),
-						     literal::i8('B'),
-						     literal::i8('C'),
-						     literal::i8('D')));
+    c.assign("arr", literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
     c.assign("idx", literal::i8(2));
 
     auto elem = c.arrayElement("arr", "idx");
-    c.callFunction("printChar", "return")(elem);
+    c.callFunction("printChar", "return").arg(elem).done();
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -25,7 +22,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function(ts::voidT())(ts::i8());
+auto sig = ts::function().ret(ts::void_t()).param(ts::i8()).done();
 c.beginFunction("printChar", sig, {"ch"}); {
   c.beginBlock("entry"); {
     c.writeOut("ch");

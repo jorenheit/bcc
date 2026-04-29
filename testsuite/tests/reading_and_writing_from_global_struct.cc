@@ -4,8 +4,7 @@
 
 TEST_BEGIN
 
-auto point = ts::defineStruct("Point")("x", ts::i8(),
-				     "y", ts::i8());
+auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 
 c.declareGlobal("g", point);
 
@@ -20,7 +19,7 @@ c.beginFunction("main"); {
     c.assign(gy, literal::i8('B'));
     c.writeOut("g");
 
-    c.callFunction("foo", "after_foo")();
+    c.callFunction("foo", "after_foo").done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

@@ -4,10 +4,7 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.writeOut(literal::array(ts::i8())(literal::i8('A'),
-					       literal::i8('B'),
-					       literal::i8('C'),
-					       literal::i8('D')));
+    c.writeOut(literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();

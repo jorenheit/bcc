@@ -19,7 +19,7 @@ c.beginFunction("main"); {
     c.assign(x3, literal::i8('D'));
 
     c.writeOut("x");
-    c.callFunction("foo", "after_foo")("x");
+    c.callFunction("foo", "after_foo").arg("x").done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -28,7 +28,7 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 
-auto fooSig = ts::function(ts::voidT())(array4);
+auto fooSig = ts::function().ret(ts::void_t()).param(array4).done();
 c.beginFunction("foo", fooSig, {"x"}); {
   c.beginBlock("entry"); {
     c.writeOut("x");

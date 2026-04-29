@@ -19,7 +19,7 @@ c.beginFunction("main"); {
     c.assign(x2, literal::i8('C'));
     c.assign(x3, literal::i8('D'));
 
-    c.callFunction("foo", "after_foo")();
+    c.callFunction("foo", "after_foo").done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {

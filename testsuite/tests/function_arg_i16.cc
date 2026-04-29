@@ -8,7 +8,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("x", literal::i16(CAT('C', 'D')));
-    c.callFunction("foo", "after_foo", "y")("x", literal::i16(CAT('A', 'B')));
+    c.callFunction("foo", "after_foo").into("y").arg("x").arg(literal::i16(CAT('A', 'B'))).done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -17,7 +17,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function(ts::i16())(ts::i16(), ts::i16());
+auto fooSig = ts::function().ret(ts::i16()).param(ts::i16()).param(ts::i16()).done();
 c.beginFunction("foo", fooSig, {"arg1", "arg2"}); {
   c.beginBlock("entry"); {
     c.returnFromFunction("arg2");

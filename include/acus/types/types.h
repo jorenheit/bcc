@@ -1,17 +1,11 @@
 #pragma once
 #include <memory>
-#include <vector>
-#include <cassert>
-#include <string>
-#include <utility>
-#include <concepts>
 
 #include "acus/core/data.h"
 
 #define API_HEADER
 #include "acus/api/api.h"
 
-// TODO: implementation to types.cc
 namespace acus::types {
 
   enum TypeTag {

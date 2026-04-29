@@ -4,8 +4,7 @@
 TEST_BEGIN
 
 auto i8 = ts::i8();
-auto pairT = ts::defineStruct("Pair")("x", i8,
-                                    "y", i8);
+auto pairT = ts::defineStruct("Pair").field("x", i8).field("y", i8).done();
 auto pairP = ts::pointer(pairT);
 auto arrT  = ts::array(pairT, 3);
 

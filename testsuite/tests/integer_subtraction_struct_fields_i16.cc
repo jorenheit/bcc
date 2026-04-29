@@ -3,8 +3,7 @@
 
 TEST_BEGIN
 
-auto pairT = ts::defineStruct("Pair16")("x", ts::i16(),
-                                    "y", ts::i16());
+auto pairT = ts::defineStruct("Pair16").field("x", ts::i16()).field("y", ts::i16()).done();
 
 c.beginFunction("main"); {
   c.declareLocal("p", pairT);

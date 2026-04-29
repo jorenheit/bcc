@@ -7,8 +7,7 @@ TEST_BEGIN
 auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 
-auto pair = ts::defineStruct("Pair")("pa", i8p,
-				    "pb", i8p);
+auto pair = ts::defineStruct("Pair").field("pa", i8p).field("pb", i8p).done();
 
 c.beginFunction("main"); {
   c.declareLocal("s", pair);
@@ -22,7 +21,7 @@ c.beginFunction("main"); {
     c.assign(c.structField("s", "pa"), c.addressOf("a"));
     c.assign(c.structField("s", "pb"), c.addressOf("b"));
 
-    c.callFunction("foo", "after")("s");
+    c.callFunction("foo", "after").arg("s").done();
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -32,7 +31,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function(ts::voidT())(pair);
+auto sig = ts::function().ret(ts::void_t()).param(pair).done();
 c.beginFunction("foo", sig, {"s"}); {
   c.beginBlock("entry"); {
     auto pa = c.structField("s", "pa");

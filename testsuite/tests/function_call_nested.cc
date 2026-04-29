@@ -4,7 +4,7 @@
 TEST_BEGIN
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo")(literal::i8('A'));
+    c.callFunction("foo", "after_foo").arg(literal::i8('A')).done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -12,10 +12,10 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function(ts::voidT())(ts::i8());
+auto fooSig = ts::function().ret(ts::void_t()).param(ts::i8()).done();
 c.beginFunction("foo", fooSig, {"x"}); {
   c.beginBlock("entry"); {
-    c.callFunction("bar", "after_bar")("x");
+    c.callFunction("bar", "after_bar").arg("x").done();
   } c.endBlock();
 
   c.beginBlock("after_bar"); {
@@ -23,7 +23,7 @@ c.beginFunction("foo", fooSig, {"x"}); {
   } c.endBlock();
 } c.endFunction();
 
-auto barSig = ts::function(ts::voidT())(ts::i8());
+auto barSig = ts::function().ret(ts::void_t()).param(ts::i8()).done();
 c.beginFunction("bar", barSig, {"y"}); {
   c.beginBlock("entry"); {
     c.writeOut("y");

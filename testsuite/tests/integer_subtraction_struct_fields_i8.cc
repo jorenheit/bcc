@@ -3,8 +3,7 @@
 
 TEST_BEGIN
 
-auto pairT = ts::defineStruct("Pair")("x", ts::i8(),
-                                    "y", ts::i8());
+auto pairT = ts::defineStruct("Pair").field("x", ts::i8()).field("y", ts::i8()).done();
 
 c.beginFunction("main"); {
   c.declareLocal("p", pairT);

@@ -6,10 +6,10 @@
 
 TEST_BEGIN
 
-auto voidT = ts::voidT();
-auto actionType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto actionType = ts::function().ret(voidT).done();
 auto actionPtr = ts::function_pointer(actionType);
-auto selectorType = ts::function(actionPtr)();
+auto selectorType = ts::function().ret(actionPtr).done();
 auto selectorPtr = ts::function_pointer(selectorType);
 
 c.beginFunction("main"); {
@@ -18,20 +18,20 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("selector", literal::function_pointer(selectorType, "selectA"));
-    c.callFunctionPointer("selector", "callA", "action")();
+    c.callFunctionPointer("selector", "callA").into("action").done();
   } c.endBlock();
 
   c.beginBlock("callA"); {
-    c.callFunctionPointer("action", "selectB")();
+    c.callFunctionPointer("action", "selectB").done();
   } c.endBlock();
 
   c.beginBlock("selectB"); {
     c.assign("selector", literal::function_pointer(selectorType, "selectB"));
-    c.callFunctionPointer("selector", "callB", "action")();
+    c.callFunctionPointer("selector", "callB").into("action").done();
   } c.endBlock();
 
   c.beginBlock("callB"); {
-    c.callFunctionPointer("action", "end")();
+    c.callFunctionPointer("action", "end").done();
   } c.endBlock();
 
   c.beginBlock("end"); {

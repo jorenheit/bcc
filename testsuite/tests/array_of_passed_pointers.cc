@@ -21,7 +21,7 @@ c.beginFunction("main"); {
     c.assign(c.arrayElement("p", 0), c.addressOf("a"));
     c.assign(c.arrayElement("p", 1), c.addressOf("b"));
 
-    c.callFunction("foo", "after")("p");
+    c.callFunction("foo", "after").arg("p").done();
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -31,7 +31,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function(ts::voidT())(i8pa);
+auto sig = ts::function().ret(ts::void_t()).param(i8pa).done();
 c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));

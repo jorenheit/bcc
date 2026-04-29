@@ -18,13 +18,13 @@ c.beginFunction("main"); {
     c.assign("pg", c.addressOf("g")); 
     c.assign("g", literal::i8('G'));
     c.assign("x", literal::i8('X'));
-    c.callFunction("foo", "after1")("pg");
+    c.callFunction("foo", "after1").arg("pg").done();
   } c.endBlock();
 
   c.beginBlock("after1"); {
     c.assign("g", literal::i8('H'));
         
-    c.callFunction("foo", "after2")("pg");
+    c.callFunction("foo", "after2").arg("pg").done();
   } c.endBlock();
 
   c.beginBlock("after2"); {
@@ -34,7 +34,7 @@ c.beginFunction("main"); {
 
 } c.endFunction();
 
-auto sig = ts::function(ts::voidT())(i8p);
+auto sig = ts::function().ret(ts::void_t()).param(i8p).done();
 c.beginFunction("foo", sig, {"p"}); {
   c.beginBlock("entry"); {
     auto pDeref = c.dereferencePointer("p");

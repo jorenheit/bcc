@@ -68,6 +68,8 @@ namespace acus::api::impl {
 #define API_CHECK_EXPECTED_STRICT() API_CHECK_EXPECTED_IMPL(true);
 #define API_CLEAR_EXPECTED() api::impl::clearExpected();
 
+// TODO: type-checks should accept types, not expression objects
+
 #define API_REQUIRE(condition, ...)					\
   error::throw_if(not (condition),					\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \

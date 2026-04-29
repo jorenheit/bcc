@@ -7,7 +7,7 @@ TEST_BEGIN
 auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 
-auto holder = ts::defineStruct("Holder")("p", i8p);
+auto holder = ts::defineStruct("Holder").field("p", i8p).done();
 auto holders = ts::array(holder, 2);
 
 c.beginFunction("main"); {
@@ -22,7 +22,7 @@ c.beginFunction("main"); {
     c.assign(c.structField(c.arrayElement("arr", 0), "p"), c.addressOf("a"));
     c.assign(c.structField(c.arrayElement("arr", 1), "p"), c.addressOf("b"));
 
-    c.callFunction("foo", "after")("arr");
+    c.callFunction("foo", "after").arg("arr").done();
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -33,7 +33,7 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 
-auto sig = ts::function(ts::voidT())(holders);
+auto sig = ts::function().ret(ts::void_t()).param(holders).done();
 c.beginFunction("foo", sig, {"arr"}); {
   c.beginBlock("entry"); {
     auto p0 = c.structField(c.arrayElement("arr", 0), "p");

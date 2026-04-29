@@ -9,7 +9,7 @@ c.beginFunction("main"); {
        
   c.beginBlock("entry"); {
     c.assign("x", literal::i8('A'));
-    c.callFunction("foo", "after_foo", "y")("x", literal::i8('B'));
+    c.callFunction("foo", "after_foo").into("y").arg("x").arg(literal::i8('B')).done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -19,7 +19,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function(ts::i8())(ts::i8(), ts::i8());
+auto fooSig = ts::function().ret(ts::i8()).param(ts::i8()).param(ts::i8()).done();
 c.beginFunction("foo", fooSig, {"arg1", "arg2"}); {
   c.beginBlock("entry"); {
     c.returnFromFunction("arg2");

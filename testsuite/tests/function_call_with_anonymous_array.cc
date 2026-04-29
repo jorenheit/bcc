@@ -6,12 +6,9 @@ auto array4 = ts::array(ts::i8(), 4);
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    auto arr = literal::array(ts::i8())(literal::i8('A'),
-					       literal::i8('B'),
-					       literal::i8('C'),
-					       literal::i8('D'));
+    auto arr = literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done();
     
-    c.callFunction("foo", "after_foo")(arr);
+    c.callFunction("foo", "after_foo").arg(arr).done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -19,7 +16,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function(ts::voidT())(array4);
+auto fooSig = ts::function().ret(ts::void_t()).param(array4).done();
 c.beginFunction("foo", fooSig, {"arr"}); {
   c.beginBlock("entry"); {
     c.writeOut("arr");

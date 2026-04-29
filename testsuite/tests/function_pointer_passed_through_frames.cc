@@ -4,17 +4,17 @@
 
 TEST_BEGIN
 
-auto voidT = ts::voidT();
-auto actionType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto actionType = ts::function().ret(voidT).done();
 auto actionPtr = ts::function_pointer(actionType);
-auto passType = ts::function(voidT)(actionPtr);
+auto passType = ts::function().ret(voidT).param(actionPtr).done();
 
 c.beginFunction("main"); {
   c.declareLocal("fp", actionPtr);
 
   c.beginBlock("entry"); {
     c.assign("fp", literal::function_pointer(actionType, "printZ"));
-    c.callFunction("pass1", "end")("fp");
+    c.callFunction("pass1", "end").arg("fp").done();
   } c.endBlock();
 
   c.beginBlock("end"); {
@@ -24,7 +24,7 @@ c.beginFunction("main"); {
 
 c.beginFunction("pass1", passType, {"fp"}); {
   c.beginBlock("entry"); {
-    c.callFunction("pass2", "done")("fp");
+    c.callFunction("pass2", "done").arg("fp").done();
   } c.endBlock();
 
   c.beginBlock("done"); {
@@ -34,7 +34,7 @@ c.beginFunction("pass1", passType, {"fp"}); {
 
 c.beginFunction("pass2", passType, {"fp"}); {
   c.beginBlock("entry"); {
-    c.callFunction("pass3", "done")("fp");
+    c.callFunction("pass3", "done").arg("fp").done();
   } c.endBlock();
 
   c.beginBlock("done"); {
@@ -44,7 +44,7 @@ c.beginFunction("pass2", passType, {"fp"}); {
 
 c.beginFunction("pass3", passType, {"fp"}); {
   c.beginBlock("entry"); {
-    c.callFunctionPointer("fp", "done")();
+    c.callFunctionPointer("fp", "done").done();
   } c.endBlock();
 
   c.beginBlock("done"); {

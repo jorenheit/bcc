@@ -5,27 +5,27 @@
 TEST_BEGIN
 
 auto i8 = ts::i8();
-auto voidT = ts::voidT();
-auto fooType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto fooType = ts::function().ret(voidT).done();
 auto fooPtr = ts::function_pointer(fooType);
 
 c.beginFunction("main"); {
   c.declareLocal("fptr", fooPtr);
 
   c.beginBlock("entry"); {
-    c.callFunction("getPtr", "call_false", "fptr")(literal::i8(0));
+    c.callFunction("getPtr", "call_false").into("fptr").arg(literal::i8(0)).done();
   } c.endBlock();
 
   c.beginBlock("call_false"); {
-    c.callFunctionPointer("fptr", "get_true")();
+    c.callFunctionPointer("fptr", "get_true").done();
   } c.endBlock();
 
   c.beginBlock("get_true"); {
-    c.callFunction("getPtr", "call_true", "fptr")(literal::i8(1));
+    c.callFunction("getPtr", "call_true").into("fptr").arg(literal::i8(1)).done();
   } c.endBlock();
 
   c.beginBlock("call_true"); {
-    c.callFunctionPointer("fptr", "end")();
+    c.callFunctionPointer("fptr", "end").done();
   } c.endBlock();
 
   c.beginBlock("end"); {
@@ -34,7 +34,7 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 
-auto getPtrType = ts::function(fooPtr)(i8);
+auto getPtrType = ts::function().ret(fooPtr).param(i8).done();
 c.beginFunction("getPtr", getPtrType, {"x"}); {
   c.beginBlock("entry"); {
     c.branchIf("x", "true", "false");

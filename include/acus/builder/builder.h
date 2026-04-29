@@ -13,7 +13,6 @@
 #include "acus/core/data.h"
 #include "acus/core/expression.h"
 #include "acus/types/operators.h"
-#include "acus/types/struct_field.h"
 #include "acus/types/typesystem.h"
 #include "acus/types/literal_fwd.h"
 
@@ -63,14 +62,9 @@ public:
   void returnFromFunction(API_FUNC);
   void abortProgram(API_FUNC);
 
-  struct FunctionCall;
-  
-#define FUNCTION_CALL_OBJECT [[nodiscard("call the returned FunctionCall object with arguments, e.g. callFunction(...)(args...)")]] FunctionCall
-  FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);
-  FUNCTION_CALL_OBJECT callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC);  
-  FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, API_FUNC);  
-  FUNCTION_CALL_OBJECT callFunctionPointer(auto const &functionPtr, std::string const& nextBlockName, auto const &returnSlot, API_FUNC);
-#undef FUNCTION_CALL_OBJECT
+  struct FunctionCallBuilder;
+  FunctionCallBuilder callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC);
+  FunctionCallBuilder callFunctionPointer(auto const &functionPtr, std::string const &nextBlockName, API_FUNC);
 
   Expression expr(auto const &obj, API_FUNC);
   Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
@@ -508,27 +502,31 @@ private:
 
 
 // Builder objects for calls and struct definitions
-class Builder::FunctionCall {
+class Builder::FunctionCallBuilder {
 public:
-  void operator()(auto const&... args) && {
-    std::vector<Expression> argList;
-    (argList.emplace_back(_builder.rValue(std::forward<decltype(args)>(args), API_FWD)), ...);
-    std::move(*this)(argList);
+  FunctionCallBuilder &into(auto&& result) {
+    _result = _builder.lValue(std::forward<decltype(result)>(result), API_FWD);
+    return *this;
   }
 
-  void operator()(std::vector<Expression> const &argList) && {
-    if (std::holds_alternative<std::string>(_function)) {
-      _builder.callFunctionImpl(std::get<std::string>(_function), _nextBlockName, _return, argList, API_FWD);
-    } else {
-      _builder.callFunctionImpl(std::get<Expression>(_function), _nextBlockName, _return, argList, API_FWD);
-    }
+  FunctionCallBuilder &arg(auto&& arg) {
+    _args.push_back(_builder.rValue(std::forward<decltype(arg)>(arg), API_FWD));
+    return *this;
+  }
 
-    _called = true;
+  void done() {
+    API_REQUIRE(not _nextBlockName.empty(), "then() was never called on the FunctionCallBuilder.");
+    _finalized = true;
+    if (std::holds_alternative<std::string>(_function)) {
+      _builder.callFunctionImpl(std::get<std::string>(_function), _nextBlockName, _result, _args, API_FWD);
+    } else {
+      _builder.callFunctionImpl(std::get<Expression>(_function), _nextBlockName, _result, _args, API_FWD);
+    }
   }
   
-  ~FunctionCall() noexcept(false) {
-    API_REQUIRE(_called, "operator() must be called on result of callFunction(); "
-		"e.g. callFunction(\"foo\", \"after_foo\")(\"x\", \"y\");");
+  ~FunctionCallBuilder() noexcept(false) {
+    if (std::uncaught_exceptions() == 0)
+      API_REQUIRE(_finalized, "done() was never called on the FunctionCallBuilder.");
   }
 
 private:
@@ -536,23 +534,22 @@ private:
   Builder& _builder;
   std::variant<std::string, Expression> _function;
   std::string _nextBlockName;
-  std::optional<Expression> _return;
+  std::optional<Expression> _result;
   api::impl::Context API_CTX_NAME;
-  bool _called = false;
+  bool _finalized = false;
+  std::vector<Expression> _args;
 
-  FunctionCall(Builder &b, auto const &function, std::string const &nextBlockName,
-	       std::optional<Expression> ret, api::impl::Context const &ctx):
+  FunctionCallBuilder(Builder &b, auto const &function, std::string const &nextBlockName, api::impl::Context const &ctx):
     _builder(b),
     _function(function),
     _nextBlockName(nextBlockName),
-    _return(std::move(ret)),
     API_CTX_NAME(ctx)
   {}
     
-  FunctionCall(FunctionCall const&) = delete;
-  FunctionCall(FunctionCall &&) = delete;
-  FunctionCall& operator=(FunctionCall const&) = delete;
-  FunctionCall& operator=(FunctionCall &&) = delete;
+  FunctionCallBuilder(FunctionCallBuilder const&) = delete;
+  FunctionCallBuilder(FunctionCallBuilder &&) = delete;
+  FunctionCallBuilder& operator=(FunctionCallBuilder const&) = delete;
+  FunctionCallBuilder& operator=(FunctionCallBuilder &&) = delete;
 };
 
   

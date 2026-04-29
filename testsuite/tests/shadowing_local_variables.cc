@@ -14,8 +14,7 @@ c.beginFunction("main"); {
   c.beginScope(); {
     c.declareLocal("x", ts::array(ts::i8(), 2));
     c.beginBlock("next"); {
-      c.assign("x", literal::array(ts::i8())(literal::i8('B'),
-						    literal::i8('X')));
+      c.assign("x", literal::array(ts::array(ts::i8(), 2)).push(literal::i8('B')).push(literal::i8('X')).done());
       c.writeOut("x");
       c.setNextBlock("main", "next2");
     } c.endBlock();

@@ -7,7 +7,7 @@ TEST_BEGIN
 auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 
-auto holder = ts::defineStruct("Holder")("p", i8p);
+auto holder = ts::defineStruct("Holder").field("p", i8p).done();
 
 c.beginFunction("main"); {
   c.declareLocal("s", holder);
@@ -17,7 +17,7 @@ c.beginFunction("main"); {
     c.assign("x", literal::i8('A'));
     c.assign(c.structField("s", "p"), c.addressOf("x"));
 
-    c.callFunction("foo", "after")("s");
+    c.callFunction("foo", "after").arg("s").done();
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -26,7 +26,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function(ts::voidT())(holder);
+auto sig = ts::function().ret(ts::void_t()).param(holder).done();
 c.beginFunction("foo", sig, {"s"}); {
   c.beginBlock("entry"); {
     auto p = c.structField("s", "p");

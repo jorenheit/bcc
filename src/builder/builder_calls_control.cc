@@ -1,8 +1,8 @@
 #include "builder.ih"
 
-Builder::FunctionCall Builder::callFunction(std::string const& functionName, std::string const& nextBlockName, API_FUNC) {
+Builder::FunctionCallBuilder Builder::callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC) {
   API_FUNC_BEGIN();
-  return FunctionCall { *this, functionName, nextBlockName, {}, API_FWD };
+  return FunctionCallBuilder { *this, functionName, nextBlockName, API_FWD };
 }
 
 void Builder::callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,

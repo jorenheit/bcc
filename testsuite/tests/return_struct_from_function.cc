@@ -2,14 +2,13 @@
 // Expected: "QR"
 
 TEST_BEGIN
-auto point = ts::defineStruct("Point")("x", ts::i8(),
-				     "y", ts::i8());
+auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);
 
   c.beginBlock("entry"); {
-    c.callFunction("makePoint", "after_makePoint", "s")();
+    c.callFunction("makePoint", "after_makePoint").into("s").done();
   } c.endBlock();
 
   c.beginBlock("after_makePoint"); {
@@ -18,7 +17,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 			    
-auto sig = ts::function(point)();
+auto sig = ts::function().ret(point).done();
 c.beginFunction("makePoint", sig); {
   c.declareLocal("p", point);
   c.beginBlock("entry"); {

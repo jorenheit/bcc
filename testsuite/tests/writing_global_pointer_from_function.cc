@@ -16,7 +16,7 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     c.assign("g", literal::i8('G'));
     c.assign("p", c.addressOf("g")); 
-    c.callFunction("foo", "after")("p");
+    c.callFunction("foo", "after").arg("p").done();
   } c.endBlock();
 
   c.beginBlock("after"); {
@@ -25,7 +25,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function(ts::voidT())(i8p);
+auto sig = ts::function().ret(ts::void_t()).param(i8p).done();
 c.beginFunction("foo", sig, {"p"}); {
   c.referGlobals({"g"});
   c.beginBlock("entry"); {

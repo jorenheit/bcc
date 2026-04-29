@@ -4,23 +4,23 @@
 
 TEST_BEGIN
 
-auto voidT = ts::voidT();
-auto fnType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto fnType = ts::function().ret(voidT).done();
 auto fnPtr = ts::function_pointer(fnType);
 
-auto holder = ts::defineStruct("Holder")("fp", fnPtr);
+auto holder = ts::defineStruct("Holder").field("fp", fnPtr).done();
 
 c.beginFunction("main"); {
   c.declareLocal("h", holder);
 
   c.beginBlock("entry"); {
     c.assign(c.structField("h", "fp"), literal::function_pointer(fnType, "printA"));
-    c.callFunctionPointer(c.structField("h", "fp"), "second")();
+    c.callFunctionPointer(c.structField("h", "fp"), "second").done();
   } c.endBlock();
 
   c.beginBlock("second"); {
     c.assign(c.structField("h", "fp"), literal::function_pointer(fnType, "printB"));
-    c.callFunctionPointer(c.structField("h", "fp"), "end")();
+    c.callFunctionPointer(c.structField("h", "fp"), "end").done();
   } c.endBlock();
 
   c.beginBlock("end"); {

@@ -11,11 +11,9 @@ c.beginFunction("main"); {
   c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    auto ab = literal::array(ts::i8())(literal::i8('A'),
-					      literal::i8('B'));
-    auto cd = literal::array(ts::i8())(literal::i8('C'),
-					      literal::i8('D'));
-    c.assign("m", literal::array(inner)(ab, cd));
+    auto ab = literal::array(ts::array(ts::i8(), 2)).push(literal::i8('A')).push(literal::i8('B')).done();
+    auto cd = literal::array(ts::array(ts::i8(), 2)).push(literal::i8('C')).push(literal::i8('D')).done();
+    c.assign("m", literal::array(ts::array(inner, 2)).push(ab).push(cd).done());
 
     c.assign("idx", literal::i8(0));
 

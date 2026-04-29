@@ -5,29 +5,29 @@
 TEST_BEGIN
 
 auto i8 = ts::i8();
-auto voidT = ts::voidT();
-auto targetType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto targetType = ts::function().ret(voidT).done();
 auto targetPtr = ts::function_pointer(targetType);
 
-auto chooserType = ts::function(targetPtr)(i8);
+auto chooserType = ts::function().ret(targetPtr).param(i8).done();
 
 c.beginFunction("main"); {
   c.declareLocal("fptr", targetPtr);
 
   c.beginBlock("entry"); {
-    c.callFunction("choose", "call_true", "fptr")(literal::i8(1));
+    c.callFunction("choose", "call_true").into("fptr").arg(literal::i8(1)).done();
   } c.endBlock();
 
   c.beginBlock("call_true"); {
-    c.callFunctionPointer("fptr", "choose_false")();
+    c.callFunctionPointer("fptr", "choose_false").done();
   } c.endBlock();
 
   c.beginBlock("choose_false"); {
-    c.callFunction("choose", "call_false", "fptr")(literal::i8(0));
+    c.callFunction("choose", "call_false").into("fptr").arg(literal::i8(0)).done();
   } c.endBlock();
 
   c.beginBlock("call_false"); {
-    c.callFunctionPointer("fptr", "end")();
+    c.callFunctionPointer("fptr", "end").done();
   } c.endBlock();
 
   c.beginBlock("end"); {

@@ -3,8 +3,7 @@
 
 TEST_BEGIN
 
-auto point = ts::defineStruct("Point")("x", ts::i8(),
-				     "y", ts::i8());
+auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 auto pointArray3 = ts::array(point, 3);
 
 c.beginFunction("main"); {
@@ -13,10 +12,10 @@ c.beginFunction("main"); {
   c.declareLocal("out", ts::i8());
 
   c.beginBlock("entry"); {
-    auto p0 = literal::structT(point)(literal::i8('A'), literal::i8('B'));
-    auto p1 = literal::structT(point)(literal::i8('C'), literal::i8('D'));
-    auto p2 = literal::structT(point)(literal::i8('E'), literal::i8('F'));
-    c.assign("pts", literal::array(point)(p0, p1, p2));
+    auto p0 = literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done();
+    auto p1 = literal::struct_t(point).init("x", literal::i8('C')).init("y", literal::i8('D')).done();
+    auto p2 = literal::struct_t(point).init("x", literal::i8('E')).init("y", literal::i8('F')).done();
+    c.assign("pts", literal::array(ts::array(point, 3)).push(p0).push(p1).push(p2).done());
     c.assign("idx", literal::i8(1));
 
     auto selected = c.arrayElement("pts", "idx");

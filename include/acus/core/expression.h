@@ -3,6 +3,7 @@
 #include <string>
 #include <variant>
 #include "acus/core/proxy.h"
+#include "acus/types/literal.h"
 
 namespace acus {
 

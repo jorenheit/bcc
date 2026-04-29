@@ -59,7 +59,7 @@ void Builder::constructMetaBlocks() {
     _currentFunction = &_program.function(m.caller);    
     beginBlock(m.name); {
 
-      if (returnType == ts::voidT() || not m.returnSlot){
+      if (returnType == ts::void_t() || not m.returnSlot){
 	fetchReturnData();
       }
       else {

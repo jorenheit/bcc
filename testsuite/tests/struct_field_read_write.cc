@@ -4,8 +4,7 @@
 
 TEST_BEGIN
 
-auto point = ts::defineStruct("Point")("x", ts::i8(),
-				     "y", ts::i8());
+auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 
 c.beginFunction("main"); {
   c.declareLocal("s", point);

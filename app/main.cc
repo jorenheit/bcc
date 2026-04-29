@@ -14,63 +14,66 @@ int main() try {
     
     auto i8 = ts::i8();
     auto i16 = ts::i16();
-    auto voidT = ts::voidT();
-    auto fooType = ts::function(voidT)();
+    auto voidT = ts::void_t();
+    auto array3 = ts::array(i8, 3);
+
+    auto point = ts::defineStruct("Point")
+      .field("x", i8)
+      .field("y", i8)
+      .done();
+
+    auto x = literal::array(array3)
+      .push(literal::i8('A'))
+      .push(literal::i8('B'))
+      .push(literal::i8('C'))
+      .done();
+      
+    auto val = literal::struct_t(point)
+      .init("x", literal::i8(1))
+      .init("y", literal::i8(2))
+      .done();
+    
+    auto fooType = ts::function().ret(point).done();
     auto fooPtr = ts::function_pointer(fooType);
 
-    std::vector<types::NameTypePair> fields;
-    fields.emplace_back("x", i8);
-    fields.emplace_back("y", i8);
-    auto point = ts::defineStruct("Point")(fields);
-    auto val = literal::structT(point)(literal::i8(1), literal::i8(2));
-    
-    
     c.beginFunction("main"); {
-      c.declareLocal("fptr", fooPtr);
+      c.declareLocal("x", point);
+      c.declareLocal("fooPtr", fooPtr);
       
       c.beginBlock("entry"); {
-	c.callFunction("getPtr", "next", "fptr")(literal::i8(0));
-      } c.endBlock();
-
-      c.beginBlock("next"); {
-	c.callFunctionPointer("fptr", "end")();
+	
+	c.assign("fooPtr", literal::function_pointer(fooType, "foo"));
+	c.callFunctionPointer("fooPtr", "end").into("x").done();
       } c.endBlock();
 
       c.beginBlock("end"); {
+	c.writeOut("x");
 	c.returnFromFunction();
       } c.endBlock();
       
     } c.endFunction();
 
-
-    auto getPtrType = ts::function(fooPtr)(i8);
-    c.beginFunction("getPtr", getPtrType, {"x"}); {
-
+    c.beginFunction("foo", fooType); {
       c.beginBlock("entry"); {
-	c.branchIf("x", "true", "false");
-      } c.endBlock();
 
-      c.beginBlock("true"); {
-	c.returnFromFunction(literal::function_pointer(fooType, "foo1"));
-      } c.endBlock();
-
-      c.beginBlock("false"); {
-	c.returnFromFunction(literal::function_pointer(fooType, "foo2"));
-      } c.endBlock();
-
-    } c.endFunction();
-
-    c.beginFunction("foo1"); {
-      c.beginBlock("entry"); {
-	c.writeOut(literal::string("foo1"));
-	c.returnFromFunction();
+	auto val = literal::struct_t(point)
+	  .init("x", literal::i8('X'))
+	  .init("y", literal::i8('Y'))
+	  .done();
+	
+	c.returnFromFunction(val);
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction("foo2"); {
+    c.beginFunction("bar", fooType); {
       c.beginBlock("entry"); {
-	c.writeOut(literal::string("foo2"));
-	c.returnFromFunction();
+
+	auto val = literal::struct_t(point)
+	  .init("x", literal::i8('Q'))
+	  .init("y", literal::i8('W'))
+	  .done();
+	
+	c.returnFromFunction(val);
       } c.endBlock();
     } c.endFunction();
 

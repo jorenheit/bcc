@@ -4,19 +4,16 @@
 TEST_BEGIN
 
 auto inner = ts::array(ts::i8(), 3);
-auto holder = ts::defineStruct("Holder")("tag", ts::i8(),
-				      "data", inner);
+auto holder = ts::defineStruct("Holder").field("tag", ts::i8()).field("data", inner).done();
 
 c.beginFunction("main"); {
   c.declareLocal("h", holder);
   c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    auto data = literal::array(ts::i8())(literal::i8('B'),
-						literal::i8('C'),
-						literal::i8('D'));
+    auto data = literal::array(ts::array(ts::i8(), 3)).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done();
     
-    c.assign("h", literal::structT(holder)(literal::i8('A'), data));
+    c.assign("h", literal::struct_t(holder).init("tag", literal::i8('A')).init("data", data).done());
     c.assign("idx", literal::i8(0));
 
     auto dataField = c.structField("h", "data");

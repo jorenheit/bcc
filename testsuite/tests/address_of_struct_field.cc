@@ -6,8 +6,7 @@ TEST_BEGIN
 auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 
-auto pairT = ts::defineStruct("Pair")("x", i8,
-                                    "y", i8);
+auto pairT = ts::defineStruct("Pair").field("x", i8).field("y", i8).done();
 
 c.beginFunction("main"); {
   c.declareLocal("p", i8p);

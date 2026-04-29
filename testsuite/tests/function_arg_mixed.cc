@@ -20,7 +20,7 @@ c.beginFunction("main"); {
     c.assign(arr1, literal::i8('E'));
     c.assign(arr2, literal::i8('F'));
 
-    c.callFunction("foo", "after_foo")("a", "b", "arr");
+    c.callFunction("foo", "after_foo").arg("a").arg("b").arg("arr").done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
@@ -28,7 +28,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function(ts::voidT())(ts::i8(), ts::i16(), array3);
+auto fooSig = ts::function().ret(ts::void_t()).param(ts::i8()).param(ts::i16()).param(array3).done();
 c.beginFunction("foo", fooSig, {"p0", "p1", "p2"}); {
   c.beginBlock("entry"); {
     c.writeOut("p0");

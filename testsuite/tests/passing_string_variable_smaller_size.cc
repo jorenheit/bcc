@@ -7,7 +7,7 @@ std::string str = "Hello World";
 
 c.beginFunction("main"); {
   c.beginBlock("entry"); {
-    c.callFunction("print", "return")(literal::string(str));
+    c.callFunction("print", "return").arg(literal::string(str)).done();
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -16,7 +16,7 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-auto printSig = ts::function(ts::voidT())(ts::string(str.size() * 2));
+auto printSig = ts::function().ret(ts::void_t()).param(ts::string(str.size() * 2)).done();
 c.beginFunction("print", printSig, {"s"}); {
   c.beginBlock("entry"); {
     c.writeOut("s");

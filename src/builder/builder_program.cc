@@ -95,7 +95,7 @@ void Builder::beginFunction(std::string const &name, types::TypeHandle type, std
 }
 
 void Builder::beginFunction(std::string const &name, API_FUNC) {
-  beginFunction(name, ts::function(ts::voidT())(), std::vector<std::string>{});
+  beginFunction(name, ts::void_function(), std::vector<std::string>{});
 }
 
 void Builder::beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC) {

@@ -4,8 +4,8 @@
 
 TEST_BEGIN
 
-auto voidT = ts::voidT();
-auto fnType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto fnType = ts::function().ret(voidT).done();
 auto fnPtr = ts::function_pointer(fnType);
 
 c.beginFunction("main"); {
@@ -13,12 +13,12 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("fptr", literal::function_pointer(fnType, "printA"));
-    c.callFunctionPointer("fptr", "second")();
+    c.callFunctionPointer("fptr", "second").done();
   } c.endBlock();
 
   c.beginBlock("second"); {
     c.assign("fptr", literal::function_pointer(fnType, "printB"));
-    c.callFunctionPointer("fptr", "end")();
+    c.callFunctionPointer("fptr", "end").done();
   } c.endBlock();
 
   c.beginBlock("end"); {

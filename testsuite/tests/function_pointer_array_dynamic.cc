@@ -5,8 +5,8 @@
 TEST_BEGIN
 
 auto i8 = ts::i8();
-auto voidT = ts::voidT();
-auto fnType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto fnType = ts::function().ret(voidT).done();
 auto fnPtr = ts::function_pointer(fnType);
 auto fnArray = ts::array(fnPtr, 2);
 
@@ -18,12 +18,12 @@ c.beginFunction("main"); {
     c.assign(c.arrayElement("arr", 0), literal::function_pointer(fnType, "printA"));
     c.assign(c.arrayElement("arr", 1), literal::function_pointer(fnType, "printB"));
     c.assign("idx", literal::i8(0));
-    c.callFunctionPointer(c.arrayElement("arr", "idx"), "second")();
+    c.callFunctionPointer(c.arrayElement("arr", "idx"), "second").done();
   } c.endBlock();
 
   c.beginBlock("second"); {
     c.assign("idx", literal::i8(1));
-    c.callFunctionPointer(c.arrayElement("arr", "idx"), "end")();
+    c.callFunctionPointer(c.arrayElement("arr", "idx"), "end").done();
   } c.endBlock();
 
   c.beginBlock("end"); {

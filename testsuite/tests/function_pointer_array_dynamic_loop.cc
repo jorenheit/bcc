@@ -5,8 +5,8 @@
 TEST_BEGIN
 
 auto i8 = ts::i8();
-auto voidT = ts::voidT();
-auto actionType = ts::function(voidT)();
+auto voidT = ts::void_t();
+auto actionType = ts::function().ret(voidT).done();
 auto actionPtr = ts::function_pointer(actionType);
 auto actionArray = ts::array(actionPtr, 2);
 
@@ -28,7 +28,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 
   c.beginBlock("body"); {
-    c.callFunctionPointer(c.arrayElement("arr", "idx"), "toggle")();
+    c.callFunctionPointer(c.arrayElement("arr", "idx"), "toggle").done();
   } c.endBlock();
 
   c.beginBlock("toggle"); {

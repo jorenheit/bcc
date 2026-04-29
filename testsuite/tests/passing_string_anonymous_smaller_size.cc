@@ -13,7 +13,7 @@ c.beginFunction("main"); {
 
   c.beginBlock("entry"); {
     c.assign("s", literal::string(str));
-    c.callFunction("print", "return")("s");
+    c.callFunction("print", "return").arg("s").done();
   } c.endBlock();
 
   c.beginBlock("return"); {
@@ -22,7 +22,7 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-auto printSig = ts::function(ts::voidT())(bigString);
+auto printSig = ts::function().ret(ts::void_t()).param(bigString).done();
 c.beginFunction("print", printSig, {"s"}); {
   c.beginBlock("entry"); {
     c.writeOut("s");

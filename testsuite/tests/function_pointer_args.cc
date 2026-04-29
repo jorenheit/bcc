@@ -5,8 +5,8 @@
 TEST_BEGIN
 
 auto i8 = ts::i8();
-auto voidT = ts::voidT();
-auto fnType = ts::function(voidT)(i8);
+auto voidT = ts::void_t();
+auto fnType = ts::function().ret(voidT).param(i8).done();
 auto fnPtr = ts::function_pointer(fnType);
 
 c.beginFunction("main"); {
@@ -16,13 +16,13 @@ c.beginFunction("main"); {
   c.beginBlock("entry"); {
     c.assign("v", literal::i8('A'));
     c.assign("fptr", literal::function_pointer(fnType, "leftEcho"));
-    c.callFunctionPointer("fptr", "second")("v");
+    c.callFunctionPointer("fptr", "second").arg("v").done();
   } c.endBlock();
 
   c.beginBlock("second"); {
     c.assign("v", literal::i8('B'));
     c.assign("fptr", literal::function_pointer(fnType, "rightEcho"));
-    c.callFunctionPointer("fptr", "end")("v");
+    c.callFunctionPointer("fptr", "end").arg("v").done();
   } c.endBlock();
 
   c.beginBlock("end"); {

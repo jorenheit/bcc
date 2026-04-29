@@ -10,14 +10,11 @@ c.beginFunction("main"); {
   c.declareLocal("idx", ts::i8());
 
   c.beginBlock("entry"); {
-    c.assign("arr", literal::array(ts::i8())(literal::i8('A'),
-						    literal::i8('B'),
-						    literal::i8('C'),
-						    literal::i8('D')));
+    c.assign("arr", literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
     c.assign("idx", literal::i8(3));
 
     auto dest = c.arrayElement("arr", "idx");
-    c.callFunction("makeZ", "after_makeZ", dest)();
+    c.callFunction("makeZ", "after_makeZ").into(dest).done();
   } c.endBlock();
 
   c.beginBlock("after_makeZ"); {
@@ -26,7 +23,7 @@ c.beginFunction("main"); {
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function(ts::i8())();
+auto sig = ts::function().ret(ts::i8()).done();
 c.beginFunction("makeZ", sig); {
   c.beginBlock("entry"); {
     c.returnFromFunction(literal::i8('Z'));

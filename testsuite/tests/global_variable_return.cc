@@ -8,12 +8,12 @@ c.beginFunction("main"); {
   c.declareLocal("x", ts::i8());
       
   c.beginBlock("entry"); {
-    c.callFunction("foo", "after_foo", "x")();
+    c.callFunction("foo", "after_foo").into("x").done();
   } c.endBlock();
 
   c.beginBlock("after_foo"); {
     c.writeOut("x");
-    c.callFunction("bar", "after_bar")();
+    c.callFunction("bar", "after_bar").done();
   } c.endBlock();
 
   c.beginBlock("after_bar"); {
@@ -22,7 +22,7 @@ c.beginFunction("main"); {
       
 } c.endFunction();
 
-auto fooSig = ts::function(ts::i8())();
+auto fooSig = ts::function().ret(ts::i8()).done();
 c.beginFunction("foo", fooSig); {
   c.referGlobals({"g"});
   c.beginBlock("entry"); {

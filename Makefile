@@ -1,6 +1,6 @@
 # ---------- Config ----------
 CXX      := g++
-CXXFLAGS := -std=c++23 -O3 -Wall -Iinclude
+CXXFLAGS := -std=c++23 -Wall -Iinclude
 LDFLAGS  :=
 LDLIBS   :=
 
@@ -16,6 +16,9 @@ COMMON_SRCS := \
 	src/types/type_rules.cc \
 	src/types/operators.cc \
 	src/types/literal.cc \
+	src/types/literal_impl.cc \
+	src/types/literal_builders.cc \
+	src/types/type_builders.cc \
 	src/core/proxy.cc \
 	src/core/slot.cc \
 	src/builder/builder_program.cc \
@@ -57,7 +60,7 @@ $(TARGET): $(COMMON_OBJS) $(MAIN_OBJ)
 tests: $(TEST_TARGET)
 
 $(TEST_TARGET): $(COMMON_OBJS) $(TEST_OBJ)
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(CXX) -O3 $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(OBJDIR)/%.o: %.cc
 	@mkdir -p $(dir $@)
