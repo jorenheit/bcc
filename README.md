@@ -2,51 +2,43 @@
 
 **Acus** is a C++ backend toolkit for generating Brainfuck programs from a structured builder API. It provides a small, explicit program-construction layer with functions, blocks, scopes, globals, locals, structs, arrays, pointers, arithmetic, comparisons, logical operations, and control flow. The intended use case is to build higher-level frontends on top of Acus, while still keeping the backend usable directly from C++ for experiments, tests, and low-level code generation.
 
-The central API type is currently planned as:
-
-```cpp
-acus::ProgramBuilder builder;
-```
-
-The current source still uses the temporary name `Compiler`; this README uses the intended public name `ProgramBuilder`.
+DO NOT USE!!!! NOT READY YET!!!!
 
 
 ## Small example
 
-The following sketch builds a tiny program whose `main` function calls a separate `hello` function. The `hello` function writes `Hello, world!` and then returns to `main`.
+The following sketch builds a tiny program whose `main` function calls a separate `say` function. The `say` function writes `Hello, world!` and then returns to `main`.
 
 ```cpp
-acus::ProgramBuilder b;
+acus::Assembler a;
 
-b.begin(); {
+a.program("hello", "main").begin(); {
 
-  b.setEntryPoint("main");
-  
-  b.beginFunction("main"); {
+  a.function("main").begin(); {
    
-    b.beginBlock("entry"); {
-       b.callFunction("hello", "after_hello")();
-    } b.endBlock();
+    a.block("entry").begin(); {
+       a.callFunction("say", "after_say")();
+    } a.endBlock();
    
-    b.beginBlock("after_hello"); {
-       b.returnFromFunction();
-    } b.endBlock();
+    a.block("after_say").begin(); {
+       a.returnFromFunction();
+    } a.endBlock();
   
-  } b.endFunction();
+  } a.endFunction();
   
-  b.beginFunction("hello"); {
-  
-    b.beginBlock("entry"); {
-      b.writeOut(values::string("Hello, World!"));
-      b.returnFromFunction();
-    b.endBlock();
-    
-  } b.endFunction();
+  a.function("say"); {
+    a.beginBlock("entry"); {
+      a.writeOut(values::string("Hello, World!"));
+      a.returnFromFunction();
+    a.endBlock();
+  } a.endFunction();
 
-} b.end();
+} a.end();
 ```
 
 Most public functions carry an internal source-location/context argument used for diagnostics. That argument is omitted from the signatures below.
+
+NOTE: THIS API IS PROBABLY NOT UP TO DATE.
 
 ---
 
