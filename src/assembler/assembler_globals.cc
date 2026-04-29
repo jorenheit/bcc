@@ -1,6 +1,6 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-void Builder::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
+void Assembler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
   assert(globalSlot.type == localSlot.type);
   assert(globalSlot.size() == localSlot.size());
 
@@ -49,7 +49,7 @@ void Builder::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
   popPtr();
 }
 
-void Builder::putGlobal(Slot const &globalSlot, Slot const &localSlot) {
+void Assembler::putGlobal(Slot const &globalSlot, Slot const &localSlot) {
   assert(globalSlot.type == localSlot.type);
   assert(globalSlot.size() == localSlot.size());
 

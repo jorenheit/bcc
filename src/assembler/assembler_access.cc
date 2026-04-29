@@ -1,6 +1,6 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Expression Builder::structFieldImpl(Expression const &obj, int fieldIndex, API_CTX) {
+Expression Assembler::structFieldImpl(Expression const &obj, int fieldIndex, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
@@ -10,7 +10,7 @@ Expression Builder::structFieldImpl(Expression const &obj, int fieldIndex, API_C
   return structFieldImpl(obj, structType->fieldName(fieldIndex), API_FWD);
 }
 
-Expression Builder::structFieldImpl(Expression const &obj, std::string const &fieldName, API_CTX) {
+Expression Assembler::structFieldImpl(Expression const &obj, std::string const &fieldName, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
@@ -24,7 +24,7 @@ Expression Builder::structFieldImpl(Expression const &obj, std::string const &fi
   return Expression{proxy::structField(obj.slot(), fieldName)};
 }
 
-Expression Builder::arrayElementImpl(Expression const &arr, int index, API_CTX) {
+Expression Assembler::arrayElementImpl(Expression const &arr, int index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
@@ -38,7 +38,7 @@ Expression Builder::arrayElementImpl(Expression const &arr, int index, API_CTX) 
   return Expression{proxy::arrayElement(arr.slot(), index)};  
 }  
 
-Expression Builder::arrayElementImpl(Expression const &arr, Expression const &index, API_CTX) {
+Expression Assembler::arrayElementImpl(Expression const &arr, Expression const &index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
@@ -58,7 +58,7 @@ Expression Builder::arrayElementImpl(Expression const &arr, Expression const &in
   return Expression{proxy::arrayElement(arr.slot(), index.slot())};
 }
 
-Expression Builder::dereferencePointerImpl(Expression const &ptr, API_CTX) {
+Expression Assembler::dereferencePointerImpl(Expression const &ptr, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_POINTER(ptr);

@@ -1,13 +1,13 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::Mop const Builder::mulSpec {
+Assembler::Mop const Assembler::mulSpec {
   .op = BinOp::Mul,
   .fold = [](int x, int y) -> int { return x * y; },
-  .applyWithSlot = &Builder::mulSlotBySlot,
-  .applyWithConst = &Builder::mulSlotByConst
+  .applyWithSlot = &Assembler::mulSlotBySlot,
+  .applyWithConst = &Assembler::mulSlotByConst
 };
 
-void Builder::mulSlotByConst(Slot const &lhs, int factor) {
+void Assembler::mulSlotByConst(Slot const &lhs, int factor) {
 
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
@@ -33,7 +33,7 @@ void Builder::mulSlotByConst(Slot const &lhs, int factor) {
 }
 
 
-void Builder::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const tmp = getTemp(rhs.type);
@@ -61,7 +61,7 @@ void Builder::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::mulConst(int factor, Temps<3> tmp) {
+void Assembler::mulConst(int factor, Temps<3> tmp) {
   // TODO: optimize for powers of 2
   // TODO: big factors should have runtime implementation
 
@@ -88,7 +88,7 @@ void Builder::mulConst(int factor, Temps<3> tmp) {
   popPtr();
 }
 
-void Builder::mul16Const(int factor, Cell high, Temps<8> tmp) {
+void Assembler::mul16Const(int factor, Cell high, Temps<8> tmp) {
   if (factor == 0) {
     pushPtr();
     zeroCell();
@@ -128,7 +128,7 @@ void Builder::mul16Const(int factor, Cell high, Temps<8> tmp) {
 }
 
 
-void Builder::mulDestructive(Cell factor, Temps<3> tmp) {
+void Assembler::mulDestructive(Cell factor, Temps<3> tmp) {
   pushPtr();
   
   Cell const current = _dp.current();
@@ -156,7 +156,7 @@ void Builder::mulDestructive(Cell factor, Temps<3> tmp) {
 }
 
 // TODO: make a 16-bit version that uses the 8-bit version of mul rather than brute force repeat the addition.
-void Builder::mul16Destructive(Cell high, Cell factorLow, Cell factorHigh, Temps<9> tmp) {
+void Assembler::mul16Destructive(Cell high, Cell factorLow, Cell factorHigh, Temps<9> tmp) {
 
   pushPtr();
   
@@ -210,7 +210,7 @@ void Builder::mul16Destructive(Cell high, Cell factorLow, Cell factorHigh, Temps
   popPtr();
 }
 
-void Builder::mulConstructive(Cell result, Cell factor, Temps<4> tmp) {
+void Assembler::mulConstructive(Cell result, Cell factor, Temps<4> tmp) {
   Cell const factorCopy = tmp.get<0>();
 
   pushPtr();
@@ -223,7 +223,7 @@ void Builder::mulConstructive(Cell result, Cell factor, Temps<4> tmp) {
 }
 
 
-void Builder::mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell factorLow, Cell factorHigh, Temps<11> tmp) {
+void Assembler::mul16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell factorLow, Cell factorHigh, Temps<11> tmp) {
 
   Cell const & low      = _dp.current();
   Cell const & factorLowCopy  = tmp.get<0>();

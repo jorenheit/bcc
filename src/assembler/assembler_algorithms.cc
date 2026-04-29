@@ -1,50 +1,50 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-void Builder::loopOpen(std::string const &tag) {
+void Assembler::loopOpen(std::string const &tag) {
   emit<primitive::LoopOpen>(tag);
 }
 
-void Builder::loopClose(std::string const &tag) {
+void Assembler::loopClose(std::string const &tag) {
   emit<primitive::LoopClose>(tag);
 }
 
-void Builder::switchField(MacroCell::Field field) {
+void Assembler::switchField(MacroCell::Field field) {
   assert(_currentSeq != nullptr);
   emit<primitive::MovePointerRelative>(field - _dp.current().field);
   _dp.set(field);
 }
 
-void Builder::moveTo(int offset, MacroCell::Field field) {
+void Assembler::moveTo(int offset, MacroCell::Field field) {
   assert(_currentSeq != nullptr);
 
   switchField(field);
   moveRel(offset - _dp.current().offset);
 }
 
-void Builder::moveTo(Cell dest) {
+void Assembler::moveTo(Cell dest) {
   moveTo(dest.offset, dest.field);
 }
 
-void Builder::moveRel(int diff) {
+void Assembler::moveRel(int diff) {
   emit<primitive::MovePointerRelative>(diff * MacroCell::FieldCount);
   _dp.moveRelative(diff);
 }
 
-void Builder::moveToOrigin() {
+void Assembler::moveToOrigin() {
   moveTo(0);
 }
 
 
-void Builder::zeroCell() { 
+void Assembler::zeroCell() { 
   emit<primitive::ZeroCell>();
 }
 
-void Builder::setToValue(int value) { 
+void Assembler::setToValue(int value) { 
   zeroCell();
   addConst(value & 0xff);
 }
 
-void Builder::setToValue16(int value, Cell high) { 
+void Assembler::setToValue16(int value, Cell high) { 
   pushPtr();
   setToValue(value & 0xff);
   moveTo(high);
@@ -52,15 +52,15 @@ void Builder::setToValue16(int value, Cell high) {
   popPtr();
 }
 
-void Builder::inc() {
+void Assembler::inc() {
   addConst(1);
 }
 
-void Builder::dec() {
+void Assembler::dec() {
   subConst(1);
 }
 
-void Builder::inc16(Cell high, Temps<2> tmp) {
+void Assembler::inc16(Cell high, Temps<2> tmp) {
   pushPtr();
   Cell const carry = tmp.get<0>();
   addConst(1);
@@ -70,7 +70,7 @@ void Builder::inc16(Cell high, Temps<2> tmp) {
   popPtr();
 }
 
-void Builder::dec16(Cell high, Temps<2> tmp) {
+void Assembler::dec16(Cell high, Temps<2> tmp) {
   pushPtr();
   Cell const borrow = tmp.get<0>();
   copyField(borrow, tmp.select<1>());
@@ -82,27 +82,27 @@ void Builder::dec16(Cell high, Temps<2> tmp) {
   popPtr();
 }
 
-void Builder::moveField(Cell dest) {
+void Assembler::moveField(Cell dest) {
   auto [src, dst] = getFieldIndices(_dp.current(), dest);
   if (src == dst) return;
   emit<primitive::MoveData>(src, dst);
 }
 
-void Builder::copyField(Cell dest, Temps<1> tmp) {
+void Assembler::copyField(Cell dest, Temps<1> tmp) {
   auto [src, dst, tmp0] = getFieldIndices(_dp.current(), dest, tmp.get<0>());
   emit<primitive::CopyData>(src, dst, tmp0);
 }
 
-void Builder::boolDestructive(Temps<1> tmp) {
+void Assembler::boolDestructive(Temps<1> tmp) {
   auto [current, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
   emit<primitive::Boolean>(current, tmp0);
 }
 
-void Builder::bool16Destructive(Cell high, Temps<1> tmp) {
+void Assembler::bool16Destructive(Cell high, Temps<1> tmp) {
   orDestructive(high, tmp.select<0>());
 }
 
-void Builder::boolConstructive(Cell result, Temps<1> tmp) {
+void Assembler::boolConstructive(Cell result, Temps<1> tmp) {
   pushPtr();
   copyField(result, tmp);
   moveTo(result);
@@ -110,7 +110,7 @@ void Builder::boolConstructive(Cell result, Temps<1> tmp) {
   popPtr();
 }
 
-void Builder::bool16Constructive(Cell high, Cell result, Temps<2> tmp) {
+void Assembler::bool16Constructive(Cell high, Cell result, Temps<2> tmp) {
   Cell const resultHigh = tmp.get<0>();
   
   pushPtr();
@@ -123,17 +123,17 @@ void Builder::bool16Constructive(Cell high, Cell result, Temps<2> tmp) {
 }
 
 
-void Builder::notDestructive(Temps<1> tmp) {
+void Assembler::notDestructive(Temps<1> tmp) {
   auto [cur, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
   emit<primitive::Not>(cur, tmp0);
 }
 
-void Builder::not16Destructive(Cell high, Temps<1> tmp) {
+void Assembler::not16Destructive(Cell high, Temps<1> tmp) {
   orDestructive(high, tmp.select<0>());
   notDestructive(tmp.select<0>());
 }
 
-void Builder::notConstructive(Cell result, Temps<1> tmp) {
+void Assembler::notConstructive(Cell result, Temps<1> tmp) {
   pushPtr();
   copyField(result, tmp);
   moveTo(result);
@@ -141,7 +141,7 @@ void Builder::notConstructive(Cell result, Temps<1> tmp) {
   popPtr();
 }
 
-void Builder::not16Constructive(Cell high, Cell result, Temps<2> tmp) {
+void Assembler::not16Constructive(Cell high, Cell result, Temps<2> tmp) {
   Cell const resultHigh = tmp.get<0>();
   
   pushPtr();
@@ -154,12 +154,12 @@ void Builder::not16Constructive(Cell high, Cell result, Temps<2> tmp) {
 }
 
 // TODO: remove compareToConst 
-void Builder::compareToConstDestructive(int value, Temps<1> tmp) {
+void Assembler::compareToConstDestructive(int value, Temps<1> tmp) {
   auto [cur, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
   emit<primitive::Cmp>(value, cur, tmp0);
 }
 
-void Builder::compareToConstConstructive(int value, Cell result, Temps<1> tmp) {
+void Assembler::compareToConstConstructive(int value, Cell result, Temps<1> tmp) {
   pushPtr();
   copyField(result, tmp);
   moveTo(result);
@@ -167,7 +167,7 @@ void Builder::compareToConstConstructive(int value, Cell result, Temps<1> tmp) {
   popPtr();
 }
     
-void Builder::compare16ToConstDestructive(int value, Cell high, Temps<1> tmp) {
+void Assembler::compare16ToConstDestructive(int value, Cell high, Temps<1> tmp) {
   pushPtr();
   compareToConstDestructive(value & 0xff, tmp);
   moveTo(high);
@@ -177,7 +177,7 @@ void Builder::compare16ToConstDestructive(int value, Cell high, Temps<1> tmp) {
   andDestructive(high, tmp);
 }
 
-void Builder::compare16ToConstConstructive(int value, Cell high, Cell result, Temps<2> tmp) {
+void Assembler::compare16ToConstConstructive(int value, Cell high, Cell result, Temps<2> tmp) {
   pushPtr();
   copyField(result, tmp.get<1>());
   moveTo(high);
@@ -187,7 +187,7 @@ void Builder::compare16ToConstConstructive(int value, Cell high, Cell result, Te
   popPtr();
 }
 
-void Builder::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
+void Assembler::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
   // WARNING: this leaves pointer in unknown position.
   // Make sure to leave a marker in order to be able to seek back
   
@@ -234,7 +234,7 @@ void Builder::goToDynamicOffset(Cell offsetLow, Cell offsetHigh) {
   moveTo(base, MacroCell::Value0);
 }
 
-void Builder::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload const &payload, primitive::Direction seekDir) {
+void Assembler::fetchFromDynamicOffset(Cell offsetLow, Cell offsetHigh, Payload const &payload, primitive::Direction seekDir) {
   assert(payload);
 
   int const base = _dp.current().offset;

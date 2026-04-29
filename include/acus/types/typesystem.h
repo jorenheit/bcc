@@ -1,5 +1,6 @@
 #pragma once
 #include "acus/types/types_fwd.h"
+#include "acus/core/builder.h"
 
 #define API_HEADER
 #include "acus/api/api.h"
@@ -28,50 +29,33 @@ namespace acus::ts {
 
 // Builder Classes (implemented in type_builders.cc)
 namespace acus::ts {
+
   
-  class FunctionTypeBuilder {
-  public:
-    FunctionTypeBuilder &ret(types::TypeHandle returnType);    
-    FunctionTypeBuilder &param(types::TypeHandle paramType);
-    FunctionTypeBuilder &param(std::vector<types::TypeHandle> const &paramTypes);    
+  struct FunctionTypeBuilder: builder::BuilderBase {
+    FunctionTypeBuilder&  ret(types::TypeHandle returnType)  &;    
+    FunctionTypeBuilder&& ret(types::TypeHandle returnType)  &&;    
+    FunctionTypeBuilder&  param(types::TypeHandle paramType) &;
+    FunctionTypeBuilder&& param(types::TypeHandle paramType) &&;
     types::FunctionType const *done();
     
     FunctionTypeBuilder(api::impl::Context const &ctx);      
-    ~FunctionTypeBuilder() noexcept(false);
     
   private:
     types::TypeHandle _ret = types::null;
-    api::impl::Context API_CTX_NAME;
-    bool _finalized = false;
     std::vector<types::TypeHandle> _paramTypes;
-    
-  
-    FunctionTypeBuilder(FunctionTypeBuilder const&) = delete;
-    FunctionTypeBuilder(FunctionTypeBuilder&&) = delete;
-    FunctionTypeBuilder& operator=(FunctionTypeBuilder const&) = delete;
-    FunctionTypeBuilder& operator=(FunctionTypeBuilder&&) = delete;
   };  
 
-  class StructTypeBuilder {
-  public:
+  struct StructTypeBuilder: builder::BuilderBase {
+    
     StructTypeBuilder(std::string const &structName, api::impl::Context const &ctx);
-    StructTypeBuilder &field(std::string const &name, types::TypeHandle type);
+    StructTypeBuilder &  field(std::string const &name, types::TypeHandle type) &;
+    StructTypeBuilder && field(std::string const &name, types::TypeHandle type) &&;
     types::StructType const *done();
-    ~StructTypeBuilder() noexcept(false);
-
     
   private:
     std::string _structName;
-    api::impl::Context API_CTX_NAME;
-    bool _finalized = false;
-
     using NameTypePair = std::pair<std::string, types::TypeHandle>;
     std::vector<types::NameTypePair> _fields;
-    
-    StructTypeBuilder(StructTypeBuilder const&) = delete;
-    StructTypeBuilder(StructTypeBuilder&&) = delete;
-    StructTypeBuilder& operator=(StructTypeBuilder const&) = delete;
-    StructTypeBuilder& operator=(StructTypeBuilder&&) = delete;
   };
 
   

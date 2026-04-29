@@ -1,20 +1,20 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::Mop const Builder::divSpec {
+Assembler::Mop const Assembler::divSpec {
   .op = BinOp::Div,
   .fold = [](int x, int y) -> int { return x / y; },
-  .applyWithSlot = &Builder::divSlotBySlot,
-  .applyWithConst = &Builder::divSlotByConst
+  .applyWithSlot = &Assembler::divSlotBySlot,
+  .applyWithConst = &Assembler::divSlotByConst
 };
 
-Builder::Mop const Builder::modSpec {
+Assembler::Mop const Assembler::modSpec {
   .op = BinOp::Mod,
   .fold = [](int x, int y) -> int { return x % y; },
-  .applyWithSlot = &Builder::modSlotBySlot,
-  .applyWithConst = &Builder::modSlotByConst
+  .applyWithSlot = &Assembler::modSlotBySlot,
+  .applyWithConst = &Assembler::modSlotByConst
 };
 
-void Builder::divSlotByConst(Slot const &lhs, int denom) {
+void Assembler::divSlotByConst(Slot const &lhs, int denom) {
 
   pushPtr();
   if (lhs.type->usesValue1()) {
@@ -53,7 +53,7 @@ void Builder::divSlotByConst(Slot const &lhs, int denom) {
   popPtr();
 }
 
-void Builder::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
 
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -97,7 +97,7 @@ void Builder::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::modSlotByConst(Slot const &lhs, int denom) {
+void Assembler::modSlotByConst(Slot const &lhs, int denom) {
 
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
@@ -135,7 +135,7 @@ void Builder::modSlotByConst(Slot const &lhs, int denom) {
   popPtr();
 }
 
-void Builder::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
 
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -178,7 +178,7 @@ void Builder::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::divModConst(int denom, Cell modResult, Temps<5> tmp) {
+void Assembler::divModConst(int denom, Cell modResult, Temps<5> tmp) {
   pushPtr();
   Cell const divResult = _dp.current();
 
@@ -257,7 +257,7 @@ void Builder::divModConst(int denom, Cell modResult, Temps<5> tmp) {
   popPtr();
 }
 
-void Builder::divMod16Const(int denom, Cell high, Cell modResultLow, Cell modResultHigh, Temps<8> tmp) {
+void Assembler::divMod16Const(int denom, Cell high, Cell modResultLow, Cell modResultHigh, Temps<8> tmp) {
   pushPtr();
 
   Cell const divResultLow = _dp.current();
@@ -349,7 +349,7 @@ void Builder::divMod16Const(int denom, Cell high, Cell modResultLow, Cell modRes
 }
 
 
-void Builder::divModDestructive(Cell denom, Cell modResult, Temps<5> tmp) {
+void Assembler::divModDestructive(Cell denom, Cell modResult, Temps<5> tmp) {
   pushPtr();
 
   Cell const divResult = _dp.current();
@@ -423,7 +423,7 @@ void Builder::divModDestructive(Cell denom, Cell modResult, Temps<5> tmp) {
   popPtr();
 }
 
-void Builder::divMod16Destructive(Cell high, Cell denomLow, Cell denomHigh, Cell modResultLow, Cell modResultHigh, Temps<8> tmp) {
+void Assembler::divMod16Destructive(Cell high, Cell denomLow, Cell denomHigh, Cell modResultLow, Cell modResultHigh, Temps<8> tmp) {
   pushPtr();
 
   Cell const divResultLow  = _dp.current();
@@ -506,7 +506,7 @@ void Builder::divMod16Destructive(Cell high, Cell denomLow, Cell denomHigh, Cell
 }
 
 
-void Builder::divModConstructive(Cell result, Cell denom, Cell modResult, Temps<6> tmp) {
+void Assembler::divModConstructive(Cell result, Cell denom, Cell modResult, Temps<6> tmp) {
   Cell const denomCopy = tmp.get<0>();
 
   pushPtr();
@@ -520,7 +520,7 @@ void Builder::divModConstructive(Cell result, Cell denom, Cell modResult, Temps<
 }
 
 
-void Builder::divMod16Constructive(Cell high,
+void Assembler::divMod16Constructive(Cell high,
 				    Cell resultLow, Cell resultHigh,
 				    Cell denomLow, Cell denomHigh,
 				    Cell modResultLow, Cell modResultHigh,

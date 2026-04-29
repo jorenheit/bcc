@@ -1,25 +1,22 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-void Builder::setEntryPoint(std::string functionName, API_FUNC) {
+Assembler::ProgramBuilder Assembler::program(std::string const &name, std::string const &entry, API_FUNC) {
   API_FUNC_BEGIN();
-  API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
-  
-  _program.entryFunctionName = std::move(functionName);
+  return ProgramBuilder{ *this, name, entry, API_FWD };
 }
 
-void Builder::begin(API_FUNC) {
-  API_FUNC_BEGIN();
+void Assembler::beginProgramImpl(std::string const &name, std::string const &entry, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE(not _program.entryFunctionName.empty(), "no entry point set; call 'setEntryPoint' first.");
   API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
 
+  _program.entryFunctionName = entry;  
   _state.begun = true;
 
   // Globals should start at same frame offset as locals for consistency -> pad with raw
-  declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart)); 
+  declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart));
 }
 
-void Builder::end(API_FUNC) {
+void Assembler::endProgram(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
@@ -70,10 +67,16 @@ void Builder::end(API_FUNC) {
   loopClose("main loop");
 
   _state.begun = false;
+
+  // TODO: store current program as BF somewhere, probably into a map<name, bf>
 }
 
-void Builder::beginFunction(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_FUNC) {
+Assembler::FunctionBuilder Assembler::function(std::string const &name, API_FUNC) {
   API_FUNC_BEGIN();
+  return FunctionBuilder { *this, name, API_FWD };
+}
+
+void Assembler::beginFunctionImpl(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_CTX) {
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
@@ -94,15 +97,7 @@ void Builder::beginFunction(std::string const &name, types::TypeHandle type, std
   }
 }
 
-void Builder::beginFunction(std::string const &name, API_FUNC) {
-  beginFunction(name, ts::void_function(), std::vector<std::string>{});
-}
-
-void Builder::beginFunction(std::string const &name, types::TypeHandle funcType, API_FUNC) {
-  beginFunction(name, funcType, std::vector<std::string>{});
-}
-
-void Builder::endFunction(API_FUNC) {
+void Assembler::endFunction(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
@@ -112,8 +107,12 @@ void Builder::endFunction(API_FUNC) {
   _currentFunction = nullptr;
 }
 
-void Builder::beginScope(API_FUNC) {
+Assembler::ScopeBuilder Assembler::scope(API_FUNC) {
   API_FUNC_BEGIN();
+  return ScopeBuilder { *this, API_FWD };
+}
+
+void Assembler::beginScopeImpl(API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
@@ -121,7 +120,7 @@ void Builder::beginScope(API_FUNC) {
   _currentScope = &_currentFunction->createScope(_currentScope);
 }
 
-void Builder::endScope(API_FUNC) {
+void Assembler::endScope(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
@@ -132,14 +131,18 @@ void Builder::endScope(API_FUNC) {
 }
 
 
-void Builder::beginBlock(std::string name, API_FUNC) {
+Assembler::BlockBuilder Assembler::block(std::string const &name, API_FUNC) {
   API_FUNC_BEGIN();
+  return BlockBuilder { *this, name, API_FWD };
+}
+
+void Assembler::beginBlockImpl(std::string const &name, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
   auto globalIdx = _program.nextGlobalBlockIndex();
-  Function::Block &block = _currentFunction->createBlock(std::move(name), globalIdx);
+  Function::Block &block = _currentFunction->createBlock(name, globalIdx);
   _program.registerBlock(block);
 
   if (_currentFunction->blocks.size() == 1) {
@@ -153,7 +156,7 @@ void Builder::beginBlock(std::string name, API_FUNC) {
   blockOpen();
 }
 
-void Builder::endBlock(API_FUNC) {
+void Assembler::endBlock(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED_STRICT();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -163,7 +166,7 @@ void Builder::endBlock(API_FUNC) {
   _currentBlock = nullptr;
 }
 
-void Builder::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
+void Assembler::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -174,7 +177,7 @@ void Builder::setNextBlock(std::string const &f, std::string const &b, API_FUNC)
   API_EXPECT_NEXT("endBlock");  
 }
 
-void Builder::setNextBlock(std::string const &b, API_FUNC) {
+void Assembler::setNextBlock(std::string const &b, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -186,7 +189,7 @@ void Builder::setNextBlock(std::string const &b, API_FUNC) {
 }
 
 
-void Builder::setNextBlockImpl(std::string const &f, std::string const &b) {
+void Assembler::setNextBlockImpl(std::string const &f, std::string const &b) {
 
   pushPtr();
   
@@ -206,14 +209,14 @@ void Builder::setNextBlockImpl(std::string const &f, std::string const &b) {
   popPtr();
 }
 
-void Builder::setNextBlockImpl(int index) {
+void Assembler::setNextBlockImpl(int index) {
   pushPtr();
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
   popPtr();
 }
 
-void Builder::setNextBlockImpl(Expression const &obj) {
+void Assembler::setNextBlockImpl(Expression const &obj) {
   assert(types::isFunctionPointer(obj.type()));
   
   Slot const targetSlot {

@@ -1,6 +1,6 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Slot Builder::local(std::string const& varName, bool globalReference) const {
+Slot Assembler::local(std::string const& varName, bool globalReference) const {
   assert(_currentFunction != nullptr);
 
   Function::Scope *targetScope = _currentScope;
@@ -23,7 +23,7 @@ Slot Builder::local(std::string const& varName, bool globalReference) const {
 }
 
 
-Slot Builder::allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind) {
+Slot Assembler::allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind) {
 
   assert(_currentFunction != nullptr);
   
@@ -85,20 +85,20 @@ Slot Builder::allocSlot(std::string const &name, types::TypeHandle type, Slot::K
   return newSlot(name, type, kind);
 }
 
-void Builder::freeSlot(Slot &slot) {
+void Assembler::freeSlot(Slot &slot) {
   slot.name = "";
   slot.type = ts::raw(slot.type->size());
   slot.kind = Slot::Available;
   slot.scope = nullptr;
 }
 
-void Builder::freeTemps() {
+void Assembler::freeTemps() {
   for (auto &slot: _currentFunction->frame.locals) {
     if (slot.kind == Slot::Temp) freeSlot(slot);
   }
 }
 
-void Builder::freeScope(Function::Scope const *scope) {
+void Assembler::freeScope(Function::Scope const *scope) {
   for (auto &slot: _currentFunction->frame.locals) {
     if (slot.scope == scope) {
       freeSlot(slot);
@@ -106,18 +106,18 @@ void Builder::freeScope(Function::Scope const *scope) {
   }
 }
 
-Slot Builder::getTemp(types::TypeHandle type) {
+Slot Assembler::getTemp(types::TypeHandle type) {
   assert(_currentBlock != nullptr);
   return allocSlot("__tmp", type, Slot::Temp);
 }
 
-Slot Builder::getTemp(literal::Literal const &value) {
+Slot Assembler::getTemp(literal::Literal const &value) {
   Slot tmp = getTemp(value->type());
   assignSlot(tmp, value);
   return tmp;
 }
 
-Slot Builder::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
+Slot Assembler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_DECLARE_GLOBAL_ALLOWED();
@@ -139,7 +139,7 @@ Slot Builder::declareGlobal(std::string const &name, types::TypeHandle type, API
 }
 
 
-Slot Builder::declareLocal(std::string const& name, types::TypeHandle type, API_FUNC) {
+Slot Assembler::declareLocal(std::string const& name, types::TypeHandle type, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
@@ -149,7 +149,7 @@ Slot Builder::declareLocal(std::string const& name, types::TypeHandle type, API_
   return allocSlot(name, type, Slot::Local);
 }
 
-Slot Builder::declareGlobalReference(Slot const &globalSlot) {
+Slot Assembler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.kind == Slot::Global);
   assert(_currentFunction != nullptr);
   assert(_currentBlock != nullptr && _currentBlock->name.starts_with("__prologue_"));
@@ -168,13 +168,13 @@ Slot Builder::declareGlobalReference(Slot const &globalSlot) {
 }
 
 
-void Builder::referGlobals(std::vector<std::string> const &names, API_FUNC) {
+void Assembler::referGlobals(std::vector<std::string> const &names, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
-  beginBlock(std::string("__prologue_") + _currentFunction->name); {
+  block(std::string("__prologue_") + _currentFunction->name).begin(); {
 
     std::unordered_set<std::string> declared;
     for (std::string const &name: names) {

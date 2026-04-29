@@ -1,6 +1,6 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Expression Builder::addressOfImpl(Expression const &obj, API_CTX) {
+Expression Assembler::addressOfImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   assert(not obj.isLiteral());
@@ -14,7 +14,7 @@ Expression Builder::addressOfImpl(Expression const &obj, API_CTX) {
 }
 
 
-Slot Builder::addressOfSlot(Slot const &slot) {
+Slot Assembler::addressOfSlot(Slot const &slot) {
   assert(slot.kind != Slot::Temp && "taking address of temp");
 
   types::TypeHandle const pointeeType = slot.type;
@@ -52,7 +52,7 @@ Slot Builder::addressOfSlot(Slot const &slot) {
   return ptrSlot;
 }
 
-void Builder::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
+void Assembler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
   assert(types::isArray(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
   assert(elementSlot.type == cast<types::ArrayLike>(arrSlot.type)->elementType());
@@ -95,7 +95,7 @@ void Builder::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, 
 
 }
 
-void Builder::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot) {
+void Assembler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot) {
   assert(types::isArray(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
 
@@ -172,7 +172,7 @@ void Builder::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot
   popPtr();
 }
 
-void Builder::assignSlot(Slot const &dest, Slot const &src) {
+void Assembler::assignSlot(Slot const &dest, Slot const &src) {
   assert(dest.size() >= src.size());
 
   pushPtr();
@@ -193,7 +193,7 @@ void Builder::assignSlot(Slot const &dest, Slot const &src) {
   popPtr();
 }
 
-void Builder::assignSlot(Slot const &slot, literal::Literal const &val) {
+void Assembler::assignSlot(Slot const &slot, literal::Literal const &val) {
   pushPtr();
   if (types::isInteger(slot.type)) {
     int const x = literal::cast<types::IntegerType>(val)->value();
@@ -243,7 +243,7 @@ void Builder::assignSlot(Slot const &slot, literal::Literal const &val) {
 }
 
 
-Expression Builder::assignImpl(Expression const &lhs, Expression const &rhs, API_CTX) {
+Expression Assembler::assignImpl(Expression const &lhs, Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_ASSIGNABLE(lhs.type(), rhs.type());
@@ -259,7 +259,7 @@ Expression Builder::assignImpl(Expression const &lhs, Expression const &rhs, API
 }
 
 // TODO: factor out into a writeSlot? That's more consistent with the other API functions
-void Builder::writeOutImpl(Expression const &rhs, API_CTX) {
+void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
 
@@ -307,7 +307,7 @@ void Builder::writeOutImpl(Expression const &rhs, API_CTX) {
   popPtr();
 }
 
-void Builder::moveToPointee(Slot const &ptrSlot) {
+void Assembler::moveToPointee(Slot const &ptrSlot) {
   assert(types::isPointer(ptrSlot.type));
   // NOTE: this leaves the pointer in an unknown position. Leave a seekmarker before calling this
   
@@ -352,7 +352,7 @@ void Builder::moveToPointee(Slot const &ptrSlot) {
 }
 
 
-void Builder::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
+void Assembler::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot) {
   assert(types::isPointer(ptrSlot.type));
   assert(srcSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
 
@@ -409,7 +409,7 @@ void Builder::writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot cons
   syncGlobalToLocal(true);
 }
 
-void Builder::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
+void Assembler::dereferencePointerIntoSlot(Slot const &ptrSlot, Slot const &derefSlot) {
   assert(types::isPointer(ptrSlot.type));
   assert(derefSlot.type == types::cast<types::PointerType>(ptrSlot.type)->pointeeType());
 

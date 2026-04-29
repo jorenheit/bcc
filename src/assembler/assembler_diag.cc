@@ -1,35 +1,35 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-std::string Builder::currentFunction() const {
+std::string Assembler::currentFunction() const {
   return _currentFunction ? (*_currentFunction).name : "";
 }
 
-std::string Builder::currentBlock() const {
+std::string Assembler::currentBlock() const {
   return _currentBlock ? (*_currentBlock).name : "";
 }
 
-bool Builder::programStarted() const {
+bool Assembler::programStarted() const {
   return _state.begun;
 }
 
-bool Builder::declaredAsGlobal(std::string const &name) const {
+bool Assembler::declaredAsGlobal(std::string const &name) const {
   return _program.isGlobal(name);
 }
 
-bool Builder::globalDeclarationsAllowed() const {
+bool Assembler::globalDeclarationsAllowed() const {
   return _state.allowGlobalDeclarations;
 }
 
-bool Builder::inScope(std::string const &name) const {
+bool Assembler::inScope(std::string const &name) const {
   return local(name).valid();
 }
 
-bool Builder::inCurrentScope(std::string const &name) const {
+bool Assembler::inCurrentScope(std::string const &name) const {
   Slot const slot = local(name);
   return slot.valid() && slot.scope == _currentScope;
 }
 
-int Builder::currentScopeDepth() const {
+int Assembler::currentScopeDepth() const {
   int depth = 0;
   Function::Scope *scope = _currentScope;
   while (scope != nullptr) {

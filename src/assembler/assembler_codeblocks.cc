@@ -1,6 +1,6 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-void Builder::blockOpen() {
+void Assembler::blockOpen() {
   assert(_dp.current().offset == 0);
   assert(_currentBlock != nullptr);
 
@@ -36,7 +36,7 @@ void Builder::blockOpen() {
   moveToOrigin();
 }
 
-void Builder::blockClose() {
+void Assembler::blockClose() {
   assert(_currentBlock != nullptr);
 
   // We move back to the Flag stored in the RunState cell (guaranteed zero)
@@ -45,7 +45,7 @@ void Builder::blockClose() {
   moveToOrigin();
 }
 
-void Builder::constructMetaBlocks() {
+void Assembler::constructMetaBlocks() {
   assert(_currentFunction == nullptr);
   assert(_currentBlock == nullptr);
 
@@ -57,7 +57,7 @@ void Builder::constructMetaBlocks() {
 
     // Set current function to caller (owner of metablock) and construct block
     _currentFunction = &_program.function(m.caller);    
-    beginBlock(m.name); {
+    block(m.name).begin(); {
 
       if (returnType == ts::void_t() || not m.returnSlot){
 	fetchReturnData();
@@ -70,7 +70,7 @@ void Builder::constructMetaBlocks() {
 	  Slot const ret = returnSlot->materialize(*this);
 	  fetchReturnData(ret);
 	  if (ret.kind == Slot::GlobalReference) {
-	    syncGlobal<&Builder::putGlobal>(ret);
+	    syncGlobal<&Assembler::putGlobal>(ret);
 	  }
 	}
 	else {

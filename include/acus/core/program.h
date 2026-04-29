@@ -20,6 +20,7 @@ struct Program {
 
   primitive::Sequence bootstrap;
   primitive::Sequence hatstrap;
+  std::string name;
   std::string entryFunctionName;
   
   std::vector<Function> functions;

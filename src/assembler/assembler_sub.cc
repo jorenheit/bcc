@@ -1,13 +1,13 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::Mop const Builder::subSpec {
+Assembler::Mop const Assembler::subSpec {
   .op = BinOp::Sub,
   .fold = [](int x, int y) -> int { return x - y; },
-  .applyWithSlot = &Builder::subSlotFromSlot,
-  .applyWithConst = &Builder::subConstFromSlot
+  .applyWithSlot = &Assembler::subSlotFromSlot,
+  .applyWithConst = &Assembler::subConstFromSlot
 };
 
-void Builder::subConstFromSlot(Slot const &lhs, int delta) {
+void Assembler::subConstFromSlot(Slot const &lhs, int delta) {
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   (lhs.type->usesValue1())
@@ -21,7 +21,7 @@ void Builder::subConstFromSlot(Slot const &lhs, int delta) {
   popPtr();
 }
 
-void Builder::subSlotFromSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::subSlotFromSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -40,15 +40,15 @@ void Builder::subSlotFromSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::subConst(int delta) {
+void Assembler::subConst(int delta) {
   addConst(-delta);
 }
 
-void Builder::subConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
+void Assembler::subConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
   addConstAndCarry(-delta, carry, tmp);
 }
 
-void Builder::sub16Const(int delta, Cell high, Temps<4> tmp) {
+void Assembler::sub16Const(int delta, Cell high, Temps<4> tmp) {
   if (delta == 0) return;
   if (delta < 0) {
     add16Const(-delta, high, tmp);
@@ -68,12 +68,12 @@ void Builder::sub16Const(int delta, Cell high, Temps<4> tmp) {
 }
 
 
-void Builder::subDestructive(Cell other) {
+void Assembler::subDestructive(Cell other) {
   auto [cur, oth] = getFieldIndices(_dp.current(), other);
   emit<primitive::Subtract>(cur, oth);
 }
 
-void Builder::subConstructive(Cell result, Cell other, Temps<2> tmp) {
+void Assembler::subConstructive(Cell result, Cell other, Temps<2> tmp) {
   pushPtr();
   copyField(result, tmp.get<0>());
   moveTo(other);
@@ -84,7 +84,7 @@ void Builder::subConstructive(Cell result, Cell other, Temps<2> tmp) {
 }
 
 
-void Builder::subAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
+void Assembler::subAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
   Cell resultCopy = tmp.get<0>();
 
   pushPtr();
@@ -96,7 +96,7 @@ void Builder::subAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
-void Builder::subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp) {
+void Assembler::subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp) {
   pushPtr();
   copyField(result, tmp.get<0>());
   moveTo(other);
@@ -106,7 +106,7 @@ void Builder::subAndCarryConstructive(Cell result, Cell carry, Cell other, Temps
   popPtr();
 }
 
-void Builder::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
 
   Cell const &low = _dp.current();
   Cell const &carry = tmp.get<0>();
@@ -133,7 +133,7 @@ void Builder::sub16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4
   popPtr();
 }
 
-void Builder::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp) {
+void Assembler::sub16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp) {
 
   Cell const &low = _dp.current();
   Cell const &otherLowCopy  = tmp.get<0>();

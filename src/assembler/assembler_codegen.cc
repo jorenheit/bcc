@@ -1,10 +1,10 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-void Builder::setTargetSequence(primitive::Sequence *seq) {
+void Assembler::setTargetSequence(primitive::Sequence *seq) {
   _currentSeq = seq;
 }
 
-primitive::Context Builder::constructContext() const {
+primitive::Context Assembler::constructContext() const {
 
   auto const constructBlockIDtoIndexMap = [&](){
     std::unordered_map<std::string, int> result;
@@ -45,7 +45,7 @@ primitive::Context Builder::constructContext() const {
   };
 }
 
-primitive::Sequence Builder::compilePrimitives() const {
+primitive::Sequence Assembler::compilePrimitives() const {
   // TODO: assert that the program has been fully specified
 
   primitive::Sequence result = _program.bootstrap;
@@ -58,18 +58,18 @@ primitive::Sequence Builder::compilePrimitives() const {
   return result;
 }
 
-std::string Builder::dumpBrainfuck() const {
+std::string Assembler::dumpBrainfuck() const {
   primitive::Context ctx = constructContext();  
   return simplifyProgram(compilePrimitives().dumpCode(ctx));
 }
 
-std::string Builder::dumpPrimitives() const {
+std::string Assembler::dumpPrimitives() const {
   primitive::Context ctx = constructContext();  
   return compilePrimitives().dumpText(ctx);
 }
 
 // Compress BF string by cancelling opposite commands
-std::string Builder::simplifyProgram(std::string const &bf) {
+std::string Assembler::simplifyProgram(std::string const &bf) {
   auto cancel = [](std::string const &input, char const up, char const down) -> std::string {
     std::string result;
     int count = 0;

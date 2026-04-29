@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "acus/builder/builder.h"
+#include "acus/assembler/assembler.h"
 #include "acus/ir/primitive.h"
 
 #define API_SOURCE

@@ -31,10 +31,10 @@ namespace acus::proxy {
 
       types::TypeHandle type() const { return _type; }
       virtual std::string name() const = 0;
-      virtual Slot materialize(Builder &c) const = 0;
-      virtual void write(Builder &c, SlotProxy src) const = 0;
-      virtual void write(Builder &c, acus::literal::Literal src) const = 0;
-      virtual Slot addressOf(Builder &c) const = 0;
+      virtual Slot materialize(Assembler &a) const = 0;
+      virtual void write(Assembler &a, SlotProxy src) const = 0;
+      virtual void write(Assembler &a, acus::literal::Literal src) const = 0;
+      virtual Slot addressOf(Assembler &a) const = 0;
       virtual bool direct() const = 0;
     };
     
@@ -44,11 +44,11 @@ namespace acus::proxy {
     
     public:
       Direct(Slot const &slot): Base(slot.type), _slot(slot) {}
-      virtual Slot materialize(Builder&) const override;
-      virtual void write(Builder &c, SlotProxy src) const override;
-      virtual void write(Builder &c, acus::literal::Literal src) const override;      
+      virtual Slot materialize(Assembler&) const override;
+      virtual void write(Assembler &a, SlotProxy src) const override;
+      virtual void write(Assembler &a, acus::literal::Literal src) const override;      
       virtual bool direct() const override { return true; }
-      virtual Slot addressOf(Builder &c) const override;
+      virtual Slot addressOf(Assembler &a) const override;
 
       virtual std::string name() const override {
 	return _slot.name;
@@ -84,35 +84,35 @@ namespace acus::proxy {
 	return _arr->name() + "[" + idx + "]";
       }
       
-      virtual Slot materialize(Builder &c) const override {
+      virtual Slot materialize(Assembler &a) const override {
 	return std::holds_alternative<int>(_index)
-	  ? materializeImpl(c, std::get<int>(_index))
-	  : materializeImpl(c, std::get<SlotProxy>(_index));
+	  ? materializeImpl(a, std::get<int>(_index))
+	  : materializeImpl(a, std::get<SlotProxy>(_index));
       }
 
-      virtual void write(Builder &c, SlotProxy src) const override {
+      virtual void write(Assembler &a, SlotProxy src) const override {
 	return std::holds_alternative<int>(_index)
-	  ? writeImpl(c, std::get<int>(_index), src)
-	  : writeImpl(c, std::get<SlotProxy>(_index), src);
+	  ? writeImpl(a, std::get<int>(_index), src)
+	  : writeImpl(a, std::get<SlotProxy>(_index), src);
       }
 
-      virtual void write(Builder &c, acus::literal::Literal src) const override {
+      virtual void write(Assembler &a, acus::literal::Literal src) const override {
 	return std::holds_alternative<int>(_index)
-	  ? writeImpl(c, std::get<int>(_index), src)
-	  : writeImpl(c, std::get<SlotProxy>(_index), src);
+	  ? writeImpl(a, std::get<int>(_index), src)
+	  : writeImpl(a, std::get<SlotProxy>(_index), src);
       }
 
-      virtual Slot addressOf(Builder &c) const override;
+      virtual Slot addressOf(Assembler &a) const override;
 
       
     private:
-      Slot materializeImpl(Builder &c, int index) const;
-      Slot materializeImpl(Builder &c, SlotProxy index) const;
+      Slot materializeImpl(Assembler &a, int index) const;
+      Slot materializeImpl(Assembler &a, SlotProxy index) const;
 
-      void writeImpl(Builder &c, int index, SlotProxy src) const;
-      void writeImpl(Builder &c, int index, acus::literal::Literal) const;
-      void writeImpl(Builder &c, SlotProxy index, SlotProxy src) const;
-      void writeImpl(Builder &c, SlotProxy index, acus::literal::Literal) const;
+      void writeImpl(Assembler &a, int index, SlotProxy src) const;
+      void writeImpl(Assembler &a, int index, acus::literal::Literal) const;
+      void writeImpl(Assembler &a, SlotProxy index, SlotProxy src) const;
+      void writeImpl(Assembler &a, SlotProxy index, acus::literal::Literal) const;
 
       Slot getElementSlot(Slot const &arrSlot, int index) const;
     }; // ArrayElement
@@ -134,10 +134,10 @@ namespace acus::proxy {
 	return _obj->name() + "." + _fieldName;
       }
 
-      virtual Slot materialize(Builder &c) const override;
-      virtual void write(Builder &c, SlotProxy src) const override;
-      virtual void write(Builder &c, acus::literal::Literal src) const override;
-      virtual Slot addressOf(Builder &c) const override;
+      virtual Slot materialize(Assembler &a) const override;
+      virtual void write(Assembler &a, SlotProxy src) const override;
+      virtual void write(Assembler &a, acus::literal::Literal src) const override;
+      virtual Slot addressOf(Assembler &a) const override;
 
     private:
       Slot getFieldSlot(Slot const obj) const;
@@ -157,10 +157,10 @@ namespace acus::proxy {
 	return std::string("deref<") + _ptr->name() + ">";
       }
       
-      virtual Slot materialize(Builder &c) const;
-      virtual void write(Builder &c, SlotProxy src) const;;
-      virtual void write(Builder &c, acus::literal::Literal src) const;
-      virtual Slot addressOf(Builder &c) const override;      
+      virtual Slot materialize(Assembler &a) const;
+      virtual void write(Assembler &a, SlotProxy src) const;;
+      virtual void write(Assembler &a, acus::literal::Literal src) const;
+      virtual Slot addressOf(Assembler &a) const override;      
       virtual bool direct() const { return false; }
     };
     

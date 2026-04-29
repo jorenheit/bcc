@@ -1,68 +1,68 @@
 
-Builder::FunctionCallBuilder Builder::callFunctionPointer(auto const &functionPointer, std::string const &nextBlockName, API_FUNC_SOURCE) {
+Assembler::FunctionCallBuilder Assembler::callFunctionPointer(auto const &functionPointer, std::string const &nextBlockName, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return FunctionCallBuilder { *this, rValue(functionPointer, API_FWD), nextBlockName, API_FWD };
 }
 
-void Builder::returnFromFunction(auto const &rhs, API_FUNC_SOURCE) {
+void Assembler::returnFromFunction(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   returnFromFunctionImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
-void Builder::writeOut(auto const &rhs, API_FUNC_SOURCE) {
+void Assembler::writeOut(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   writeOutImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
-Expression Builder::assign(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
+Expression Assembler::assign(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return assignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
 }
 
-Expression Builder::structField(auto const &obj, std::string const &field, API_FUNC_SOURCE) {
+Expression Assembler::structField(auto const &obj, std::string const &field, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return structFieldImpl(rValue(obj, API_FWD), field, API_FWD);
 }
 
-Expression Builder::structField(auto const &obj, int fieldIndex, API_FUNC_SOURCE) {
+Expression Assembler::structField(auto const &obj, int fieldIndex, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return structFieldImpl(rValue(obj, API_FWD), fieldIndex, API_FWD);
 }
 
-Expression Builder::arrayElement(auto const &arr, int index, API_FUNC_SOURCE) {
+Expression Assembler::arrayElement(auto const &arr, int index, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return arrayElementImpl(rValue(arr, API_FWD), index, API_FWD);
 }
 
-Expression Builder::arrayElement(auto const &arr, auto const &index, API_FUNC_SOURCE) {
+Expression Assembler::arrayElement(auto const &arr, auto const &index, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return arrayElementImpl(rValue(arr, API_FWD), rValue(index, API_FWD), API_FWD);
 }
 
-Expression Builder::dereferencePointer(auto const &ptr, API_FUNC_SOURCE) {
+Expression Assembler::dereferencePointer(auto const &ptr, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return dereferencePointerImpl(lValue(ptr, API_FWD), API_FWD);
 }
 
-Expression Builder::addressOf(auto const &obj, API_FUNC_SOURCE) {
+Expression Assembler::addressOf(auto const &obj, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return addressOfImpl(lValue(obj, API_FWD), API_FWD);
 }
 
-void Builder::branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC_SOURCE) {
+void Assembler::branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
 }
 
 
 
-Expression Builder::expr(auto const &obj, API_FUNC_SOURCE) {
+Expression Assembler::expr(auto const &obj, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return rValue(obj, API_FWD);
 }
 
 // Binary operations
-Expression Builder::binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
+Expression Assembler::binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   switch (op) {
   case BinOp::Add:  return add(lhs, rhs, API_FWD);
@@ -87,7 +87,7 @@ Expression Builder::binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_S
   std::unreachable();
 }
 
-Expression Builder::binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
+Expression Assembler::binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   switch (op) {
   case BinOp::Add:  return addAssign(lhs, rhs, API_FWD);
@@ -115,12 +115,12 @@ Expression Builder::binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_
 // The implementation for opImpl and opAssignImpl is in Builder_binop_general.cc
 
 #define BINOP(OP)							\
-  Expression Builder::OP##Assign(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) { \
+  Expression Assembler::OP##Assign(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) { \
     API_FUNC_BEGIN();							\
     return opAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), OP##Spec, API_FWD); \
   }									\
 									\
-  Expression Builder::OP(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) { \
+  Expression Assembler::OP(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) { \
     API_FUNC_BEGIN();							\
     return opImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), OP##Spec, API_FWD); \
   }

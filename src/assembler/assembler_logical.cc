@@ -1,48 +1,48 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::Lop const Builder::landSpec {
+Assembler::Lop const Assembler::landSpec {
   .op = BinOp::And,
   .fold = [](bool x, bool y) -> bool { return x && y; },
-  .applyWithSlot = &Builder::andSlotWithSlot,
-  .applyWithConst = &Builder::andSlotWithConst
+  .applyWithSlot = &Assembler::andSlotWithSlot,
+  .applyWithConst = &Assembler::andSlotWithConst
 };
 
-Builder::Lop const Builder::lnandSpec {
+Assembler::Lop const Assembler::lnandSpec {
   .op = BinOp::Nand,
   .fold = [](bool x, bool y) -> bool { return !(x && y); },
-  .applyWithSlot = &Builder::nandSlotWithSlot,
-  .applyWithConst = &Builder::nandSlotWithConst
+  .applyWithSlot = &Assembler::nandSlotWithSlot,
+  .applyWithConst = &Assembler::nandSlotWithConst
 };
 
-Builder::Lop const Builder::lorSpec {
+Assembler::Lop const Assembler::lorSpec {
   .op = BinOp::Or,
   .fold = [](bool x, bool y) -> bool { return x || y; },
-  .applyWithSlot = &Builder::orSlotWithSlot,
-  .applyWithConst = &Builder::orSlotWithConst
+  .applyWithSlot = &Assembler::orSlotWithSlot,
+  .applyWithConst = &Assembler::orSlotWithConst
 };
 
-Builder::Lop const Builder::lnorSpec {
+Assembler::Lop const Assembler::lnorSpec {
   .op = BinOp::Nor,
   .fold = [](bool x, bool y) -> bool { return !(x || y); },
-  .applyWithSlot = &Builder::norSlotWithSlot,
-  .applyWithConst = &Builder::norSlotWithConst
+  .applyWithSlot = &Assembler::norSlotWithSlot,
+  .applyWithConst = &Assembler::norSlotWithConst
 };
 
-Builder::Lop const Builder::lxorSpec {
+Assembler::Lop const Assembler::lxorSpec {
   .op = BinOp::Xor,
   .fold = [](bool x, bool y) -> bool { return x != y; },
-  .applyWithSlot = &Builder::xorSlotWithSlot,
-  .applyWithConst = &Builder::xorSlotWithConst
+  .applyWithSlot = &Assembler::xorSlotWithSlot,
+  .applyWithConst = &Assembler::xorSlotWithConst
 };
 
-Builder::Lop const Builder::lxnorSpec {
+Assembler::Lop const Assembler::lxnorSpec {
   .op = BinOp::Xnor,
   .fold = [](bool x, bool y) -> bool { return x == y; },
-  .applyWithSlot = &Builder::xnorSlotWithSlot,
-  .applyWithConst = &Builder::xnorSlotWithConst
+  .applyWithSlot = &Assembler::xnorSlotWithSlot,
+  .applyWithConst = &Assembler::xnorSlotWithConst
 };
 
-void Builder::andSlotWithConst(Slot const &lhs, int val) {
+void Assembler::andSlotWithConst(Slot const &lhs, int val) {
   pushPtr();
   moveTo(lhs);
 
@@ -64,7 +64,7 @@ void Builder::andSlotWithConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::andSlotWithSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::andSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const rhsCopy = getTemp(rhs.type);
@@ -86,7 +86,7 @@ void Builder::andSlotWithSlot(Slot const &lhs, Slot const &rhs) {
 }
 
 
-void Builder::nandSlotWithConst(Slot const &lhs, int val) {
+void Assembler::nandSlotWithConst(Slot const &lhs, int val) {
   pushPtr();
   moveTo(lhs);
 
@@ -108,7 +108,7 @@ void Builder::nandSlotWithConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::nandSlotWithSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::nandSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const rhsCopy = getTemp(rhs.type);
@@ -130,7 +130,7 @@ void Builder::nandSlotWithSlot(Slot const &lhs, Slot const &rhs) {
 }
 
 
-void Builder::orSlotWithConst(Slot const &lhs, int val) {
+void Assembler::orSlotWithConst(Slot const &lhs, int val) {
   pushPtr();
   moveTo(lhs);
 
@@ -152,7 +152,7 @@ void Builder::orSlotWithConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::orSlotWithSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::orSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const rhsCopy = getTemp(rhs.type);
@@ -173,7 +173,7 @@ void Builder::orSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::norSlotWithConst(Slot const &lhs, int val) {
+void Assembler::norSlotWithConst(Slot const &lhs, int val) {
   pushPtr();
   moveTo(lhs);
 
@@ -195,7 +195,7 @@ void Builder::norSlotWithConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::norSlotWithSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::norSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const rhsCopy = getTemp(rhs.type);
@@ -216,7 +216,7 @@ void Builder::norSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::xorSlotWithConst(Slot const &lhs, int val) {
+void Assembler::xorSlotWithConst(Slot const &lhs, int val) {
   pushPtr();
   moveTo(lhs);
 
@@ -240,7 +240,7 @@ void Builder::xorSlotWithConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::xorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::xorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const rhsCopy = getTemp(rhs.type);
@@ -263,7 +263,7 @@ void Builder::xorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::xnorSlotWithConst(Slot const &lhs, int val) {
+void Assembler::xnorSlotWithConst(Slot const &lhs, int val) {
   pushPtr();
   moveTo(lhs);
 
@@ -287,7 +287,7 @@ void Builder::xnorSlotWithConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::xnorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::xnorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
   Slot const rhsCopy = getTemp(rhs.type);
@@ -310,12 +310,12 @@ void Builder::xnorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::orDestructive(Cell other, Temps<1> tmp) {
+void Assembler::orDestructive(Cell other, Temps<1> tmp) {
   auto [cur, oth, tmp0] = getFieldIndices(_dp.current(), other, tmp.get<0>());
   emit<primitive::Or>(cur, oth, tmp0);
 }
 
-void Builder::orConstructive(Cell result, Cell other, Temps<2> tmp) {
+void Assembler::orConstructive(Cell result, Cell other, Temps<2> tmp) {
   Cell const &otherCopy = tmp.get<0>();
   
   pushPtr();
@@ -327,7 +327,7 @@ void Builder::orConstructive(Cell result, Cell other, Temps<2> tmp) {
   popPtr();
 }
 
-void Builder::or16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Assembler::or16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
 
   pushPtr();
   Cell const currentLow = _dp.current();
@@ -345,7 +345,7 @@ void Builder::or16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>
   popPtr();
 }
 
-void Builder::or16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+void Assembler::or16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -365,12 +365,12 @@ void Builder::or16Constructive(Cell high, Cell result, Cell otherLow, Cell other
   popPtr();
 }
 
-void Builder::andDestructive(Cell other, Temps<1> tmp) {
+void Assembler::andDestructive(Cell other, Temps<1> tmp) {
   auto [cur, oth, tmp0] = getFieldIndices(_dp.current(), other, tmp.get<0>());
   emit<primitive::And>(cur, oth, tmp0);
 }
 
-void Builder::andConstructive(Cell result, Cell other, Temps<2> tmp) { 
+void Assembler::andConstructive(Cell result, Cell other, Temps<2> tmp) { 
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());  
@@ -381,7 +381,7 @@ void Builder::andConstructive(Cell result, Cell other, Temps<2> tmp) {
   popPtr();
 }
 
-void Builder::and16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Assembler::and16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
 
   pushPtr();
   Cell const currentLow = _dp.current();
@@ -400,7 +400,7 @@ void Builder::and16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1
 }
 
 
-void Builder::and16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+void Assembler::and16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -420,12 +420,12 @@ void Builder::and16Constructive(Cell high, Cell result, Cell otherLow, Cell othe
   popPtr();
 }
 
-void Builder::xorDestructive(Cell other, Temps<2> tmp) {
+void Assembler::xorDestructive(Cell other, Temps<2> tmp) {
   auto [cur, oth, tmp0, tmp1] = getFieldIndices(_dp.current(), other, tmp.get<0>(), tmp.get<1>());
   emit<primitive::Xor>(cur, oth, tmp0, tmp1);
 }
 
-void Builder::xorConstructive(Cell result, Cell other, Temps<3> tmp) { 
+void Assembler::xorConstructive(Cell result, Cell other, Temps<3> tmp) { 
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());  
@@ -436,7 +436,7 @@ void Builder::xorConstructive(Cell result, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
-void Builder::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2> tmp) {
+void Assembler::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2> tmp) {
   pushPtr();
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -454,7 +454,7 @@ void Builder::xor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2
 }
 
 
-void Builder::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5> tmp) { 
+void Assembler::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5> tmp) { 
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -474,63 +474,63 @@ void Builder::xor16Constructive(Cell high, Cell result, Cell otherLow, Cell othe
   popPtr();
 }
 
-void Builder::nandDestructive(Cell other, Temps<1> tmp) {
+void Assembler::nandDestructive(Cell other, Temps<1> tmp) {
   andDestructive(other, tmp);
   notDestructive(tmp);
 }
 
-void Builder::nandConstructive(Cell result, Cell other, Temps<2> tmp) {
+void Assembler::nandConstructive(Cell result, Cell other, Temps<2> tmp) {
   andConstructive(result, other, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Assembler::nand16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
   and16Destructive(high, otherLow, otherHigh, tmp);
   notDestructive(tmp);
 }
 
 
-void Builder::nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::nand16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
   and16Constructive(high, result, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::norDestructive(Cell other, Temps<1> tmp) {
+void Assembler::norDestructive(Cell other, Temps<1> tmp) {
   orDestructive(other, tmp);
   notDestructive(tmp);
 }
 
-void Builder::norConstructive(Cell result, Cell other, Temps<2> tmp) {
+void Assembler::norConstructive(Cell result, Cell other, Temps<2> tmp) {
   orConstructive(result, other, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::nor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Assembler::nor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
   or16Destructive(high, otherLow, otherHigh, tmp);
   notDestructive(tmp);
 }
 
-void Builder::nor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::nor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
   or16Constructive(high, result, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::xnorDestructive(Cell other, Temps<2> tmp) {
+void Assembler::xnorDestructive(Cell other, Temps<2> tmp) {
   xorDestructive(other, tmp);
   notDestructive(tmp.select<1>());
 }
 
-void Builder::xnorConstructive(Cell result, Cell other, Temps<3> tmp) {
+void Assembler::xnorConstructive(Cell result, Cell other, Temps<3> tmp) {
   xorConstructive(result, other, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2> tmp) {
+void Assembler::xnor16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<2> tmp) {
   xor16Destructive(high, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5> tmp) {
+void Assembler::xnor16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<5> tmp) {
   xor16Constructive(high, result, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }

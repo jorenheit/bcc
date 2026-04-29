@@ -1,7 +1,7 @@
-#include "builder.ih"
+#include "assembler.ih"
 
 template <typename SpecType>
-Expression Builder::opAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
+Expression Assembler::opAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
@@ -46,7 +46,7 @@ Expression Builder::opAssignImpl(Expression const &lhs, Expression const &rhs, S
 }
 
 template <typename SpecType>
-Expression Builder::opImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
+Expression Assembler::opImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
@@ -72,10 +72,10 @@ Expression Builder::opImpl(Expression const &lhs, Expression const &rhs, SpecTyp
 }
 
 // Explicit instantiations for Mop, Cop and Lop
-template Expression Builder::opImpl<Builder::Mop>(Expression const&, Expression const&, Builder::Mop const&, API_CTX);
-template Expression Builder::opImpl<Builder::Lop>(Expression const&, Expression const&, Builder::Lop const&, API_CTX);
-template Expression Builder::opImpl<Builder::Cop>(Expression const&, Expression const&, Builder::Cop const&, API_CTX);
+template Expression Assembler::opImpl<Assembler::Mop>(Expression const&, Expression const&, Assembler::Mop const&, API_CTX);
+template Expression Assembler::opImpl<Assembler::Lop>(Expression const&, Expression const&, Assembler::Lop const&, API_CTX);
+template Expression Assembler::opImpl<Assembler::Cop>(Expression const&, Expression const&, Assembler::Cop const&, API_CTX);
 
-template Expression Builder::opAssignImpl<Builder::Mop>(Expression const&, Expression const&, Builder::Mop const&, API_CTX);
-template Expression Builder::opAssignImpl<Builder::Lop>(Expression const&, Expression const&, Builder::Lop const&, API_CTX);
-template Expression Builder::opAssignImpl<Builder::Cop>(Expression const&, Expression const&, Builder::Cop const&, API_CTX);
+template Expression Assembler::opAssignImpl<Assembler::Mop>(Expression const&, Expression const&, Assembler::Mop const&, API_CTX);
+template Expression Assembler::opAssignImpl<Assembler::Lop>(Expression const&, Expression const&, Assembler::Lop const&, API_CTX);
+template Expression Assembler::opAssignImpl<Assembler::Cop>(Expression const&, Expression const&, Assembler::Cop const&, API_CTX);

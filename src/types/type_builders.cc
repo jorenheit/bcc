@@ -19,24 +19,27 @@ namespace acus::ts::impl {
 // FunctionTypeBuilder
 namespace acus::ts {
 
-  FunctionTypeBuilder &FunctionTypeBuilder::ret(types::TypeHandle returnType) {
+  FunctionTypeBuilder & FunctionTypeBuilder::ret(types::TypeHandle returnType) & {
     API_REQUIRE(_ret == types::null, "return-type was already specified.");
     _ret = returnType;
     return *this;
   }
-    
-  FunctionTypeBuilder &FunctionTypeBuilder::param(types::TypeHandle paramType) {
+
+  FunctionTypeBuilder && FunctionTypeBuilder::ret(types::TypeHandle returnType) && {
+    return std::move(this->ret(returnType));
+  }
+  
+  FunctionTypeBuilder & FunctionTypeBuilder::param(types::TypeHandle paramType) & {
     _paramTypes.push_back(paramType);
     return *this;
   }
 
-  FunctionTypeBuilder &FunctionTypeBuilder::param(std::vector<types::TypeHandle> const &paramTypes) {
-    for (auto t: paramTypes) _paramTypes.push_back(t);
-    return *this;
+  FunctionTypeBuilder && FunctionTypeBuilder::param(types::TypeHandle paramType) && {
+    return std::move(this->param(paramType));
   }
 
   types::FunctionType const *FunctionTypeBuilder::done() {
-    _finalized = true;
+    _finalized.done();
     
     if (_ret == types::null) _ret = ts::void_t();
     if (_ret == ts::void_t() && _paramTypes.size() == 0) {
@@ -63,14 +66,9 @@ namespace acus::ts {
   }
 
   FunctionTypeBuilder::FunctionTypeBuilder(api::impl::Context const &ctx):
-    _ret(types::null),
-    API_CTX_NAME(ctx)
+    BuilderBase("FunctionTypeBuilder", "done", ctx),
+    _ret(types::null)
   {}
-
-  FunctionTypeBuilder::~FunctionTypeBuilder() noexcept(false) {
-    if (std::uncaught_exceptions() == 0)
-      API_REQUIRE(_finalized, "done() was never called on result of ts::function()");
-  }
 }
 
 
@@ -78,25 +76,24 @@ namespace acus::ts {
 namespace acus::ts {
 
   StructTypeBuilder::StructTypeBuilder(std::string const &structName, api::impl::Context const &ctx):
-    _structName(structName),
-    API_CTX_NAME(ctx)
+    BuilderBase("StructTypeBuilder", "done", ctx),
+    _structName(structName)
   {}
 
-  StructTypeBuilder &StructTypeBuilder::field(std::string const &name, types::TypeHandle type) {
+  StructTypeBuilder & StructTypeBuilder::field(std::string const &name, types::TypeHandle type) &{
     _fields.emplace_back(name, type);
     return *this;
   }
 
+  StructTypeBuilder && StructTypeBuilder::field(std::string const &name, types::TypeHandle type) && {
+    return std::move(this->field(name, type));
+  }
+  
   types::StructType const *StructTypeBuilder::done() {
-    _finalized = true;
+    _finalized.done();
     if (struct_t(_structName) != nullptr) return nullptr; // already defined a struct with this name
     impl::_structTypes.emplace_back(std::make_unique<types::StructType>(_structName, _fields));
     return impl::_structTypes.back().get();
-  }
-
-  StructTypeBuilder::~StructTypeBuilder() noexcept(false) {
-    if (std::uncaught_exceptions() == 0)
-      API_REQUIRE(_finalized, "done() was never called on result of ts::structT()");
   }
 
 }

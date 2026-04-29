@@ -1,11 +1,11 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::FunctionCallBuilder Builder::callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC) {
+Assembler::FunctionCallBuilder Assembler::callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC) {
   API_FUNC_BEGIN();
   return FunctionCallBuilder { *this, functionName, nextBlockName, API_FWD };
 }
 
-void Builder::callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
+void Assembler::callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
 				std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -38,7 +38,7 @@ void Builder::callFunctionImpl(std::string const &functionName, std::string cons
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::callFunctionImpl(Expression const &fPtr, std::string const& nextBlockName,
+void Assembler::callFunctionImpl(Expression const &fPtr, std::string const& nextBlockName,
 			       std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -73,7 +73,7 @@ void Builder::callFunctionImpl(Expression const &fPtr, std::string const& nextBl
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX) {
+void Assembler::functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX) {
   auto const &paramTypes = functionType->paramTypes();
   API_REQUIRE(paramTypes.size() == args.size(),
 	      "invalid number of arguments in function-call through function-pointer: " 
@@ -83,7 +83,7 @@ void Builder::functionCallTypeCheck(types::FunctionType const *functionType, std
   }
 }
 
-void Builder::deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX) {
+void Assembler::deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX) {
     _deferredFunctionCallTypeChecks.emplace_back(FunctionCallInfo {
       .API_CTX_NAME = API_FWD,
       .callee = callee,
@@ -91,7 +91,7 @@ void Builder::deferFunctionCallTypeCheck(std::string const &callee, std::vector<
     });
 }
 
-void Builder::deferredFunctionCallTypeChecks() {
+void Assembler::deferredFunctionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
   for (auto const &[API_CTX_NAME, callee, args]: _deferredFunctionCallTypeChecks) {
@@ -103,13 +103,13 @@ void Builder::deferredFunctionCallTypeChecks() {
 }
 
 
-void Builder::blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX) {
+void Assembler::blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX) {
   API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");
   API_REQUIRE(_program.function(functionName).isBlockDefined(blockName),
 	      "block '", blockName, "' not defined inside function '", functionName, "'.");
 }
 
-void Builder::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
+void Assembler::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
   _deferredBlockNameChecks.emplace_back( BlockNameCheck {
       .API_CTX_NAME = API_FWD,
       .functionName = f,
@@ -117,7 +117,7 @@ void Builder::deferBlockNameCheck(std::string const &f, std::string const &b, AP
     });
 }
 
-void Builder::deferredBlockNameChecks() {
+void Assembler::deferredBlockNameChecks() {
   assert(_currentFunction == nullptr);
 
   for (auto const &[API_CTX_NAME, functionName, blockName]: _deferredBlockNameChecks) {
@@ -127,7 +127,7 @@ void Builder::deferredBlockNameChecks() {
   _deferredBlockNameChecks.clear();
 }
 
-void Builder::abortProgram(API_FUNC) {
+void Assembler::abortProgram(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -141,12 +141,12 @@ void Builder::abortProgram(API_FUNC) {
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::returnFromFunction(API_FUNC) {
+void Assembler::returnFromFunction(API_FUNC) {
   API_FUNC_BEGIN();
   returnFromFunctionImpl({}, API_FWD);
 }
 
-void Builder::returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX) {
+void Assembler::returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   
@@ -171,7 +171,7 @@ void Builder::returnFromFunctionImpl(std::optional<Expression> const &ret, API_C
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramStart,
+void Assembler::initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramStart,
 				  std::vector<Expression> const &args, API_CTX) {
 
   auto const copySlotToNextFrame = [&](Slot const &slot, int &offset) {
@@ -315,7 +315,7 @@ void Builder::initializeArguments(primitive::DInt const currentFrameSize, primit
 }
 
 
-void Builder::prepareNextFrame(std::string const &functionName, std::vector<Expression> const &args, API_CTX) {
+void Assembler::prepareNextFrame(std::string const &functionName, std::vector<Expression> const &args, API_CTX) {
 
   primitive::DInt const paramStart = [callee = functionName](primitive::Context const &ctx) {
     return ctx.getLocalBaseOffset(callee) * MacroCell::FieldCount;
@@ -333,7 +333,7 @@ void Builder::prepareNextFrame(std::string const &functionName, std::vector<Expr
   emit<primitive::MovePointerRelative>(-currentFrameSize);
 }
 
-void Builder::prepareNextFrame(Expression const &fptr, std::vector<Expression> const &args, API_CTX) {
+void Assembler::prepareNextFrame(Expression const &fptr, std::vector<Expression> const &args, API_CTX) {
 
   auto functionPointerType = types::cast<types::FunctionPointerType>(fptr.type());
   auto functionType = types::cast<types::FunctionType>(functionPointerType->functionType());
@@ -372,7 +372,7 @@ void Builder::prepareNextFrame(Expression const &fptr, std::vector<Expression> c
 
 
 
-void Builder::fetchReturnData() {
+void Assembler::fetchReturnData() {
   assert(_currentSeq != nullptr);  
   assert(_currentFunction != nullptr);
 
@@ -393,7 +393,7 @@ void Builder::fetchReturnData() {
 
 
 
-void Builder::fetchReturnData(Slot const &returnSlot) {
+void Assembler::fetchReturnData(Slot const &returnSlot) {
 
   primitive::DInt const stackFrameSize = [caller = _currentFunction->name](primitive::Context const &ctx) -> int {
     return ctx.getStackFrameSize(caller) * MacroCell::FieldCount;
@@ -419,7 +419,7 @@ void Builder::fetchReturnData(Slot const &returnSlot) {
   popPtr();
 }
 
-void Builder::branchIfImpl(Expression const &obj, std::string const &trueLabel,
+void Assembler::branchIfImpl(Expression const &obj, std::string const &trueLabel,
 			    std::string const &falseLabel, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
@@ -438,7 +438,7 @@ void Builder::branchIfImpl(Expression const &obj, std::string const &trueLabel,
   API_EXPECT_NEXT("endBlock");
 }
 
-void Builder::branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel) {
+void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel) {
 
   pushPtr();
 

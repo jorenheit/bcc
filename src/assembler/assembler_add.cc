@@ -1,14 +1,14 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::Mop const Builder::addSpec {
+Assembler::Mop const Assembler::addSpec {
   .op = BinOp::Add,
   .fold = [](int x, int y) -> int { return x + y; },
-  .applyWithSlot = &Builder::addSlotToSlot,
-  .applyWithConst = &Builder::addConstToSlot
+  .applyWithSlot = &Assembler::addSlotToSlot,
+  .applyWithConst = &Assembler::addConstToSlot
 };
 
 
-void Builder::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -27,7 +27,7 @@ void Builder::addSlotToSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::addConstToSlot(Slot const &lhs, int delta) {
+void Assembler::addConstToSlot(Slot const &lhs, int delta) {
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   (lhs.type->usesValue1())
@@ -41,11 +41,11 @@ void Builder::addConstToSlot(Slot const &lhs, int delta) {
 }
 
 
-void Builder::addConst(int delta) {
+void Assembler::addConst(int delta) {
   emit<primitive::ChangeBy>(delta);
 }
 
-void Builder::addConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
+void Assembler::addConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
   pushPtr();
 
   if (delta == 0) {
@@ -70,7 +70,7 @@ void Builder::addConstAndCarry(int delta, Cell carry, Temps<3> tmp) {
   popPtr();
 }  
 
-void Builder::addAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
+void Assembler::addAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
   Cell resultCopy = tmp.get<0>();
 
   pushPtr();
@@ -82,7 +82,7 @@ void Builder::addAndCarryDestructive(Cell carry, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
-void Builder::addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp) {
+void Assembler::addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps<4> tmp) {
   pushPtr();
   copyField(result, tmp.get<0>());
   moveTo(other);
@@ -92,7 +92,7 @@ void Builder::addAndCarryConstructive(Cell result, Cell carry, Cell other, Temps
   popPtr();
 }
 
-void Builder::add16Const(int delta, Cell high, Temps<4> tmp) {
+void Assembler::add16Const(int delta, Cell high, Temps<4> tmp) {
   if (delta == 0) return;
   if (delta < 0) {
     sub16Const(-delta, high, tmp);
@@ -111,12 +111,12 @@ void Builder::add16Const(int delta, Cell high, Temps<4> tmp) {
   popPtr();
 }
 
-void Builder::addDestructive(Cell other) {
+void Assembler::addDestructive(Cell other) {
   auto [cur, oth] = getFieldIndices(_dp.current(), other);
   emit<primitive::Add>(cur, oth);
 }
 
-void Builder::addConstructive(Cell result, Cell other, Temps<2> tmp) {
+void Assembler::addConstructive(Cell result, Cell other, Temps<2> tmp) {
   pushPtr();
   copyField(result, tmp.get<0>());
   moveTo(other);
@@ -126,7 +126,7 @@ void Builder::addConstructive(Cell result, Cell other, Temps<2> tmp) {
   popPtr();
 }
 
-void Builder::add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
 
   pushPtr();
   Cell const &low   = _dp.current();
@@ -152,7 +152,7 @@ void Builder::add16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4
   popPtr();
 }
 
-void Builder::add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp) {
+void Assembler::add16Constructive(Cell high, Cell resultLow, Cell resultHigh, Cell otherLow, Cell otherHigh, Temps<6> tmp) {
 
   Cell const & low      = _dp.current();
   Cell const & otherLowCopy  = tmp.get<0>();

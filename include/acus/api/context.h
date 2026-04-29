@@ -3,20 +3,20 @@
 #include <string>
 
 namespace acus {
-  class Builder;
+  class Assembler;
 }
 
 namespace acus::api::impl {
 
   class Context {
-    Builder const *_builder = nullptr;
+    Assembler const *_assembler = nullptr;
     std::string _name;
     std::source_location _loc;
     
   public:
     Context() = default;
     Context(std::string const &name, std::source_location loc);    
-    Context(Builder const &c, std::string const &name, std::source_location loc);
+    Context(Assembler const &a, std::string const &name, std::source_location loc);
 
     bool programStarted() const;
     std::string currentFunction() const;

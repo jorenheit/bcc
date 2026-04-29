@@ -21,26 +21,26 @@ COMMON_SRCS := \
 	src/types/type_builders.cc \
 	src/core/proxy.cc \
 	src/core/slot.cc \
-	src/builder/builder_program.cc \
-	src/builder/builder_struct.cc \
-	src/builder/builder_access.cc \
-	src/builder/builder_calls_control.cc \
-	src/builder/builder_pointers_memory.cc \
-	src/builder/builder_algorithms.cc \
-	src/builder/builder_codeblocks.cc \
-	src/builder/builder_framenav.cc \
-	src/builder/builder_diag.cc \
-	src/builder/builder_codegen.cc \
-	src/builder/builder_globals.cc \
-	src/builder/builder_memory.cc \
-	src/builder/builder_rlvalue.cc \
-	src/builder/builder_add.cc \
-	src/builder/builder_sub.cc \
-	src/builder/builder_divmod.cc \
-	src/builder/builder_mul.cc \
-	src/builder/builder_logical.cc \
-	src/builder/builder_comparisons.cc \
-	src/builder/builder_binop_general.cc \
+	src/assembler/assembler_builders.cc \
+	src/assembler/assembler_program.cc \
+	src/assembler/assembler_access.cc \
+	src/assembler/assembler_calls_control.cc \
+	src/assembler/assembler_pointers_memory.cc \
+	src/assembler/assembler_algorithms.cc \
+	src/assembler/assembler_codeblocks.cc \
+	src/assembler/assembler_framenav.cc \
+	src/assembler/assembler_diag.cc \
+	src/assembler/assembler_codegen.cc \
+	src/assembler/assembler_globals.cc \
+	src/assembler/assembler_memory.cc \
+	src/assembler/assembler_rlvalue.cc \
+	src/assembler/assembler_add.cc \
+	src/assembler/assembler_sub.cc \
+	src/assembler/assembler_divmod.cc \
+	src/assembler/assembler_mul.cc \
+	src/assembler/assembler_logical.cc \
+	src/assembler/assembler_comparisons.cc \
+	src/assembler/assembler_binop_general.cc \
 
 MAIN_SRC := app/main.cc
 TEST_SRC := testsuite/testsuite.cc

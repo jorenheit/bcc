@@ -1,7 +1,7 @@
 #pragma once
 
 template <auto FetchOrPut>
-void Builder::syncGlobal(Slot const &localSlot, bool onlyAliasedGlobals) {
+void Assembler::syncGlobal(Slot const &localSlot, bool onlyAliasedGlobals) {
   assert(localSlot.kind == Slot::GlobalReference);
   
   std::string globalName = localSlot.name.substr(std::string("__g_").size());
@@ -15,7 +15,7 @@ void Builder::syncGlobal(Slot const &localSlot, bool onlyAliasedGlobals) {
 }
 
 template <auto FetchOrPut>
-void Builder::syncGlobals(bool onlyAliasedGlobals) {
+void Assembler::syncGlobals(bool onlyAliasedGlobals) {
   auto const &locals = _currentFunction->frame.locals;
   for (auto const &localSlot: locals) {
     if (localSlot.kind != Slot::GlobalReference) continue;
@@ -23,40 +23,40 @@ void Builder::syncGlobals(bool onlyAliasedGlobals) {
   }  
 }
 
-inline void Builder::syncGlobalToLocal(bool onlyAliasedGlobals) {
-  syncGlobals<&Builder::fetchGlobal>(onlyAliasedGlobals);
+inline void Assembler::syncGlobalToLocal(bool onlyAliasedGlobals) {
+  syncGlobals<&Assembler::fetchGlobal>(onlyAliasedGlobals);
 }
 
-inline void Builder::syncLocalToGlobal(bool onlyAliasedGlobals) {
-  syncGlobals<&Builder::putGlobal>(onlyAliasedGlobals);
+inline void Assembler::syncLocalToGlobal(bool onlyAliasedGlobals) {
+  syncGlobals<&Assembler::putGlobal>(onlyAliasedGlobals);
 }
 
 
-inline std::string Builder::defaultOpenTag() {
+inline std::string Assembler::defaultOpenTag() {
   static int count = 0;
   return std::string("open_loop_") + std::to_string(count++);
 } 
 
-inline std::string Builder::defaultCloseTag() {
+inline std::string Assembler::defaultCloseTag() {
   static int count = 0;
   return std::string("close_loop_") + std::to_string(count++);
 }
 
-inline int Builder::getFieldIndex(int offset, int field) {
+inline int Assembler::getFieldIndex(int offset, int field) {
   return offset * MacroCell::FieldCount + field;
 }
 
-inline int Builder::getFieldIndex(Cell cell) {
+inline int Assembler::getFieldIndex(Cell cell) {
   return getFieldIndex(cell.offset, cell.field);
 }
 
 template <typename Primitive, typename ... Args>
-void Builder::emit(Args&& ... args) {
+void Assembler::emit(Args&& ... args) {
   assert(_currentSeq != nullptr);
   _currentSeq->emplace<Primitive>(std::forward<Args>(args)...);
 }
 
 template <typename... Args> requires ((std::convertible_to<Args, Cell>) && ...)
-auto Builder::getFieldIndices(Args... args) {
+auto Assembler::getFieldIndices(Args... args) {
   return std::make_tuple(getFieldIndex(static_cast<Cell>(args))...);
 }

@@ -1,5 +1,5 @@
 #include "acus/api/context.h"
-#include "acus/builder/builder.h"
+#include "acus/assembler/assembler.h"
 
 namespace Impl {
   std::string expected;
@@ -38,59 +38,59 @@ acus::api::impl::ExpResult acus::api::impl::isExpected(std::string const &name, 
   };
 }
 
-acus::api::impl::Context::Context(Builder const &b, std::string const &name, std::source_location loc):
-  _builder(&b),
+acus::api::impl::Context::Context(Assembler const &a, std::string const &name, std::source_location loc):
+  _assembler(&a),
   _name(name),
   _loc(std::move(loc))
 {}
 
 acus::api::impl::Context::Context(std::string const &name, std::source_location loc):
-  _builder(nullptr),
+  _assembler(nullptr),
   _name(name),
   _loc(std::move(loc))
 {}
 
 bool acus::api::impl::Context::programStarted() const {
-  assert(_builder);
-  return _builder->programStarted();
+  assert(_assembler);
+  return _assembler->programStarted();
 }
 
 std::string acus::api::impl::Context::currentFunction() const {
-  assert(_builder);
-  return _builder->currentFunction();
+  assert(_assembler);
+  return _assembler->currentFunction();
 }
 
 std::string acus::api::impl::Context::currentBlock() const {
-  assert(_builder);
-  return _builder->currentBlock();
+  assert(_assembler);
+  return _assembler->currentBlock();
 }
 
 int acus::api::impl::Context::currentScopeDepth() const {
-  assert(_builder);
-  return _builder->currentScopeDepth();
+  assert(_assembler);
+  return _assembler->currentScopeDepth();
 }
 
 bool acus::api::impl::Context::declaredAsGlobal(std::string const &name) const {
-  assert(_builder);
-  return _builder->declaredAsGlobal(name);
+  assert(_assembler);
+  return _assembler->declaredAsGlobal(name);
 }
 
 std::string acus::api::impl::Context::apiName() const {
-  assert(_builder);
+  assert(_assembler);
   return _name;
 }
 
 bool acus::api::impl::Context::globalDeclarationsAllowed() const {
-  assert(_builder);
-  return _builder->globalDeclarationsAllowed();
+  assert(_assembler);
+  return _assembler->globalDeclarationsAllowed();
 }
 
 bool acus::api::impl::Context::inScope(std::string const &name) const {
-  assert(_builder);
-  return _builder->inScope(name);
+  assert(_assembler);
+  return _assembler->inScope(name);
 }
 
 bool acus::api::impl::Context::inCurrentScope(std::string const &name) const {
-  assert(_builder);
-  return _builder->inCurrentScope(name);
+  assert(_assembler);
+  return _assembler->inCurrentScope(name);
 }

@@ -6,78 +6,36 @@ using namespace acus::api;
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
 int main() try {
-  Builder c;
-  c.setEntryPoint("main");
+  Assembler c;
 
-  c.begin(); {
-
+  c.program("name", "main").begin(); {
     
     auto i8 = ts::i8();
-    auto i16 = ts::i16();
-    auto voidT = ts::void_t();
-    auto array3 = ts::array(i8, 3);
-
-    auto point = ts::defineStruct("Point")
-      .field("x", i8)
-      .field("y", i8)
-      .done();
-
-    auto x = literal::array(array3)
-      .push(literal::i8('A'))
-      .push(literal::i8('B'))
-      .push(literal::i8('C'))
-      .done();
-      
-    auto val = literal::struct_t(point)
-      .init("x", literal::i8(1))
-      .init("y", literal::i8(2))
-      .done();
     
-    auto fooType = ts::function().ret(point).done();
-    auto fooPtr = ts::function_pointer(fooType);
-
-    c.beginFunction("main"); {
-      c.declareLocal("x", point);
-      c.declareLocal("fooPtr", fooPtr);
+    c.function("main").begin(); {
+      c.declareLocal("x", i8);
+      c.declareLocal("y", i8);
       
-      c.beginBlock("entry"); {
-	
-	c.assign("fooPtr", literal::function_pointer(fooType, "foo"));
-	c.callFunctionPointer("fooPtr", "end").into("x").done();
+      c.block("entry").begin(); {
+	c.assign("x", literal::i8('X'));
+	c.callFunction("foo", "end").into("y").arg("x").done();
       } c.endBlock();
 
-      c.beginBlock("end"); {
+      c.block("end").begin(); {
 	c.writeOut("x");
+	c.writeOut("y");
 	c.returnFromFunction();
       } c.endBlock();
       
     } c.endFunction();
 
-    c.beginFunction("foo", fooType); {
-      c.beginBlock("entry"); {
-
-	auto val = literal::struct_t(point)
-	  .init("x", literal::i8('X'))
-	  .init("y", literal::i8('Y'))
-	  .done();
-	
-	c.returnFromFunction(val);
+    c.function("foo").param("x", i8).ret(i8).begin(); {
+      c.block("entry").begin(); {
+	c.returnFromFunction("x");
       } c.endBlock();
     } c.endFunction();
 
-    c.beginFunction("bar", fooType); {
-      c.beginBlock("entry"); {
-
-	auto val = literal::struct_t(point)
-	  .init("x", literal::i8('Q'))
-	  .init("y", literal::i8('W'))
-	  .done();
-	
-	c.returnFromFunction(val);
-      } c.endBlock();
-    } c.endFunction();
-
-  } c.end();
+  } c.endProgram();
 
   std::cout << c.dumpBrainfuck() << '\n';
  } catch (std::exception const &e) {

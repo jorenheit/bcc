@@ -1,48 +1,48 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-Builder::Cop const Builder::eqSpec {
+Assembler::Cop const Assembler::eqSpec {
   .op = BinOp::Eq,
   .fold = [](int x, int y) -> bool { return x == y; },
-  .applyWithSlot = &Builder::slotEqualSlot,
-  .applyWithConst = &Builder::slotEqualConst
+  .applyWithSlot = &Assembler::slotEqualSlot,
+  .applyWithConst = &Assembler::slotEqualConst
 };
 
-Builder::Cop const Builder::neqSpec {
+Assembler::Cop const Assembler::neqSpec {
   .op = BinOp::Neq,
   .fold = [](int x, int y) -> bool { return x != y; },
-  .applyWithSlot = &Builder::slotNotEqualSlot,
-  .applyWithConst = &Builder::slotNotEqualConst
+  .applyWithSlot = &Assembler::slotNotEqualSlot,
+  .applyWithConst = &Assembler::slotNotEqualConst
 };
 
-Builder::Cop const Builder::ltSpec {
+Assembler::Cop const Assembler::ltSpec {
   .op = BinOp::Lt,
   .fold = [](int x, int y) -> bool { return x < y; },
-  .applyWithSlot = &Builder::slotLessSlot,
-  .applyWithConst = &Builder::slotLessConst
+  .applyWithSlot = &Assembler::slotLessSlot,
+  .applyWithConst = &Assembler::slotLessConst
 };
 
-Builder::Cop const Builder::leSpec {
+Assembler::Cop const Assembler::leSpec {
   .op = BinOp::Le,
   .fold = [](int x, int y) -> bool { return x <= y; },
-  .applyWithSlot = &Builder::slotLessEqualSlot,
-  .applyWithConst = &Builder::slotLessEqualConst
+  .applyWithSlot = &Assembler::slotLessEqualSlot,
+  .applyWithConst = &Assembler::slotLessEqualConst
 };
 
-Builder::Cop const Builder::gtSpec {
+Assembler::Cop const Assembler::gtSpec {
   .op = BinOp::Gt,
   .fold = [](int x, int y) -> bool { return x > y; },
-  .applyWithSlot = &Builder::slotGreaterSlot,
-  .applyWithConst = &Builder::slotGreaterConst
+  .applyWithSlot = &Assembler::slotGreaterSlot,
+  .applyWithConst = &Assembler::slotGreaterConst
 };
 
-Builder::Cop const Builder::geSpec {
+Assembler::Cop const Assembler::geSpec {
   .op = BinOp::Ge,
   .fold = [](int x, int y) -> bool { return x >= y; },
-  .applyWithSlot = &Builder::slotGreaterEqualSlot,
-  .applyWithConst = &Builder::slotGreaterEqualConst
+  .applyWithSlot = &Assembler::slotGreaterEqualSlot,
+  .applyWithConst = &Assembler::slotGreaterEqualConst
 };
 
-void Builder::slotEqualConst(Slot const &lhs, int val) {
+void Assembler::slotEqualConst(Slot const &lhs, int val) {
   pushPtr();
 
   moveTo(lhs);  
@@ -58,7 +58,7 @@ void Builder::slotEqualConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::slotEqualSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::slotEqualSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -77,7 +77,7 @@ void Builder::slotEqualSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::slotNotEqualConst(Slot const &lhs, int val) {
+void Assembler::slotNotEqualConst(Slot const &lhs, int val) {
   pushPtr();
   slotEqualConst(lhs, val);
   moveTo(lhs);
@@ -85,7 +85,7 @@ void Builder::slotNotEqualConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::slotNotEqualSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::slotNotEqualSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -95,7 +95,7 @@ void Builder::slotNotEqualSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::slotLessConst(Slot const &lhs, int val) {
+void Assembler::slotLessConst(Slot const &lhs, int val) {
   if (val == 0) {
     pushPtr();
     moveTo(lhs);
@@ -112,7 +112,7 @@ void Builder::slotLessConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::slotLessSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::slotLessSlot(Slot const &lhs, Slot const &rhs) {
   
   pushPtr();
 
@@ -137,7 +137,7 @@ void Builder::slotLessSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::slotLessEqualConst(Slot const &lhs, int val) {
+void Assembler::slotLessEqualConst(Slot const &lhs, int val) {
   pushPtr();
 
   // If val is maximal, the result must be true
@@ -159,7 +159,7 @@ void Builder::slotLessEqualConst(Slot const &lhs, int val) {
   
 }
 
-void Builder::slotLessEqualSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::slotLessEqualSlot(Slot const &lhs, Slot const &rhs) {
 
   pushPtr();
 
@@ -185,7 +185,7 @@ void Builder::slotLessEqualSlot(Slot const &lhs, Slot const &rhs) {
 }
 
 
-void Builder::slotGreaterConst(Slot const &lhs, int val) {
+void Assembler::slotGreaterConst(Slot const &lhs, int val) {
 
   pushPtr();
 
@@ -209,7 +209,7 @@ void Builder::slotGreaterConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::slotGreaterSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::slotGreaterSlot(Slot const &lhs, Slot const &rhs) {
   
   pushPtr();
 
@@ -234,7 +234,7 @@ void Builder::slotGreaterSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::slotGreaterEqualConst(Slot const &lhs, int val) {
+void Assembler::slotGreaterEqualConst(Slot const &lhs, int val) {
 
   pushPtr();
 
@@ -258,7 +258,7 @@ void Builder::slotGreaterEqualConst(Slot const &lhs, int val) {
   popPtr();
 }
 
-void Builder::slotGreaterEqualSlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::slotGreaterEqualSlot(Slot const &lhs, Slot const &rhs) {
   
   pushPtr();
 
@@ -283,12 +283,12 @@ void Builder::slotGreaterEqualSlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
-void Builder::eqDestructive(Cell other, Temps<1> tmp) {
+void Assembler::eqDestructive(Cell other, Temps<1> tmp) {
   auto [cur, oth] = getFieldIndices(_dp.current(), other);
   emit<primitive::Equal>(cur, oth);
 }
 
-void Builder::eqConstructive(Cell result, Cell other, Temps<1> tmp) {
+void Assembler::eqConstructive(Cell result, Cell other, Temps<1> tmp) {
   pushPtr();
   copyField(result, tmp);
   moveTo(result);
@@ -296,7 +296,7 @@ void Builder::eqConstructive(Cell result, Cell other, Temps<1> tmp) {
   popPtr();
 }
 
-void Builder::eq16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
+void Assembler::eq16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1> tmp) {
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
 
@@ -310,7 +310,7 @@ void Builder::eq16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<1>
   popPtr();
 }
 
-void Builder::eq16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
+void Assembler::eq16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<4> tmp) { 
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -331,12 +331,12 @@ void Builder::eq16Constructive(Cell high, Cell result, Cell otherLow, Cell other
 }
 
 
-void Builder::lessDestructive(Cell other, Temps<2> tmp) { 
+void Assembler::lessDestructive(Cell other, Temps<2> tmp) { 
   auto [cur, oth, tmp0, tmp1] = getFieldIndices(_dp.current(), other, tmp.get<0>(), tmp.get<1>());
   emit<primitive::Less>(cur, oth, tmp0, tmp1);
 }
 
-void Builder::lessConstructive(Cell result, Cell other, Temps<3> tmp) {
+void Assembler::lessConstructive(Cell result, Cell other, Temps<3> tmp) {
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());
@@ -347,7 +347,7 @@ void Builder::lessConstructive(Cell result, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
-void Builder::less16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::less16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
   // xH < yH || (xH == yH && xL < yL)
 
   pushPtr();
@@ -395,7 +395,7 @@ void Builder::less16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<
   
 }
 
-void Builder::less16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
+void Assembler::less16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -416,12 +416,12 @@ void Builder::less16Constructive(Cell high, Cell result, Cell otherLow, Cell oth
 }
 
 
-void Builder::lessOrEqualDestructive(Cell other, Temps<2> tmp) {
+void Assembler::lessOrEqualDestructive(Cell other, Temps<2> tmp) {
   auto [cur, oth, tmp0, tmp1] = getFieldIndices(_dp.current(), other, tmp.get<0>(), tmp.get<1>());
   emit<primitive::LessOrEqual>(cur, oth, tmp0, tmp1);
 }
 
-void Builder::lessOrEqualConstructive(Cell result, Cell other, Temps<3> tmp) {
+void Assembler::lessOrEqualConstructive(Cell result, Cell other, Temps<3> tmp) {
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());
@@ -432,12 +432,12 @@ void Builder::lessOrEqualConstructive(Cell result, Cell other, Temps<3> tmp) {
   popPtr();
 }
 
-void Builder::lessOrEqual16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::lessOrEqual16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
   greater16Destructive(high, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::lessOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
+void Assembler::lessOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -458,12 +458,12 @@ void Builder::lessOrEqual16Constructive(Cell high, Cell result, Cell otherLow, C
 
 }
 
-void Builder::greaterDestructive(Cell other, Temps<2> tmp) {
+void Assembler::greaterDestructive(Cell other, Temps<2> tmp) {
   auto [cur, oth, tmp0, tmp1] = getFieldIndices(_dp.current(), other, tmp.get<0>(), tmp.get<1>());
   emit<primitive::Greater>(cur, oth, tmp0, tmp1);
 }
 
-void Builder::greaterConstructive(Cell result, Cell other, Temps<3> tmp) {
+void Assembler::greaterConstructive(Cell result, Cell other, Temps<3> tmp) {
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());
@@ -475,7 +475,7 @@ void Builder::greaterConstructive(Cell result, Cell other, Temps<3> tmp) {
 }
 
 
-void Builder::greater16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::greater16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
   // xH > yH || (xH == yH && xL > yL)
 
   pushPtr();
@@ -523,7 +523,7 @@ void Builder::greater16Destructive(Cell high, Cell otherLow, Cell otherHigh, Tem
   
 }
 
-void Builder::greater16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
+void Assembler::greater16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;
@@ -545,12 +545,12 @@ void Builder::greater16Constructive(Cell high, Cell result, Cell otherLow, Cell 
 
 
 
-void Builder::greaterOrEqualDestructive(Cell other, Temps<2> tmp) {
+void Assembler::greaterOrEqualDestructive(Cell other, Temps<2> tmp) {
   auto [cur, oth, tmp0, tmp1] = getFieldIndices(_dp.current(), other, tmp.get<0>(), tmp.get<1>());
   emit<primitive::GreaterOrEqual>(cur, oth, tmp0, tmp1);
 }
 
-void Builder::greaterOrEqualConstructive(Cell result, Cell other, Temps<3> tmp) {
+void Assembler::greaterOrEqualConstructive(Cell result, Cell other, Temps<3> tmp) {
   Cell const &otherCopy = tmp.get<0>();
   pushPtr();
   copyField(result, tmp.select<1>());
@@ -561,12 +561,12 @@ void Builder::greaterOrEqualConstructive(Cell result, Cell other, Temps<3> tmp) 
   popPtr();
 }
 
-void Builder::greaterOrEqual16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
+void Assembler::greaterOrEqual16Destructive(Cell high, Cell otherLow, Cell otherHigh, Temps<4> tmp) {
   less16Destructive(high, otherLow, otherHigh, tmp);
   notDestructive(tmp.select<0>());
 }
 
-void Builder::greaterOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
+void Assembler::greaterOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8> tmp) {
 
   Cell const currentLow = _dp.current();
   Cell const currentHigh = high;

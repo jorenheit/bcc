@@ -1,19 +1,19 @@
-#include "builder.ih"
+#include "assembler.ih"
 
-void Builder::resetOrigin() {
+void Assembler::resetOrigin() {
   _dp.set(0, static_cast<MacroCell::Field>(0));
 }
 
-void Builder::pushPtr() {
+void Assembler::pushPtr() {
   _ptrStack.push(_dp.current());
 }
 
-void Builder::popPtr() {
+void Assembler::popPtr() {
   moveTo(_ptrStack.top());
   _ptrStack.pop();
 }
 
-void Builder::pushFrame() {
+void Assembler::pushFrame() {
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
   assert(_currentSeq != nullptr);
@@ -37,7 +37,7 @@ void Builder::pushFrame() {
   moveToOrigin();
 }
 
-void Builder::popFrame() {
+void Assembler::popFrame() {
   assert(_currentBlock != nullptr);
   assert(_currentFunction != nullptr);
   assert(_currentSeq != nullptr);
@@ -62,7 +62,7 @@ void Builder::popFrame() {
 }
 
 
-void Builder::seek(MacroCell::Field markerField, primitive::Direction dir, Payload const &payload, bool checkCurrent) {  
+void Assembler::seek(MacroCell::Field markerField, primitive::Direction dir, Payload const &payload, bool checkCurrent) {  
   int const stride = MacroCell::FieldCount * ((dir == primitive::Right) ? 1 : -1);
 
   if (not checkCurrent) {
@@ -108,21 +108,21 @@ void Builder::seek(MacroCell::Field markerField, primitive::Direction dir, Paylo
 }
 
 
-void Builder::setSeekMarker() {
+void Assembler::setSeekMarker() {
   pushPtr();
   switchField(MacroCell::SeekMarker);
   setToValue(1);
   popPtr();
 }
 
-void Builder::resetSeekMarker() {
+void Assembler::resetSeekMarker() {
   pushPtr();
   switchField(MacroCell::SeekMarker);
   zeroCell();
   popPtr();
 }
 
-void Builder::moveToPreviousFrame(Payload const &payload) {
+void Assembler::moveToPreviousFrame(Payload const &payload) {
   moveToOrigin();
   seek(MacroCell::FrameMarker, primitive::Left, payload, false);
 }

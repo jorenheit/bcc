@@ -2,7 +2,7 @@
 
 #include "acus/types/typesystem.h"
 #include "acus/types/literal.h"
-#include "acus/builder/builder.h"
+#include "acus/assembler/assembler.h"
 
 namespace acus::api {
   using namespace acus;
