@@ -8,7 +8,7 @@ auto i8p   = ts::pointer(i8);
 auto i8pp  = ts::pointer(i8p);
 auto ptrArrT = ts::array(i8p, 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", i8);
   c.declareLocal("y", i8);
   c.declareLocal("z", i8);
@@ -16,7 +16,7 @@ c.beginFunction("main"); {
   c.declareLocal("qq", i8pp);
   c.declareLocal("arr", ptrArrT);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("x", literal::i8('A'));
     c.assign("y", literal::i8('B'));
     c.assign("z", literal::i8('C'));

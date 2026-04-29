@@ -9,37 +9,37 @@ auto voidT = ts::void_t();
 auto fnType = ts::function().ret(voidT).param(i8).done();
 auto fnPtr = ts::function_pointer(fnType);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("fptr", fnPtr);
   c.declareLocal("v", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("v", literal::i8('A'));
     c.assign("fptr", literal::function_pointer(fnType, "leftEcho"));
     c.callFunctionPointer("fptr", "second").arg("v").done();
   } c.endBlock();
 
-  c.beginBlock("second"); {
+  c.block("second").begin(); {
     c.assign("v", literal::i8('B'));
     c.assign("fptr", literal::function_pointer(fnType, "rightEcho"));
     c.callFunctionPointer("fptr", "end").arg("v").done();
   } c.endBlock();
 
-  c.beginBlock("end"); {
+  c.block("end").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("leftEcho", fnType, {"x"}); {
-  c.beginBlock("entry"); {
+c.function("leftEcho").param("x", i8).ret(voidT).begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('L'));
     c.writeOut("x");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("rightEcho", fnType, {"x"}); {
-  c.beginBlock("entry"); {
+c.function("rightEcho").param("x", i8).ret(voidT).begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('R'));
     c.writeOut("x");
     c.returnFromFunction();

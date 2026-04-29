@@ -6,10 +6,10 @@ TEST_BEGIN
 
 auto i8 = ts::i8();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     // add with literal -> 'A'
     c.assign("x", literal::i8(64));
     c.writeOut(c.add("x", literal::i8(1)));

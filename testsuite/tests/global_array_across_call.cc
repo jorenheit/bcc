@@ -5,10 +5,10 @@ TEST_BEGIN
 
 c.declareGlobal("x", ts::array(ts::i8(), 10));
     
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.referGlobals({"x"});
       
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto x0 = c.arrayElement("x", 0);
     auto x1 = c.arrayElement("x", 1);
     auto x2 = c.arrayElement("x", 2);
@@ -22,15 +22,15 @@ c.beginFunction("main"); {
     c.callFunction("foo", "after_foo").done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo"); {
+c.function("foo").begin(); {
   c.referGlobals({"x"});
       
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto x0 = c.arrayElement("x", literal::i8(0));
     auto x1 = c.arrayElement("x", literal::i8(1));
     auto x2 = c.arrayElement("x", literal::i8(2));

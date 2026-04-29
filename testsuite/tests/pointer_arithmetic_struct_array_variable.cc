@@ -8,13 +8,13 @@ auto pairT = ts::defineStruct("Pair").field("x", i8).field("y", i8).done();
 auto pairP = ts::pointer(pairT);
 auto arrT  = ts::array(pairT, 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("idx", ts::i16());
   c.declareLocal("p", pairP);
   c.declareLocal("q", pairP);
   c.declareLocal("arr", arrT);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.structField(c.arrayElement("arr", 0), "x"), literal::i8('A'));
     c.assign(c.structField(c.arrayElement("arr", 1), "x"), literal::i8('B'));
     c.assign(c.structField(c.arrayElement("arr", 2), "x"), literal::i8('C'));

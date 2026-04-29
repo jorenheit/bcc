@@ -6,12 +6,12 @@ TEST_BEGIN
 auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 auto pointArray3 = ts::array(point, 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("pts", pointArray3);
   c.declareLocal("idx", ts::i8());
   c.declareLocal("out", ts::i8());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto p0 = literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done();
     auto p1 = literal::struct_t(point).init("x", literal::i8('C')).init("y", literal::i8('D')).done();
     auto p2 = literal::struct_t(point).init("x", literal::i8('E')).init("y", literal::i8('F')).done();

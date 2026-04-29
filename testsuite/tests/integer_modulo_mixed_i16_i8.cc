@@ -4,12 +4,12 @@
 
 TEST_BEGIN
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", ts::i16());
   c.declareLocal("y", ts::i8());
   c.declareLocal("z", ts::i16());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("x", literal::i16(100));
     c.assign("y", literal::i8(34));
 

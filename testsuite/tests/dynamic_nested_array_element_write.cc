@@ -6,12 +6,12 @@ TEST_BEGIN
 auto array2 = ts::array(ts::i8(), 2);
 auto matrix2x2 = ts::array(array2, 2);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("m", matrix2x2);
   c.declareLocal("row", ts::i8());
   c.declareLocal("col", ts::i8());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto ab = literal::array(ts::array(ts::i8(), 2)).push(literal::i8('A')).push(literal::i8('B')).done();
     auto cd = literal::array(ts::array(ts::i8(), 2)).push(literal::i8('C')).push(literal::i8('D')).done();
     c.assign("m", literal::array(ts::array(array2, 2)).push(ab).push(cd).done());

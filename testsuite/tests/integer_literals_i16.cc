@@ -6,10 +6,10 @@ TEST_BEGIN
 
 auto i16 = ts::i16();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", i16);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     // add with literal -> "AA"
     c.assign("x", literal::i16(0x4140));
     c.writeOut(c.add("x", literal::i16(1)));

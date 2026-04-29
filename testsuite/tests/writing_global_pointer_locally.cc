@@ -9,11 +9,11 @@ auto i8p = ts::pointer(i8);
 
 c.declareGlobal("g", i8);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.referGlobals({"g"});
   c.declareLocal("p", i8p);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("g", literal::i8('G'));
     c.assign("p", c.addressOf("g"));
 

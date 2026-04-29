@@ -5,11 +5,11 @@ TEST_BEGIN
 
 auto array3 = ts::array(ts::i8(), 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("arr", array3);
   c.declareLocal("z", ts::i8());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.arrayElement("arr", 0), literal::i8('G'));
     c.assign(c.arrayElement("arr", 1), literal::i8(3));
 

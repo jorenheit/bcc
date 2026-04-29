@@ -9,33 +9,33 @@ auto fnType = ts::function().ret(voidT).done();
 auto fnPtr = ts::function_pointer(fnType);
 auto fnArray = ts::array(fnPtr, 2);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("arr", fnArray);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.arrayElement("arr", 0), literal::function_pointer(fnType, "printA"));
     c.assign(c.arrayElement("arr", 1), literal::function_pointer(fnType, "printB"));
     c.callFunctionPointer(c.arrayElement("arr", 1), "second").done();
   } c.endBlock();
 
-  c.beginBlock("second"); {
+  c.block("second").begin(); {
     c.callFunctionPointer(c.arrayElement("arr", 0), "end").done();
   } c.endBlock();
 
-  c.beginBlock("end"); {
+  c.block("end").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printA"); {
-  c.beginBlock("entry"); {
+c.function("printA").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printB"); {
-  c.beginBlock("entry"); {
+c.function("printB").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('B'));
     c.returnFromFunction();
   } c.endBlock();

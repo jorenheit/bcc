@@ -6,11 +6,11 @@ TEST_BEGIN
 
 auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("s", point);
 
       
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto x = c.structField("s", "x");
     auto y = c.structField("s", "y");
       

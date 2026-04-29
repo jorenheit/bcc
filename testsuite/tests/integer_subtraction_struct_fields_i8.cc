@@ -5,11 +5,11 @@ TEST_BEGIN
 
 auto pairT = ts::defineStruct("Pair").field("x", ts::i8()).field("y", ts::i8()).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("p", pairT);
   c.declareLocal("z", ts::i8());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto x = c.structField("p", "x");
     auto y = c.structField("p", "y");
 

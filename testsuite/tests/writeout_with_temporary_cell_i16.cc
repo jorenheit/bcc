@@ -2,8 +2,8 @@
 // Expect: "AB"
 
 TEST_BEGIN
-c.beginFunction("main"); {
-  c.beginBlock("entry"); {
+c.function("main").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i16(CAT('A', 'B')));
     c.returnFromFunction();
   } c.endBlock();

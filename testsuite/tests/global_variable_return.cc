@@ -4,36 +4,35 @@ TEST_BEGIN
 
 c.declareGlobal("g", ts::i8());
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
       
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.callFunction("foo", "after_foo").into("x").done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.writeOut("x");
     c.callFunction("bar", "after_bar").done();
   } c.endBlock();
 
-  c.beginBlock("after_bar"); {
+  c.block("after_bar").begin(); {
     c.returnFromFunction();
   } c.endBlock();
       
 } c.endFunction();
 
-auto fooSig = ts::function().ret(ts::i8()).done();
-c.beginFunction("foo", fooSig); {
+c.function("foo").ret(ts::i8()).begin(); {
   c.referGlobals({"g"});
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("g", literal::i8('G'));
     c.returnFromFunction("g");
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("bar"); {
+c.function("bar").begin(); {
   c.referGlobals({"g"});
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.writeOut("g");
     c.returnFromFunction();
   } c.endBlock();

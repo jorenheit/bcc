@@ -9,12 +9,12 @@ auto i8p = ts::pointer(i8);
 
 auto pair = ts::defineStruct("Pair").field("pa", i8p).field("pb", i8p).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("s", pair);
   c.declareLocal("a", i8);
   c.declareLocal("b", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("a", literal::i8('A'));
     c.assign("b", literal::i8('B'));
 
@@ -24,16 +24,15 @@ c.beginFunction("main"); {
     c.callFunction("foo", "after").arg("s").done();
   } c.endBlock();
 
-  c.beginBlock("after"); {
+  c.block("after").begin(); {
     c.writeOut("a");
     c.writeOut("b");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function().ret(ts::void_t()).param(pair).done();
-c.beginFunction("foo", sig, {"s"}); {
-  c.beginBlock("entry"); {
+c.function("foo").param("s", pair).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     auto pa = c.structField("s", "pa");
     auto pb = c.structField("s", "pb");
 

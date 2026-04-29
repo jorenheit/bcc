@@ -9,11 +9,11 @@ auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 auto arr3 = ts::array(i8, 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("arr", arr3);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.arrayElement("arr", 0), literal::i8('A'));
     c.assign(c.arrayElement("arr", 1), literal::i8('B'));
     c.assign(c.arrayElement("arr", 2), literal::i8('C'));

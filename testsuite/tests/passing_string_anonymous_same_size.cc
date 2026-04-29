@@ -6,20 +6,19 @@ TEST_BEGIN
 std::string str = "Hello World";
 auto string = ts::string(str.size());
 
-c.beginFunction("main"); {
-  c.beginBlock("entry"); {
+c.function("main").begin(); {
+  c.block("entry").begin(); {
     c.callFunction("print", "return").arg(literal::string(str)).done();
   } c.endBlock();
 
-  c.beginBlock("return"); {
+  c.block("return").begin(); {
     c.returnFromFunction();
   } c.endBlock();
       
 } c.endFunction();
 
-auto printSig = ts::function().ret(ts::void_t()).param(string).done();
-c.beginFunction("print", printSig, {"s"}); {
-  c.beginBlock("entry"); {
+c.function("print").param("s", string).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     c.writeOut("s");
     c.returnFromFunction();
   } c.endBlock();

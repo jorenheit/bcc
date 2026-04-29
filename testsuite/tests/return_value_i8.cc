@@ -4,14 +4,14 @@
 TEST_BEGIN
 
 // main: void
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.callFunction("foo", "after_foo").into("x").done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.writeOut("x");
     c.returnFromFunction();
   } c.endBlock();
@@ -19,10 +19,9 @@ c.beginFunction("main"); {
 } c.endFunction();
 
 // foo: returns i8
-auto fooSig = ts::function().ret(ts::i8()).done();
-c.beginFunction("foo", fooSig); {
+c.function("foo").ret(ts::i8()).begin(); {
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.returnFromFunction(literal::i8('X'));
   } c.endBlock();
 

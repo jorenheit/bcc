@@ -8,33 +8,33 @@ auto voidT = ts::void_t();
 auto fnType = ts::function().ret(voidT).done();
 auto fnPtr = ts::function_pointer(fnType);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("fptr", fnPtr);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("fptr", literal::function_pointer(fnType, "printA"));
     c.callFunctionPointer("fptr", "second").done();
   } c.endBlock();
 
-  c.beginBlock("second"); {
+  c.block("second").begin(); {
     c.assign("fptr", literal::function_pointer(fnType, "printB"));
     c.callFunctionPointer("fptr", "end").done();
   } c.endBlock();
 
-  c.beginBlock("end"); {
+  c.block("end").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printA"); {
-  c.beginBlock("entry"); {
+c.function("printA").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printB"); {
-  c.beginBlock("entry"); {
+c.function("printB").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('B'));
     c.returnFromFunction();
   } c.endBlock();

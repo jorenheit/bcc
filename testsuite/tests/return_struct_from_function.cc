@@ -4,23 +4,22 @@
 TEST_BEGIN
 auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("s", point);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.callFunction("makePoint", "after_makePoint").into("s").done();
   } c.endBlock();
 
-  c.beginBlock("after_makePoint"); {
+  c.block("after_makePoint").begin(); {
     c.writeOut("s");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 			    
-auto sig = ts::function().ret(point).done();
-c.beginFunction("makePoint", sig); {
+c.function("makePoint").ret(point).begin(); {
   c.declareLocal("p", point);
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto x = c.structField("p", "x");
     auto y = c.structField("p", "y");
 

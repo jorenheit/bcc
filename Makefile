@@ -45,10 +45,20 @@ COMMON_SRCS := \
 MAIN_SRC := app/main.cc
 TEST_SRC := testsuite/testsuite.cc
 
+EXAMPLE_SRCS    := $(filter-out %~,$(wildcard examples/*.cc))
+EXAMPLE_TARGETS := $(patsubst examples/%.cc,examples/%,$(EXAMPLE_SRCS))
+EXAMPLE_OBJS    := $(patsubst %.cc,$(OBJDIR)/%.o,$(EXAMPLE_SRCS))
+
 COMMON_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(COMMON_SRCS))
 MAIN_OBJ    := $(patsubst %.cc,$(OBJDIR)/%.o,$(MAIN_SRC))
 TEST_OBJ    := $(patsubst %.cc,$(OBJDIR)/%.o,$(TEST_SRC))
-DEPS        := $(COMMON_OBJS:.o=.d) $(MAIN_OBJ:.o=.d) $(TEST_OBJ:.o=.d)
+
+$(TEST_OBJ): CXXFLAGS += -O3
+
+DEPS := $(COMMON_OBJS:.o=.d) \
+	$(MAIN_OBJ:.o=.d) \
+	$(TEST_OBJ:.o=.d) \
+	$(EXAMPLE_OBJS:.o=.d)
 
 .PHONY: all
 all: $(TARGET)
@@ -60,7 +70,13 @@ $(TARGET): $(COMMON_OBJS) $(MAIN_OBJ)
 tests: $(TEST_TARGET)
 
 $(TEST_TARGET): $(COMMON_OBJS) $(TEST_OBJ)
-	$(CXX) -O3 $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+.PHONY: examples
+examples: $(EXAMPLE_TARGETS)
+
+examples/%: $(COMMON_OBJS) $(OBJDIR)/examples/%.o
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(OBJDIR)/%.o: %.cc
 	@mkdir -p $(dir $@)
@@ -70,4 +86,4 @@ $(OBJDIR)/%.o: %.cc
 
 .PHONY: clean
 clean:
-	$(RM) -r $(OBJDIR) $(TARGET) $(TEST_TARGET)
+	$(RM) -r $(OBJDIR) $(TARGET) $(TEST_TARGET) $(EXAMPLE_TARGETS)

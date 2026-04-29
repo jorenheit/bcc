@@ -7,53 +7,52 @@ TEST_BEGIN
 auto voidT = ts::void_t();
 auto actionType = ts::function().ret(voidT).done();
 auto actionPtr = ts::function_pointer(actionType);
-auto passType = ts::function().ret(voidT).param(actionPtr).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("fp", actionPtr);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("fp", literal::function_pointer(actionType, "printZ"));
     c.callFunction("pass1", "end").arg("fp").done();
   } c.endBlock();
 
-  c.beginBlock("end"); {
+  c.block("end").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("pass1", passType, {"fp"}); {
-  c.beginBlock("entry"); {
+c.function("pass1").param("fp", actionPtr).ret(voidT).begin(); {
+  c.block("entry").begin(); {
     c.callFunction("pass2", "done").arg("fp").done();
   } c.endBlock();
 
-  c.beginBlock("done"); {
+  c.block("done").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("pass2", passType, {"fp"}); {
-  c.beginBlock("entry"); {
+c.function("pass2").param("fp", actionPtr).ret(voidT).begin(); {
+  c.block("entry").begin(); {
     c.callFunction("pass3", "done").arg("fp").done();
   } c.endBlock();
 
-  c.beginBlock("done"); {
+  c.block("done").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("pass3", passType, {"fp"}); {
-  c.beginBlock("entry"); {
+c.function("pass3").param("fp", actionPtr).ret(voidT).begin(); {
+  c.block("entry").begin(); {
     c.callFunctionPointer("fp", "done").done();
   } c.endBlock();
 
-  c.beginBlock("done"); {
+  c.block("done").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printZ"); {
-  c.beginBlock("entry"); {
+c.function("printZ").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('Z'));
     c.returnFromFunction();
   } c.endBlock();

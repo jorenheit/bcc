@@ -9,13 +9,13 @@ TEST_BEGIN
     auto i8 = ts::i8();
     auto i16 = ts::i16();
 
-    c.beginFunction("main"); {
+    c.function("main").begin(); {
       c.declareLocal("a", i8);
       c.declareLocal("b", i8);
       c.declareLocal("x", i16);
       c.declareLocal("y", i16);
 
-      c.beginBlock("entry"); {
+      c.block("entry").begin(); {
 
         // i8/i8 variables: 20 ? 30, then 30 ? 20
         c.assign("a", literal::i8(20));

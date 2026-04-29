@@ -3,8 +3,8 @@
 
 TEST_BEGIN
 
-c.beginFunction("main"); {
-  c.beginBlock("entry"); {
+c.function("main").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();

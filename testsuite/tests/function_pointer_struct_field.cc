@@ -10,33 +10,33 @@ auto fnPtr = ts::function_pointer(fnType);
 
 auto holder = ts::defineStruct("Holder").field("fp", fnPtr).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("h", holder);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.structField("h", "fp"), literal::function_pointer(fnType, "printA"));
     c.callFunctionPointer(c.structField("h", "fp"), "second").done();
   } c.endBlock();
 
-  c.beginBlock("second"); {
+  c.block("second").begin(); {
     c.assign(c.structField("h", "fp"), literal::function_pointer(fnType, "printB"));
     c.callFunctionPointer(c.structField("h", "fp"), "end").done();
   } c.endBlock();
 
-  c.beginBlock("end"); {
+  c.block("end").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printA"); {
-  c.beginBlock("entry"); {
+c.function("printA").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('A'));
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("printB"); {
-  c.beginBlock("entry"); {
+c.function("printB").begin(); {
+  c.block("entry").begin(); {
     c.writeOut(literal::i8('B'));
     c.returnFromFunction();
   } c.endBlock();

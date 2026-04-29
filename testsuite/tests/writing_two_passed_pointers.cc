@@ -7,13 +7,13 @@ TEST_BEGIN
 auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("pa", i8p);
   c.declareLocal("pb", i8p);
   c.declareLocal("a", i8);
   c.declareLocal("b", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("a", literal::i8('A'));
     c.assign("b", literal::i8('B'));
     c.assign("pa", c.addressOf("a"));
@@ -22,16 +22,15 @@ c.beginFunction("main"); {
     c.callFunction("foo", "after").arg("pa").arg("pb").done();
   } c.endBlock();
 
-  c.beginBlock("after"); {
+  c.block("after").begin(); {
     c.writeOut("a");
     c.writeOut("b");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function().ret(ts::void_t()).param(i8p).param(i8p).done();
-c.beginFunction("foo", sig, {"pa", "pb"}); {
-  c.beginBlock("entry"); {
+c.function("foo").param("pa", i8p).param("pb", i8p).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     auto aDeref = c.dereferencePointer("pa");
     auto bDeref = c.dereferencePointer("pb");
 

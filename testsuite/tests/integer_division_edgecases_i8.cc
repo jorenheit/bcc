@@ -6,11 +6,11 @@ TEST_BEGIN
 
 auto i8 = ts::i8();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", i8);
   c.declareLocal("y", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     // x / 0 -> 0xff, mapped to 'A'
     c.assign("x", literal::i8(100));
     c.assign("y", literal::i8(0));

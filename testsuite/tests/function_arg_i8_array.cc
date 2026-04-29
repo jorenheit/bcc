@@ -4,10 +4,10 @@
 TEST_BEGIN
 auto array4 = ts::array(ts::i8(), 4);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", array4);
        
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto x0 = c.arrayElement("x", 0);
     auto x1 = c.arrayElement("x", 1);
     auto x2 = c.arrayElement("x", 2);
@@ -22,15 +22,14 @@ c.beginFunction("main"); {
     c.callFunction("foo", "after_foo").arg("x").done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
 
-auto fooSig = ts::function().ret(ts::void_t()).param(array4).done();
-c.beginFunction("foo", fooSig, {"x"}); {
-  c.beginBlock("entry"); {
+c.function("foo").param("x", array4).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     c.writeOut("x");
     c.returnFromFunction();
   } c.endBlock();

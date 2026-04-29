@@ -5,11 +5,11 @@ TEST_BEGIN
 
 auto array4 = ts::array(ts::i8(), 4);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("arr", array4);
   c.declareLocal("idx", ts::i8());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("arr", literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
     c.assign("idx", literal::i8(2));
 
@@ -17,14 +17,13 @@ c.beginFunction("main"); {
     c.callFunction("printChar", "return").arg(elem).done();
   } c.endBlock();
 
-  c.beginBlock("return"); {
+  c.block("return").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function().ret(ts::void_t()).param(ts::i8()).done();
-c.beginFunction("printChar", sig, {"ch"}); {
-  c.beginBlock("entry"); {
+c.function("printChar").param("ch", ts::i8()).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     c.writeOut("ch");
     c.returnFromFunction();
   } c.endBlock();

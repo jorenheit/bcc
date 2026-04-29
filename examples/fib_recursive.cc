@@ -1,59 +1,61 @@
 #include <iostream>
-#include "acus/builder/builder.h"
+#include "acus/assembler/assembler.h"
 using namespace acus;
 
 
 int main() try {
-  Builder c;
-  c.setEntryPoint("main");
+  Assembler c;
 
-  c.begin(); {
+  c.program("fib", "main").begin(); {
 
-    auto i8 = TypeSystem::i8();
+    auto i8 = ts::i8();
 					    
-    c.beginFunction("main"); {
+    c.function("main").begin(); {
       c.declareLocal("f", i8);
       
-      c.beginBlock("entry"); {
-	c.callFunction("fib", "end", "f")(values::i8(12));
+      c.block("entry").begin(); {
+	c.callFunction("fib", "end").into("f").arg(literal::i8(12)).done();
       } c.endBlock();
 
-      c.beginBlock("end"); {
+      c.block("end").begin(); {
 	c.writeOut("f");
 	c.returnFromFunction();
       } c.endBlock();
 
     } c.endFunction();
 
-    auto fibType = TypeSystem::function(i8, {i8});
-    c.beginFunction("fib", fibType, {"n"}); {
+    c.function("fib")
+      .param("n", i8)
+      .ret(i8)
+      .begin();
+    {
       c.declareLocal("f1", i8);
       c.declareLocal("f2", i8);
       
-      c.beginBlock("entry"); {
+      c.block("entry").begin(); {
 	// if (n <= 1) return n;
-	c.branchIf(c.le("n", values::i8(1)), "done", "recurse");
+	c.branchIf(c.le("n", literal::i8(1)), "done", "recurse");
       } c.endBlock();
 
 
-      c.beginBlock("done"); {
+      c.block("done").begin(); {
 	c.returnFromFunction("n");
       } c.endBlock();
 
 
-      c.beginBlock("recurse"); {
+      c.block("recurse").begin(); {
 	// fib(n - 1)
-	auto n_minus_1 = c.sub("n", values::i8(1));
-	c.callFunction("fib", "recurse2", "f1")(n_minus_1);
+	auto n_minus_1 = c.sub("n", literal::i8(1));
+	c.callFunction("fib", "recurse2").into("f1").arg(n_minus_1).done();
       } c.endBlock();
 
-      c.beginBlock("recurse2"); {
+      c.block("recurse2").begin(); {
 	// fib(n - 2)
-	auto n_minus_2 = c.sub("n", values::i8(2));
-	c.callFunction("fib", "end", "f2")(n_minus_2);
+	auto n_minus_2 = c.sub("n", literal::i8(2));
+	c.callFunction("fib", "end").into("f2").arg(n_minus_2).done();
       } c.endBlock();
 
-      c.beginBlock("end"); {
+      c.block("end").begin(); {
 	// return fib(n-1) + fib(n-2)
 	c.returnFromFunction(c.add("f1", "f2"));
       } c.endBlock();
@@ -61,7 +63,7 @@ int main() try {
     } c.endFunction();
 
 
-  } c.end();
+  } c.endProgram();
  
   std::cout << c.dumpBrainfuck() << '\n';
  } catch (std::exception const &e) {

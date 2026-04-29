@@ -7,12 +7,12 @@ TEST_BEGIN
 auto i8  = ts::i8();
 auto i8p = ts::pointer(i8);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("x", i8);
   c.declareLocal("y", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("p", c.addressOf("x")); //literal::pointer(i8, "x"));
     c.assign("x", literal::i8('X'));
 

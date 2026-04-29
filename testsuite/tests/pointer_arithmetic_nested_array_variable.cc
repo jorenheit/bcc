@@ -8,13 +8,13 @@ auto innerT = ts::array(i8, 2);
 auto innerP = ts::pointer(innerT);
 auto outerT = ts::array(innerT, 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("idx", ts::i16());
   c.declareLocal("p", innerP);
   c.declareLocal("q", innerP);
   c.declareLocal("arr", outerT);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.arrayElement(c.arrayElement("arr", 0), 0), literal::i8('A'));
     c.assign(c.arrayElement(c.arrayElement("arr", 1), 0), literal::i8('B'));
     c.assign(c.arrayElement(c.arrayElement("arr", 2), 0), literal::i8('C'));

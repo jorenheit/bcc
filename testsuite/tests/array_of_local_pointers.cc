@@ -9,12 +9,12 @@ auto i8   = ts::i8();
 auto i8p  = ts::pointer(i8);
 auto i8pa = ts::array(i8p, 2);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("p", i8pa);
   c.declareLocal("a", i8);
   c.declareLocal("b", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("a", literal::i8('A'));
     c.assign("b", literal::i8('B'));
 

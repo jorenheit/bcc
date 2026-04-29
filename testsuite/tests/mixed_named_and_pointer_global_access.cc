@@ -10,27 +10,26 @@ auto i8p = ts::pointer(i8);
 
 c.declareGlobal("g", i8);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.referGlobals({"g"});
   c.declareLocal("p", i8p);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("g", literal::i8('A'));
     c.assign("p", c.addressOf("g"));
 
     c.callFunction("foo", "after").arg("p").done();
   } c.endBlock();
 
-  c.beginBlock("after"); {
+  c.block("after").begin(); {
     c.writeOut("g");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function().ret(ts::void_t()).param(i8p).done();
-c.beginFunction("foo", sig, {"p"}); {
+c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
   c.referGlobals({"g"});
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto pDeref = c.dereferencePointer("p");
     c.writeOut(pDeref);
     c.assign(pDeref, literal::i8('X'));

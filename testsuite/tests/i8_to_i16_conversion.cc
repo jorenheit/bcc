@@ -5,11 +5,11 @@ TEST_BEGIN
 
 std::string str = "Hello World";
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
   c.declareLocal("y", ts::i16());
     
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("x", literal::i8('A'));
     c.writeOut("x");
     c.assign("y", "x");

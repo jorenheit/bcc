@@ -6,11 +6,11 @@ TEST_BEGIN
 
 auto i16 = ts::i16();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", i16);
   c.declareLocal("y", i16);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     // x / 0 -> 0xffff, mapped to "AA"
     c.assign("x", literal::i16(0x1234));
     c.assign("y", literal::i16(0));

@@ -4,12 +4,12 @@
 TEST_BEGIN
 auto array3 = ts::array(ts::i8(), 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("a", ts::i8());
   c.declareLocal("b", ts::i16());
   c.declareLocal("arr", array3);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto arr0 = c.arrayElement("arr", 0);
     auto arr1 = c.arrayElement("arr", 1);
     auto arr2 = c.arrayElement("arr", 2);
@@ -23,14 +23,13 @@ c.beginFunction("main"); {
     c.callFunction("foo", "after_foo").arg("a").arg("b").arg("arr").done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function().ret(ts::void_t()).param(ts::i8()).param(ts::i16()).param(array3).done();
-c.beginFunction("foo", fooSig, {"p0", "p1", "p2"}); {
-  c.beginBlock("entry"); {
+c.function("foo").param("p0", ts::i8()).param("p1", ts::i16()).param("p2", array3).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     c.writeOut("p0");
     c.writeOut("p1");
     c.writeOut("p2");

@@ -8,10 +8,10 @@ auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8())
 
 c.declareGlobal("g", point);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.referGlobals({"g"});
       
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto gx = c.structField("g", "x");
     auto gy = c.structField("g", "y");
 
@@ -22,16 +22,16 @@ c.beginFunction("main"); {
     c.callFunction("foo", "after_foo").done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.writeOut("g");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-c.beginFunction("foo"); {
+c.function("foo").begin(); {
   c.referGlobals({"g"});
       
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     auto gy = c.structField("g", "y");
     c.assign(gy, literal::i8('C'));
     c.returnFromFunction();

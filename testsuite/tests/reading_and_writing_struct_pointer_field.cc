@@ -9,26 +9,25 @@ auto i8p = ts::pointer(i8);
 
 auto holder = ts::defineStruct("Holder").field("p", i8p).done();
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("s", holder);
   c.declareLocal("x", i8);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("x", literal::i8('A'));
     c.assign(c.structField("s", "p"), c.addressOf("x"));
 
     c.callFunction("foo", "after").arg("s").done();
   } c.endBlock();
 
-  c.beginBlock("after"); {
+  c.block("after").begin(); {
     c.writeOut("x");
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto sig = ts::function().ret(ts::void_t()).param(holder).done();
-c.beginFunction("foo", sig, {"s"}); {
-  c.beginBlock("entry"); {
+c.function("foo").param("s", holder).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     auto p = c.structField("s", "p");
     auto pDeref = c.dereferencePointer(p);
 

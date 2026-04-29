@@ -2,30 +2,28 @@
 // Expect: A
 
 TEST_BEGIN
-c.beginFunction("main"); {
-  c.beginBlock("entry"); {
+c.function("main").begin(); {
+  c.block("entry").begin(); {
     c.callFunction("foo", "after_foo").arg(literal::i8('A')).done();
   } c.endBlock();
 
-  c.beginBlock("after_foo"); {
+  c.block("after_foo").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto fooSig = ts::function().ret(ts::void_t()).param(ts::i8()).done();
-c.beginFunction("foo", fooSig, {"x"}); {
-  c.beginBlock("entry"); {
+c.function("foo").param("x", ts::i8()).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     c.callFunction("bar", "after_bar").arg("x").done();
   } c.endBlock();
 
-  c.beginBlock("after_bar"); {
+  c.block("after_bar").begin(); {
     c.returnFromFunction();
   } c.endBlock();
 } c.endFunction();
 
-auto barSig = ts::function().ret(ts::void_t()).param(ts::i8()).done();
-c.beginFunction("bar", barSig, {"y"}); {
-  c.beginBlock("entry"); {
+c.function("bar").param("y", ts::i8()).ret(ts::void_t()).begin(); {
+  c.block("entry").begin(); {
     c.writeOut("y");
     c.returnFromFunction();
   } c.endBlock();

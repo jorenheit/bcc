@@ -7,12 +7,12 @@ auto i8   = ts::i8();
 auto i8p  = ts::pointer(i8);
 auto i8pp = ts::pointer(i8p);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", i8);
   c.declareLocal("p", i8p);
   c.declareLocal("pp", i8pp);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("x", literal::i8('A'));
     c.assign("p", c.addressOf("x"));
     c.assign("pp", c.addressOf("p"));

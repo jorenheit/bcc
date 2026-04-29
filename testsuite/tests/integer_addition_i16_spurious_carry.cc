@@ -3,10 +3,10 @@
 
 TEST_BEGIN
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("x", ts::i16());
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign("x", literal::i16(CAT('A', 'C')));
 
     c.writeOut("x");                  // AC

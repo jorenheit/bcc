@@ -7,13 +7,13 @@ auto i16  = ts::i16();
 auto i16p = ts::pointer(i16);
 auto arrT = ts::array(i16, 3);
 
-c.beginFunction("main"); {
+c.function("main").begin(); {
   c.declareLocal("idx", i16);
   c.declareLocal("p", i16p);
   c.declareLocal("q", i16p);
   c.declareLocal("arr", arrT);
 
-  c.beginBlock("entry"); {
+  c.block("entry").begin(); {
     c.assign(c.arrayElement("arr", 0), literal::i16(CAT('A', 'a')));
     c.assign(c.arrayElement("arr", 1), literal::i16(CAT('B', 'b')));
     c.assign(c.arrayElement("arr", 2), literal::i16(CAT('C', 'c')));
