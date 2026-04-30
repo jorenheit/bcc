@@ -1,4 +1,5 @@
 #include "assembler.ih"
+#include <iostream>
 
 Assembler::ProgramBuilder Assembler::program(std::string const &name, std::string const &entry, API_FUNC) {
   API_FUNC_BEGIN();
@@ -9,27 +10,29 @@ void Assembler::beginProgramImpl(std::string const &name, std::string const &ent
   API_CHECK_EXPECTED();
   API_REQUIRE_OUTSIDE_PROGRAM_BLOCK();
 
+  _program = {};
+  _program.name = name;
   _program.entryFunctionName = entry;  
   _state.begun = true;
+  _state.allowGlobalDeclarations = true;
 
   // Globals should start at same frame offset as locals for consistency -> pad with raw
   declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart));
 }
 
 void Assembler::endProgram(API_FUNC) {
+
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
   API_REQUIRE(_program.functions.size() > 0, "a program should contain at least one function.");
       
-  deferredFunctionCallTypeChecks();
-  deferredBlockNameChecks();
-  
   // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
   constructMetaBlocks();
+  deferredFunctionCallTypeChecks();
+  deferredBlockNameChecks();
 
-  
   // To bootstrap the system, we need to do the following:
   // 1. Mark cell 0 using the SeekMarker field to indicate that this is where
   //    the global data frame starts, for easy navigation to this frame. 
@@ -68,7 +71,11 @@ void Assembler::endProgram(API_FUNC) {
 
   _state.begun = false;
 
-  // TODO: store current program as BF somewhere, probably into a map<name, bf>
+  // Store resulting code
+  auto prog = simplifySequence(compilePrimitives());
+  primitive::Context ctx = constructContext();  
+  _txt[_program.name] = prog.dumpText(ctx);
+  _bf[_program.name] = simplifyBrainfuck(prog.dumpCode(ctx));
 }
 
 Assembler::FunctionBuilder Assembler::function(std::string const &name, API_FUNC) {

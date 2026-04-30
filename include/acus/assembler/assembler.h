@@ -31,26 +31,26 @@ namespace acus {
     inline Assembler() { ts::init(); }
 
     // TODO: API_FUNC 
-    std::string dumpPrimitives() const;
-    std::string dumpBrainfuck() const;
+    std::string primitives(std::string const &name) const;
+    std::string brainfuck(std::string const &name) const;
 
-    class ProgramBuilder;
+    struct ProgramBuilder;
+    struct ScopeBuilder;
+    struct BlockBuilder;
+    struct FunctionBuilder;
+    struct FunctionCallBuilder;
+
     ProgramBuilder program(std::string const &name, std::string const &entry, API_FUNC);
-    void endProgram(API_FUNC);
-
-    class ScopeBuilder;
+    FunctionBuilder function(std::string const &name, API_FUNC);
     ScopeBuilder scope(API_FUNC);
-    void beginScopeImpl(API_CTX);
-    void endScope(API_FUNC);
-
-    class BlockBuilder;
     BlockBuilder block(std::string const &name, API_FUNC);
+
+    void endProgram(API_FUNC);
+    void endFunction(API_FUNC);
+    void endScope(API_FUNC);
     void endBlock(API_FUNC);
 
-    class FunctionBuilder;
-    FunctionBuilder function(std::string const &name, API_FUNC);
-    void endFunction(API_FUNC);
-
+    // TODO: rename jump
     void setNextBlock(std::string const &b, API_FUNC);
     void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
 
@@ -63,7 +63,6 @@ namespace acus {
     void returnFromFunction(API_FUNC);
     void abortProgram(API_FUNC);
 
-    struct FunctionCallBuilder;
     FunctionCallBuilder callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC);
     FunctionCallBuilder callFunctionPointer(auto const &functionPtr, std::string const &nextBlockName, API_FUNC);
 
@@ -137,6 +136,7 @@ namespace acus {
 
     // program name -> brainfuck output:    
     std::unordered_map<std::string, std::string> _bf; 
+    std::unordered_map<std::string, std::string> _txt; 
     
     Program _program;
     Function* _currentFunction = nullptr;
@@ -200,8 +200,9 @@ namespace acus {
 
     // Implementation functions for public interface
     void beginProgramImpl(std::string const &name, std::string const &entry, API_CTX);
-    void beginBlockImpl(std::string const &name, API_CTX);
     void beginFunctionImpl(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_CTX);
+    void beginScopeImpl(API_CTX);    
+    void beginBlockImpl(std::string const &name, API_CTX);
   
     void setNextBlockImpl(int index);
     void setNextBlockImpl(std::string const &f, std::string const &b);
@@ -483,7 +484,8 @@ namespace acus {
     void setTargetSequence(primitive::Sequence *seq);
     primitive::Context constructContext() const;    
     primitive::Sequence compilePrimitives() const;
-    static std::string simplifyProgram(std::string const &bf);
+    static std::string simplifyBrainfuck(std::string const &bf);
+    static primitive::Sequence simplifySequence(primitive::Sequence const &seq);
 
     // Function call and block name checks
     void functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX);

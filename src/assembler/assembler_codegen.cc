@@ -46,7 +46,6 @@ primitive::Context Assembler::constructContext() const {
 }
 
 primitive::Sequence Assembler::compilePrimitives() const {
-  // TODO: assert that the program has been fully specified
 
   primitive::Sequence result = _program.bootstrap;
   for (auto const &fn: _program.functions) {
@@ -58,18 +57,40 @@ primitive::Sequence Assembler::compilePrimitives() const {
   return result;
 }
 
-std::string Assembler::dumpBrainfuck() const {
-  primitive::Context ctx = constructContext();  
-  return simplifyProgram(compilePrimitives().dumpCode(ctx));
+std::string Assembler::brainfuck(std::string const &name) const {
+  // TODO: API_REQUIRE
+  return simplifyBrainfuck(_bf.at(name));
 }
 
-std::string Assembler::dumpPrimitives() const {
-  primitive::Context ctx = constructContext();  
-  return compilePrimitives().dumpText(ctx);
+std::string Assembler::primitives(std::string const &name) const {
+  // TODO: API_REQUIRE
+  return _txt.at(name);
 }
+
+
+
+primitive::Sequence Assembler::simplifySequence(primitive::Sequence const &seq) {
+  primitive::Sequence result;
+  if (seq.nodes.empty()) return result;
+
+  result.nodes.push_back(seq.nodes[0]);
+  for (size_t next = 1; next != seq.nodes.size(); ++next) {
+    auto n0 = result.nodes.back();
+    auto n1 = seq.nodes[next];
+
+    if (auto merged = n0->merge(n1.get())) {
+      result.nodes.back() = merged;
+    }
+    else {
+      result.nodes.push_back(n1);
+    }
+  }
+  return result;
+}
+
 
 // Compress BF string by cancelling opposite commands
-std::string Assembler::simplifyProgram(std::string const &bf) {
+std::string Assembler::simplifyBrainfuck(std::string const &bf) {
   auto cancel = [](std::string const &input, char const up, char const down) -> std::string {
     std::string result;
     int count = 0;

@@ -1,4 +1,5 @@
 #include "assembler.ih"
+#include <iostream>
 
 Assembler::FunctionCallBuilder Assembler::callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC) {
   API_FUNC_BEGIN();
@@ -101,7 +102,6 @@ void Assembler::deferredFunctionCallTypeChecks() {
 
   _deferredFunctionCallTypeChecks.clear();
 }
-
 
 void Assembler::blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX) {
   API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");

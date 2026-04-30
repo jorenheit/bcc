@@ -447,7 +447,7 @@ using namespace acus::api;
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
 #define TEST_BEGIN Assembler c; c.program("test", "main").begin();
-#define TEST_END c.endProgram(); return c.dumpBrainfuck();
+#define TEST_END c.endProgram(); return c.brainfuck("test");
 
 static std::vector<bftest::TestCase> buildTests() {
   std::vector<bftest::TestCase> tests;

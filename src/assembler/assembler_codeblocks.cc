@@ -1,4 +1,5 @@
 #include "assembler.ih"
+#include <iostream> // debug
 
 void Assembler::blockOpen() {
   assert(_dp.current().offset == 0);
@@ -110,4 +111,5 @@ void Assembler::constructMetaBlocks() {
 
   _currentFunction = nullptr;
   assert(_currentBlock == nullptr);
+  _metaBlocks.clear();
 }

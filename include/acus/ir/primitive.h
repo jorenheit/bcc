@@ -7,16 +7,8 @@
 #include <utility>
 #include "acus/ir/defer.h"
 
-// TODO: is it still handy to define in terms of these primitives? It seems like I should
-// implement all these algorithms simply inside the compiler. The distinction between actual
-// primitives and compound algorithms is getting more and more fuzzy. Just look for all the emit
-// calls and replace. Be careful: these accept DInt for deferred evaluation. Is that a reason to
-// justt keep these? 
-
-
 namespace acus::primitive {
 
-  
   struct Context {
     
     int fieldCount;
@@ -47,13 +39,16 @@ namespace acus::primitive {
     virtual ~Node() = default;
     virtual std::string text(Context const&) const = 0;
     virtual std::string generate(Context const&) const = 0;
+    virtual std::shared_ptr<Node> merge(Node const *other) const { return nullptr; }
   };
 
   struct Sequence {
     std::vector<std::shared_ptr<Node>> nodes;
 
     template <typename T, typename... Args>
-    void emplace(Args&&... args);
+    void emplace(Args&&... args) {
+      nodes.push_back(std::make_shared<T>(std::forward<Args>(args)...));
+    }
 
     inline void append(Sequence const &other) {
       for (auto const &n : other.nodes) {
@@ -105,6 +100,8 @@ namespace acus::primitive {
      */
     
     inline explicit MovePointerRelative(DInt amount): amount(std::move(amount)) {}
+    virtual std::shared_ptr<Node> merge(Node const *other) const override;
+
     COMMON_INTERFACE;
   };
 
@@ -117,7 +114,8 @@ namespace acus::primitive {
       Assumed empty: -      
       Invariants: -
      */
-    
+
+    virtual std::shared_ptr<Node> merge(Node const *other) const override;         
     COMMON_INTERFACE;
   };
 
@@ -130,11 +128,11 @@ namespace acus::primitive {
       Invariants: -
      */
     
+    virtual std::shared_ptr<Node> merge(Node const *other) const override;    
     COMMON_INTERFACE;
   };
 
 
-  // TODO: change name to AddConst
   struct ChangeBy: Node {
     DInt delta;
     /*
@@ -147,6 +145,8 @@ namespace acus::primitive {
     
     inline explicit ChangeBy(DInt d): delta(std::move(d)) {}
     COMMON_INTERFACE;
+
+    virtual std::shared_ptr<Node> merge(Node const *other) const override;
   };
 
   struct MoveData: Node {
@@ -172,6 +172,7 @@ namespace acus::primitive {
     {}
 
     COMMON_INTERFACE;
+    virtual std::shared_ptr<Node> merge(Node const *other) const override;
   };
   
   struct CopyData: Node {
@@ -192,6 +193,7 @@ namespace acus::primitive {
     {}
 
     COMMON_INTERFACE;
+    virtual std::shared_ptr<Node> merge(Node const *other) const override;
   };
   
   struct Out: Node {
@@ -215,6 +217,8 @@ namespace acus::primitive {
     {}
     
     COMMON_INTERFACE;
+    
+    // TODO: Bool + Not -> Not, Bool + Bool -> Bool
   };
   
   struct Not: Node {
@@ -495,6 +499,7 @@ namespace acus::primitive {
     COMMON_INTERFACE;
   };
   
-#include "acus/ir/primitive.tpp"
-  
 } // namespace acus::ir
+
+
+
