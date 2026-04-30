@@ -1,7 +1,7 @@
 #include "assembler.ih"
 
 template <typename SpecType>
-Expression Assembler::opAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
+Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
@@ -46,7 +46,7 @@ Expression Assembler::opAssignImpl(Expression const &lhs, Expression const &rhs,
 }
 
 template <typename SpecType>
-Expression Assembler::opImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
+Expression Assembler::binOpImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
@@ -65,17 +65,17 @@ Expression Assembler::opImpl(Expression const &lhs, Expression const &rhs, SpecT
 
   Slot result = getTemp(lhs.type());
   assignImpl(Expression{result}, lhs, API_FWD);
-  opAssignImpl(Expression{result}, rhs, spec, API_FWD);
+  binOpAssignImpl(Expression{result}, rhs, spec, API_FWD);
 
   result.type = opResult.type;
   return Expression{result};
 }
 
 // Explicit instantiations for Mop, Cop and Lop
-template Expression Assembler::opImpl<Assembler::Mop>(Expression const&, Expression const&, Assembler::Mop const&, API_CTX);
-template Expression Assembler::opImpl<Assembler::Lop>(Expression const&, Expression const&, Assembler::Lop const&, API_CTX);
-template Expression Assembler::opImpl<Assembler::Cop>(Expression const&, Expression const&, Assembler::Cop const&, API_CTX);
+template Expression Assembler::binOpImpl<Assembler::Mop>(Expression const&, Expression const&, Assembler::Mop const&, API_CTX);
+template Expression Assembler::binOpImpl<Assembler::Lop>(Expression const&, Expression const&, Assembler::Lop const&, API_CTX);
+template Expression Assembler::binOpImpl<Assembler::Cop>(Expression const&, Expression const&, Assembler::Cop const&, API_CTX);
 
-template Expression Assembler::opAssignImpl<Assembler::Mop>(Expression const&, Expression const&, Assembler::Mop const&, API_CTX);
-template Expression Assembler::opAssignImpl<Assembler::Lop>(Expression const&, Expression const&, Assembler::Lop const&, API_CTX);
-template Expression Assembler::opAssignImpl<Assembler::Cop>(Expression const&, Expression const&, Assembler::Cop const&, API_CTX);
+template Expression Assembler::binOpAssignImpl<Assembler::Mop>(Expression const&, Expression const&, Assembler::Mop const&, API_CTX);
+template Expression Assembler::binOpAssignImpl<Assembler::Lop>(Expression const&, Expression const&, Assembler::Lop const&, API_CTX);
+template Expression Assembler::binOpAssignImpl<Assembler::Cop>(Expression const&, Expression const&, Assembler::Cop const&, API_CTX);

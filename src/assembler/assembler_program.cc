@@ -16,6 +16,9 @@ void Assembler::beginProgramImpl(std::string const &name, std::string const &ent
   _state.begun = true;
   _state.allowGlobalDeclarations = true;
 
+  // TODO: check if entryfunction is of correct type!
+
+  
   // Globals should start at same frame offset as locals for consistency -> pad with raw
   declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart));
 }

@@ -34,6 +34,7 @@ COMMON_SRCS := \
 	src/assembler/assembler_globals.cc \
 	src/assembler/assembler_memory.cc \
 	src/assembler/assembler_rlvalue.cc \
+	src/assembler/assembler_unary.cc \
 	src/assembler/assembler_add.cc \
 	src/assembler/assembler_sub.cc \
 	src/assembler/assembler_divmod.cc \

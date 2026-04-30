@@ -24,3 +24,11 @@ std::string acus::binOpStr(BinOp op) {
   }
   std::unreachable();
 }
+
+std::string acus::unOpStr(UnOp op) {
+  switch (op) {
+  case UnOp::Not:  return "!";
+  case UnOp::Bool: return "!!";
+  }
+  std::unreachable();
+}

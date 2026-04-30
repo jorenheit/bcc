@@ -4,12 +4,17 @@
 
 namespace acus {
 
-enum class BinOp {
-  Add, Sub, Mul, Div, Mod,
-  And, Or, Nand, Nor, Xor, Xnor,
-  Eq, Neq, Lt, Le, Gt, Ge
-};
+  enum class BinOp {
+    Add, Sub, Mul, Div, Mod,
+    And, Or, Nand, Nor, Xor, Xnor,
+    Eq, Neq, Lt, Le, Gt, Ge
+  };
 
-std::string binOpStr(BinOp op);
+  enum class UnOp {
+    Not, Bool
+  };
+  
+  std::string binOpStr(BinOp op);
+  std::string unOpStr(UnOp op);
 
 } // namespace acus

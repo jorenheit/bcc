@@ -9,14 +9,11 @@ void Assembler::loopClose(std::string const &tag) {
 }
 
 void Assembler::switchField(MacroCell::Field field) {
-  assert(_currentSeq != nullptr);
   emit<primitive::MovePointerRelative>(field - _dp.current().field);
   _dp.set(field);
 }
 
 void Assembler::moveTo(int offset, MacroCell::Field field) {
-  assert(_currentSeq != nullptr);
-
   switchField(field);
   moveRel(offset - _dp.current().offset);
 }
@@ -34,12 +31,11 @@ void Assembler::moveToOrigin() {
   moveTo(0);
 }
 
-
 void Assembler::zeroCell() { 
   emit<primitive::ZeroCell>();
 }
 
-void Assembler::setToValue(int value) { 
+void Assembler::setToValue(int value) {
   zeroCell();
   addConst(value & 0xff);
 }

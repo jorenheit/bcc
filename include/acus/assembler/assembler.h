@@ -75,10 +75,16 @@ namespace acus {
     Expression arrayElement(auto const &arr, int index, API_FUNC);  
     Expression arrayElement(auto const &arr, auto const &index, API_FUNC);
 
-    // TODO: implement lnot
+
+    Expression unOp(UnOp op, auto const &rhs, API_FUNC);
+    Expression unOpAssign(UnOp op, auto const &rhs, API_FUNC);
+
     Expression lnotAssign(auto const &rhs, API_FUNC);
     Expression lnot(auto const &rhs, API_FUNC);
 
+    Expression lboolAssign(auto const &rhs, API_FUNC);
+    Expression lbool(auto const &rhs, API_FUNC);
+    
     Expression binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
     Expression binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
 
@@ -227,6 +233,12 @@ namespace acus {
     void branchIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
   
+    // Unrary operators implementation
+    Expression lnotImpl(Expression const &obj, API_CTX);
+    Expression lnotAssignImpl(Expression const &obj, API_CTX);
+    Expression lboolImpl(Expression const &obj, API_CTX);
+    Expression lboolAssignImpl(Expression const &obj, API_CTX);
+    
     // Binary operators implementation
     template <typename Fold>
     struct BinOpSpec {
@@ -248,15 +260,19 @@ namespace acus {
     static const Cop eqSpec, neqSpec, ltSpec, leSpec, gtSpec, geSpec;
   
     template <typename SpecType>
-    Expression opAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
+    Expression binOpAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
 
     template <typename SpecType>  
-    Expression opImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
+    Expression binOpImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
   
     // Slot operations
     Slot local(std::string const& name, bool globalReference = false) const;
     void assignSlot(Slot const &dest, Slot const &src);
     void assignSlot(Slot const &slot, literal::Literal const &val);
+
+    void notSlot(Slot const &rhs);
+    void boolSlot(Slot const &rhs);
+
     void addSlotToSlot(Slot const &lhs, Slot const &rhs);
     void addConstToSlot(Slot const &lhs, int delta);
     void subSlotFromSlot(Slot const &lhs, Slot const &rhs);

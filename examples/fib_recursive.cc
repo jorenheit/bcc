@@ -65,7 +65,7 @@ int main() try {
 
   } c.endProgram();
  
-  std::cout << c.dumpBrainfuck() << '\n';
+  std::cout << c.brainfuck("fib") << '\n';
  } catch (std::exception const &e) {
   std::cerr << e.what() << '\n';
  }

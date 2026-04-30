@@ -54,11 +54,50 @@ void Assembler::branchIf(auto const &condition, std::string const &trueLabel, st
   return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
 }
 
-
-
 Expression Assembler::expr(auto const &obj, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return rValue(obj, API_FWD);
+}
+
+// Unary operations
+Expression Assembler::unOp(UnOp op, auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  switch (op) {
+  case UnOp::Not:  return lnot(rhs, API_FWD);
+  case UnOp::Bool: return lbool(rhs, API_FWD);
+  default: std::unreachable();
+  }
+  std::unreachable();
+}
+
+Expression Assembler::unOpAssign(UnOp op, auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  switch (op) {
+  case UnOp::Not:  return lnotAssign(rhs, API_FWD);
+  case UnOp::Bool: return lboolAssign(rhs, API_FWD);
+  default: std::unreachable();
+  }
+  std::unreachable();
+}
+
+Expression Assembler::lnot(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return lnotImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::lnotAssign(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return lnotAssignImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::lbool(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return lboolImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::lboolAssign(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return lboolAssignImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
 // Binary operations
@@ -112,17 +151,16 @@ Expression Assembler::binOpAssign(BinOp op, auto const &lhs, auto const &rhs, AP
   std::unreachable();
 }
 
-// The implementation for opImpl and opAssignImpl is in Builder_binop_general.cc
-
+// The implementation for binOpImpl and binOpAssignImpl is in assembler_binop_general.cc
 #define BINOP(OP)							\
   Expression Assembler::OP##Assign(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) { \
     API_FUNC_BEGIN();							\
-    return opAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), OP##Spec, API_FWD); \
+    return binOpAssignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), OP##Spec, API_FWD); \
   }									\
 									\
   Expression Assembler::OP(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) { \
     API_FUNC_BEGIN();							\
-    return opImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), OP##Spec, API_FWD); \
+    return binOpImpl(rValue(lhs, API_FWD), rValue(rhs, API_FWD), OP##Spec, API_FWD); \
   }
 
 // Arithmetic

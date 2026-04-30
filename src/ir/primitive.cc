@@ -98,6 +98,7 @@ namespace acus::Algorithm {
     return oss.str();
   }
 
+  
   // Set current (offset 0) to value
   std::string setToValue(int val) {
     std::ostringstream oss;

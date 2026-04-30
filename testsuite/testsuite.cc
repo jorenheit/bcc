@@ -800,6 +800,76 @@ tests.push_back(expectOutput("Struct with two pointer fields",
 #include "tests/mixed_named_and_pointer_global_access.cc"
 			      })); 
 
+ tests.push_back(expectOutput("Logical NOT",
+			      "BABABABABB", []() {
+#include "tests/logical_not.cc"
+			      }));
+
+tests.push_back(expectOutput("Logical BOOL",
+			     "ABABABABBA", []() {
+#include "tests/logical_bool.cc"
+			     }));
+
+ tests.push_back(expectOutput("Logical AND",
+                             "BABABABABA", []() {
+#include "tests/logical_and.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical NAND",
+                             "ABABABABAB", []() {
+#include "tests/logical_nand.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical OR",
+                             "BBBBBBBBBA", []() {
+#include "tests/logical_or.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical NOR",
+                             "AAAAAAAAAB", []() {
+#include "tests/logical_nor.cc"
+                             }));
+
+tests.push_back(expectOutput("Logical XOR",
+                             "ABABABABAA", []() {
+#include "tests/logical_xor.cc"
+                             }));
+
+ tests.push_back(expectOutput("Logical XNOR",
+			      "BABABABABB", []() {
+#include "tests/logical_xnor.cc"
+			      })); 
+
+ tests.push_back(expectOutput("Comparison LT",
+			      "BABABAAAABABB", []() {
+#include "tests/comparison_less_than.cc"
+			      }));
+
+ tests.push_back(expectOutput("Comparison LE",
+			      "BABABABABBABB", []() {
+#include "tests/comparison_less_equal.cc"
+			      }));
+
+  tests.push_back(expectOutput("Comparison GT",
+			      "ABABABABAABBA", []() {
+#include "tests/comparison_greater_than.cc"
+			      }));
+
+ tests.push_back(expectOutput("Comparison GE",
+			      "ABABABBBBABBA", []() {
+#include "tests/comparison_greater_equal.cc"
+			      }));
+
+ tests.push_back(expectOutput("Comparison EQ",
+			      "AAAAAABABAABA", []() {
+#include "tests/comparison_equal.cc"
+			      }));
+
+ tests.push_back(expectOutput("Comparison NEQ",
+			      "BBBBBBABABBBB", []() {
+#include "tests/comparison_not_equal.cc"
+			      }));
+ 
  tests.push_back(expectOutput("Integer Addition: 8 bit",
 			      "ADG", []() {
 #include "tests/integer_addition_i8.cc"
@@ -1049,65 +1119,6 @@ tests.push_back(expectOutput("Integer Literal RHS i16",
 #include "tests/integer_literals_i16.cc"
                              }));
 
- tests.push_back(expectOutput("Logical AND",
-                             "BABABABABA", []() {
-#include "tests/logical_and.cc"
-                             }));
-
-tests.push_back(expectOutput("Logical NAND",
-                             "ABABABABAB", []() {
-#include "tests/logical_nand.cc"
-                             }));
-
-tests.push_back(expectOutput("Logical OR",
-                             "BBBBBBBBBA", []() {
-#include "tests/logical_or.cc"
-                             }));
-
-tests.push_back(expectOutput("Logical NOR",
-                             "AAAAAAAAAB", []() {
-#include "tests/logical_nor.cc"
-                             }));
-
-tests.push_back(expectOutput("Logical XOR",
-                             "ABABABABAA", []() {
-#include "tests/logical_xor.cc"
-                             }));
-
- tests.push_back(expectOutput("Logical XNOR",
-			      "BABABABABB", []() {
-#include "tests/logical_xnor.cc"
-			      })); 
-
- tests.push_back(expectOutput("Comparison LT",
-			      "BABABAAAABABB", []() {
-#include "tests/comparison_less_than.cc"
-			      }));
-
- tests.push_back(expectOutput("Comparison LE",
-			      "BABABABABBABB", []() {
-#include "tests/comparison_less_equal.cc"
-			      }));
-
-  tests.push_back(expectOutput("Comparison GT",
-			      "ABABABABAABBA", []() {
-#include "tests/comparison_greater_than.cc"
-			      }));
-
- tests.push_back(expectOutput("Comparison GE",
-			      "ABABABBBBABBA", []() {
-#include "tests/comparison_greater_equal.cc"
-			      }));
-
- tests.push_back(expectOutput("Comparison EQ",
-			      "AAAAAABABAABA", []() {
-#include "tests/comparison_equal.cc"
-			      }));
-
- tests.push_back(expectOutput("Comparison NEQ",
-			      "BBBBBBABABBBB", []() {
-#include "tests/comparison_not_equal.cc"
-			      }));
 
  tests.push_back(expectOutput("Function Pointer Direct",
 			      "foo2foo1", []() {
