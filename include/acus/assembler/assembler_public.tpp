@@ -80,6 +80,8 @@ Expression Assembler::unOpAssign(UnOp op, auto const &rhs, API_FUNC_SOURCE) {
   switch (op) {
   case UnOp::Not:  return lnotAssign(rhs, API_FWD);
   case UnOp::Bool: return lboolAssign(rhs, API_FWD);
+  case UnOp::Neg:  return negate(rhs, API_FWD);
+  case UnOp::Abs:  return abs(rhs, API_FWD);
   default: std::unreachable();
   }
   std::unreachable();
@@ -92,7 +94,7 @@ Expression Assembler::lnot(auto const &rhs, API_FUNC_SOURCE) {
 
 Expression Assembler::lnotAssign(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-  return lnotAssignImpl(rValue(rhs, API_FWD), API_FWD);
+  return lnotAssignImpl(lValue(rhs, API_FWD), API_FWD);
 }
 
 Expression Assembler::lbool(auto const &rhs, API_FUNC_SOURCE) {
@@ -102,7 +104,7 @@ Expression Assembler::lbool(auto const &rhs, API_FUNC_SOURCE) {
 
 Expression Assembler::lboolAssign(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-  return lboolAssignImpl(rValue(rhs, API_FWD), API_FWD);
+  return lboolAssignImpl(lValue(rhs, API_FWD), API_FWD);
 }
 
 Expression Assembler::negate(auto const &rhs, API_FUNC_SOURCE) {
@@ -112,9 +114,28 @@ Expression Assembler::negate(auto const &rhs, API_FUNC_SOURCE) {
 
 Expression Assembler::negateAssign(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-  return negateAssignImpl(rValue(rhs, API_FWD), API_FWD);
+  return negateAssignImpl(lValue(rhs, API_FWD), API_FWD);
 }
 
+Expression Assembler::abs(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return absImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::absAssign(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return absAssignImpl(lValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::signBit(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return signBitImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::signBitAssign(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return signBitAssignImpl(lValue(rhs, API_FWD), API_FWD);
+}
 
 // Binary operations
 Expression Assembler::binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {

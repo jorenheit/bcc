@@ -101,6 +101,75 @@ Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
 }
 
 
+Expression Assembler::absImpl(Expression const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_INTEGER(obj);
+
+  if (obj.isLiteral()) {
+    if (types::isUnsignedInteger(obj.type())) return obj;
+    int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
+    return obj.type()->usesValue1()
+      ? Expression { literal::s16(val < 0 ? -val : val) }
+      : Expression { literal::s8(val < 0 ? -val : val) };
+  } 
+
+  // Apply to temp copy
+  Slot result = getTemp(obj.type());
+  assignSlot(result, obj.slot()->materialize(*this));
+  absSlot(result);
+  return Expression { result };
+}
+
+
+Expression Assembler::absAssignImpl(Expression const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_INTEGER(obj);
+  assert(not obj.isLiteral());
+
+  Slot const objSlot = obj.slot()->materialize(*this);
+  absSlot(objSlot);
+  if (not obj.slot()->direct()) {
+    obj.slot()->write(*this, objSlot);
+  }
+  return obj;
+}
+
+
+Expression Assembler::signBitImpl(Expression const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+
+  if (obj.isLiteral()) {
+    int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
+    return obj.type()->usesValue1()
+      ? Expression { literal::s16(val < 0) }
+      : Expression { literal::s8(val < 0) };
+  } 
+
+  // Apply to temp copy
+  Slot result = getTemp(obj.type());
+  assignSlot(result, obj.slot()->materialize(*this));
+  signBitSlot(result);
+  return Expression { result };
+}
+
+
+Expression Assembler::signBitAssignImpl(Expression const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+  assert(not obj.isLiteral());
+
+  Slot const objSlot = obj.slot()->materialize(*this);
+  signBitSlot(objSlot);
+  if (not obj.slot()->direct()) {
+    obj.slot()->write(*this, objSlot);
+  }
+  return obj;
+}
 
 
 
@@ -157,6 +226,59 @@ void Assembler::negateSlot(Slot const &rhs) {
 				       rhs, MacroCell::Scratch1));
   }
 
+  popPtr();
+}
+
+void Assembler::absSlot(Slot const &rhs) {
+  assert(types::isInteger(rhs.type));
+
+  if (types::isUnsignedInteger(rhs.type)) return;
+
+  pushPtr();
+  // Construct the signbit in rhs.Flag
+  moveTo(rhs, rhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{rhs, MacroCell::Flag},
+		      Temps<4>::select(rhs, MacroCell::Scratch0, rhs, MacroCell::Scratch1,
+				       rhs, MacroCell::Payload0, rhs, MacroCell::Payload1));
+
+  // If the sign-bit was set, negate the slot
+  moveTo(rhs, MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();
+    negateSlot(rhs);
+  } loopClose();
+
+  popPtr();
+}
+
+void Assembler::signBitSlot(Slot const &rhs) {
+  assert(types::isSignedInteger(rhs.type));
+  
+  pushPtr();
+  moveTo(rhs, rhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitDestructive(Temps<3>::select(rhs, MacroCell::Scratch0,
+				      rhs, MacroCell::Scratch1,
+				      rhs, MacroCell::Payload0));
+  popPtr();
+}
+
+void Assembler::signBitDestructive(Temps<3> tmp) {
+  Cell const current = _dp.current();
+  Cell const oneTwentyEight = tmp.get<0>();
+
+  pushPtr();
+  moveTo(oneTwentyEight);
+  setToValue(128);
+  moveTo(current);
+  greaterOrEqualDestructive(oneTwentyEight, tmp.select<1, 2>());
+  popPtr();
+}
+
+void Assembler::signBitConstructive(Cell result, Temps<4> tmp) {
+  pushPtr();
+  copyField(result, tmp.get<0>());
+  moveTo(result);
+  signBitDestructive(tmp.select<1, 2, 3>());
   popPtr();
 }
 

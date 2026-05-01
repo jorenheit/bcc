@@ -201,7 +201,8 @@ void Assembler::assignIntegerSlot(Slot const &dest, Slot const &src) {
   // destructive less < 128 on it and subtract 1:
   // 0 -> low byte >= 128 -> -1 = 0xff
   // 1 -> low byte < 128 -> 0
-  
+
+  // TODO: replace by getSignBit
   moveTo(dest, MacroCell::Scratch0);
   setToValue(128);
   moveTo(dest, MacroCell::Value1);

@@ -10,10 +10,10 @@ int main() try {
 
   c.program("test", "main").begin(); {
     c.function("main").begin(); {
-      c.declareLocal("x", ts::s8());
+      c.declareLocal("x", ts::s16());
       
       c.block("entry").begin(); {
-	c.assign("x", literal::s8(-43));
+	c.assign("x", literal::s16(-433));
 	c.print("x");
 	
 	c.returnFromFunction();

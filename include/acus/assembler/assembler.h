@@ -87,6 +87,12 @@ namespace acus {
 
     Expression negateAssign(auto const &rhs, API_FUNC);
     Expression negate(auto const &rhs, API_FUNC);
+
+    Expression absAssign(auto const &rhs, API_FUNC);
+    Expression abs(auto const &rhs, API_FUNC);
+
+    Expression signBitAssign(auto const &rhs, API_FUNC);
+    Expression signBit(auto const &rhs, API_FUNC);
     
     Expression binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
     Expression binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
@@ -238,6 +244,8 @@ namespace acus {
     void branchIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX); 
+    void printUnsignedImpl(Expression const &val, API_CTX);
+    void printSignedImpl(Expression const &val, API_CTX);
   
     // Unrary operators implementation
     Expression lnotImpl(Expression const &obj, API_CTX);
@@ -246,6 +254,10 @@ namespace acus {
     Expression lboolAssignImpl(Expression const &obj, API_CTX);
     Expression negateImpl(Expression const &obj, API_CTX);
     Expression negateAssignImpl(Expression const &obj, API_CTX);
+    Expression absImpl(Expression const &obj, API_CTX);
+    Expression absAssignImpl(Expression const &obj, API_CTX);
+    Expression signBitImpl(Expression const &obj, API_CTX);
+    Expression signBitAssignImpl(Expression const &obj, API_CTX);
     
     // Binary operators implementation
     template <typename Fold>
@@ -283,6 +295,9 @@ namespace acus {
     void notSlot(Slot const &rhs);
     void boolSlot(Slot const &rhs);
     void negateSlot(Slot const &rhs);
+    void absSlot(Slot const &rhs);
+    void signBitSlot(Slot const &rhs);
+    void printIntegerSlotDestructive(Slot const &valSlot);
     
     void addSlotToSlot(Slot const &lhs, Slot const &rhs);
     void addConstToSlot(Slot const &lhs, int delta);
@@ -354,6 +369,10 @@ namespace acus {
     void dec16(Cell high, Temps<2>);
   
     // TODO: constructive versions should accept "other" before result and carry
+    
+    void signBitDestructive(Temps<3>);
+    void signBitConstructive(Cell result, Temps<4>);
+    
     void negateDestructive(Temps<2>);
     void negateConstructive(Cell result, Temps<2>);
     void negate16Destructive(Cell high, Temps<6>);
