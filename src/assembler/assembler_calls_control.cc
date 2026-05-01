@@ -259,7 +259,7 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
       case types::I8:
       case types::I16: {
 	// Construct integer
-	int const value = literal::cast<types::IntegerType>(arg.literal())->value();
+	int const value = literal::cast<types::IntegerType>(arg.literal())->encodedValue();
 	moveTo(0, MacroCell::Value0);
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
@@ -428,7 +428,7 @@ void Assembler::branchIfImpl(Expression const &obj, std::string const &trueLabel
   if (obj.hasSlot()) {
     branchIfSlot(obj.slot()->materialize(*this), trueLabel, falseLabel);
   } else {  
-    bool const value = literal::cast<types::IntegerType>(obj.literal())->value();
+    bool const value = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
     setNextBlockImpl(_currentFunction->name, value ? trueLabel : falseLabel);
   }
 

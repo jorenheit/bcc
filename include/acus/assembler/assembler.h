@@ -84,6 +84,9 @@ namespace acus {
 
     Expression lboolAssign(auto const &rhs, API_FUNC);
     Expression lbool(auto const &rhs, API_FUNC);
+
+    Expression negateAssign(auto const &rhs, API_FUNC);
+    Expression negate(auto const &rhs, API_FUNC);
     
     Expression binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
     Expression binOpAssign(BinOp op, auto const &lhs, auto const &rhs, API_FUNC);
@@ -131,6 +134,8 @@ namespace acus {
     Expression addressOf(auto const &obj, API_FUNC);
 
     void writeOut(auto const &val, API_FUNC);
+    void print(auto const &val, API_FUNC);
+    
     void branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
   
   private:
@@ -232,12 +237,15 @@ namespace acus {
   
     void branchIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
+    void printImpl(Expression const &rhs, API_CTX); 
   
     // Unrary operators implementation
     Expression lnotImpl(Expression const &obj, API_CTX);
     Expression lnotAssignImpl(Expression const &obj, API_CTX);
     Expression lboolImpl(Expression const &obj, API_CTX);
     Expression lboolAssignImpl(Expression const &obj, API_CTX);
+    Expression negateImpl(Expression const &obj, API_CTX);
+    Expression negateAssignImpl(Expression const &obj, API_CTX);
     
     // Binary operators implementation
     template <typename Fold>
@@ -269,10 +277,13 @@ namespace acus {
     Slot local(std::string const& name, bool globalReference = false) const;
     void assignSlot(Slot const &dest, Slot const &src);
     void assignSlot(Slot const &slot, literal::Literal const &val);
+    void assignSlotBytewise(Slot const &dest, Slot const &src);
+    void assignIntegerSlot(Slot const &dest, Slot const &src);
 
     void notSlot(Slot const &rhs);
     void boolSlot(Slot const &rhs);
-
+    void negateSlot(Slot const &rhs);
+    
     void addSlotToSlot(Slot const &lhs, Slot const &rhs);
     void addConstToSlot(Slot const &lhs, int delta);
     void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
@@ -343,6 +354,11 @@ namespace acus {
     void dec16(Cell high, Temps<2>);
   
     // TODO: constructive versions should accept "other" before result and carry
+    void negateDestructive(Temps<2>);
+    void negateConstructive(Cell result, Temps<2>);
+    void negate16Destructive(Cell high, Temps<6>);
+    void negate16Constructive(Cell high, Cell result, Temps<7>);
+    
     void addConst(int delta);
     void addConstAndCarry(int delta, Cell carry, Temps<3>);
     void add16Const(int delta, Cell high, Temps<4>);

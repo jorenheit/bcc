@@ -869,6 +869,74 @@ tests.push_back(expectOutput("Logical XOR",
 			      "BBBBBBABABBBB", []() {
 #include "tests/comparison_not_equal.cc"
 			      }));
+
+tests.push_back(expectOutput("Signed Negate",
+                             "ABCDEFF",
+                             [] {
+#include "tests/signed_negate.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Negate Assign",
+                             "ABCDEXBHH",
+                             [] {
+#include "tests/signed_negate_assign.cc"
+                             }));
+ 
+ tests.push_back(expectOutput("Signed i8 Add/Sub/Neg",
+			      "ABCDEF", []() {
+#include "tests/signed_i8_add_sub_neg.cc"
+			      }));
+
+tests.push_back(expectOutput("Signed i16 Add/Sub/Neg",
+                             "ABABAB", []() {
+#include "tests/signed_i16_add_sub_neg.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Widening s8 to s16",
+                             "ABBDBA", []() {
+#include "tests/signed_widening_s8_to_s16.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Mixed Width s8/s16",
+                             "ABAB", []() {
+#include "tests/signed_mixed_width_s8_s16.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s8 Mul Const",
+                             "ABCDEF",
+                             [] {
+#include "tests/signed_s8_mul_const.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s8 Mul Vars",
+                             "ABCDEF",
+                             [] {
+#include "tests/signed_s8_mul_vars.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Mul Const",
+                             "ABCDEFGH",
+                             [] {
+#include "tests/signed_s16_mul_const.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Mul Vars",
+                             "ABCDEFGH",
+                             [] {
+#include "tests/signed_s16_mul_vars.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Mul Widening",
+                             "ABCDEFGH",
+                             [] {
+#include "tests/signed_mul_widening.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Mul Literal Folding",
+                             "ABCDEF",
+                             [] {
+#include "tests/signed_mul_literal_folding.cc"
+                             }));
  
  tests.push_back(expectOutput("Integer Addition: 8 bit",
 			      "ADG", []() {

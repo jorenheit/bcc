@@ -43,6 +43,7 @@ Assembler::Cop const Assembler::geSpec {
 };
 
 void Assembler::slotEqualConst(Slot const &lhs, int val) {
+
   pushPtr();
 
   moveTo(lhs);  
@@ -96,6 +97,8 @@ void Assembler::slotNotEqualSlot(Slot const &lhs, Slot const &rhs) {
 }
 
 void Assembler::slotLessConst(Slot const &lhs, int val) {
+  assert(not types::isSignedInteger(lhs.type) && "not implemented yet");
+  
   if (val == 0) {
     pushPtr();
     moveTo(lhs);
@@ -113,6 +116,7 @@ void Assembler::slotLessConst(Slot const &lhs, int val) {
 }
 
 void Assembler::slotLessSlot(Slot const &lhs, Slot const &rhs) {
+  assert(not types::isSignedInteger(lhs.type) && not types::isSignedInteger(rhs.type) && "not implemented yet");
   
   pushPtr();
 
@@ -138,6 +142,8 @@ void Assembler::slotLessSlot(Slot const &lhs, Slot const &rhs) {
 }
 
 void Assembler::slotLessEqualConst(Slot const &lhs, int val) {
+  assert(not types::isSignedInteger(lhs.type) && "not implemented yet");
+
   pushPtr();
 
   // If val is maximal, the result must be true
@@ -160,6 +166,7 @@ void Assembler::slotLessEqualConst(Slot const &lhs, int val) {
 }
 
 void Assembler::slotLessEqualSlot(Slot const &lhs, Slot const &rhs) {
+  assert(not types::isSignedInteger(lhs.type) && not types::isSignedInteger(rhs.type) && "not implemented yet");
 
   pushPtr();
 
@@ -186,6 +193,7 @@ void Assembler::slotLessEqualSlot(Slot const &lhs, Slot const &rhs) {
 
 
 void Assembler::slotGreaterConst(Slot const &lhs, int val) {
+  assert(not types::isSignedInteger(lhs.type) && "not implemented yet");
 
   pushPtr();
 
@@ -210,6 +218,7 @@ void Assembler::slotGreaterConst(Slot const &lhs, int val) {
 }
 
 void Assembler::slotGreaterSlot(Slot const &lhs, Slot const &rhs) {
+  assert(not types::isSignedInteger(lhs.type) && not types::isSignedInteger(rhs.type) && "not implemented yet");
   
   pushPtr();
 
@@ -235,6 +244,7 @@ void Assembler::slotGreaterSlot(Slot const &lhs, Slot const &rhs) {
 }
 
 void Assembler::slotGreaterEqualConst(Slot const &lhs, int val) {
+  assert(not types::isSignedInteger(lhs.type) && "not implemented yet");
 
   pushPtr();
 
@@ -259,6 +269,7 @@ void Assembler::slotGreaterEqualConst(Slot const &lhs, int val) {
 }
 
 void Assembler::slotGreaterEqualSlot(Slot const &lhs, Slot const &rhs) {
+  assert(not types::isSignedInteger(lhs.type) && not types::isSignedInteger(rhs.type) && "not implemented yet");
   
   pushPtr();
 

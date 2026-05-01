@@ -1,5 +1,29 @@
+#include <cstdint>
+#include <bitset>
+
 #include "acus/types/typesystem.h"
 #include "acus/types/literal_impl.h"
+
+namespace {
+
+  int wrapUnsigned(int v, int bits) {
+    assert(bits == 8 || bits == 16);
+    int const mask = (1 << bits) - 1;
+    return v & mask;
+  }
+
+  int wrapSigned(int v, int bits) {
+    assert(bits == 8 || bits == 16);
+    int const modulus = 1 << bits;
+    int const half = 1 << (bits - 1);
+    
+    v %= modulus;
+    if (v < 0) v += modulus;
+    if (v >= half) return v - modulus;
+    return v;
+  }
+}
+
 
 namespace acus::literal::impl {
 
@@ -13,35 +37,63 @@ namespace acus::literal::impl {
   // Integer
   Integer::Integer(types::TypeHandle t, int v):
     Base(t),
-    _value(v)
+    _semanticValue(v)
   {}
 
   std::string Integer::str() const {
-    return std::to_string(_value);
+    return std::to_string(_semanticValue);
   }
 
-  int Integer::value() const {
-    return _value;
-  }      
+  int Integer::semanticValue() const {
+    return _semanticValue;
+  }
+
+  unsigned Integer::encodedValue() const {
+    auto intType = types::cast<types::IntegerType>(_type);
+    unsigned const raw = static_cast<unsigned>(_semanticValue);
+
+    if (intType->bits() == 8)  return raw & 0xffu;
+    if (intType->bits() == 16) return raw & 0xffffu;
+
+    std::unreachable();
+  }  
 
   // i8
   i8::i8(int v, API_CTX_IGNORE):
-    Integer(ts::i8(), v & 0xff)
+    Integer(ts::i8(), wrapUnsigned(v, 8))
   {}
 
   Literal i8::clone() const {
     return std::make_shared<i8>(*this);
   }
 
+  // s8
+  s8::s8(int v, API_CTX_IGNORE):
+    Integer(ts::s8(), wrapSigned(v, 8))
+  {}
+
+  Literal s8::clone() const {
+    return std::make_shared<s8>(*this);
+  }
+  
   // i16
   i16::i16(int v, API_CTX_IGNORE):
-    Integer(ts::i16(), v & 0xffff)
+    Integer(ts::i16(), wrapUnsigned(v, 16))
   {}
 
   Literal i16::clone() const  {
     return std::make_shared<i16>(*this);
   }      
 
+  // s16
+  s16::s16(int v, API_CTX_IGNORE):
+    Integer(ts::s16(), wrapSigned(v, 16))
+  {}
+
+  Literal s16::clone() const  {
+    return std::make_shared<s16>(*this);
+  }      
+  
   // ArrayLike
   ArrayLike::ArrayLike(types::TypeHandle type):
     Base(type)

@@ -1,5 +1,4 @@
 #include "assembler.ih"
-#include <iostream> // debug
 
 void Assembler::blockOpen() {
   assert(_dp.current().offset == 0);

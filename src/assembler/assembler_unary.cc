@@ -8,7 +8,7 @@ Expression Assembler::lnotImpl(Expression const &obj, API_CTX) {
   API_REQUIRE_IS_INTEGER(obj);
 
   if (obj.isLiteral()) {
-    int const val = literal::cast<types::IntegerType>(obj.literal())->value();
+    int const val = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
     return Expression { literal::i8(!val) };
   }
 
@@ -40,7 +40,7 @@ Expression Assembler::lboolImpl(Expression const &obj, API_CTX) {
   API_REQUIRE_IS_INTEGER(obj);
 
   if (obj.isLiteral()) {
-    int const val = literal::cast<types::IntegerType>(obj.literal())->value();
+    int const val = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
     return Expression { literal::i8(!!val) };
   }
 
@@ -66,7 +66,47 @@ Expression Assembler::lboolAssignImpl(Expression const &obj, API_CTX) {
   return obj;
 }
 
+Expression Assembler::negateImpl(Expression const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+
+  if (obj.isLiteral()) {
+    int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
+    return obj.type()->usesValue1()
+      ? Expression { literal::s16(-val) }
+      : Expression { literal::s8(-val) };
+  }
+
+  // Apply to temp copy
+  Slot result = getTemp(obj.type());
+  assignSlot(result, obj.slot()->materialize(*this));
+  negateSlot(result);
+  return Expression { result };
+}
+
+
+Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+  assert(not obj.isLiteral());
+
+  Slot const objSlot = obj.slot()->materialize(*this);
+  negateSlot(objSlot);
+  if (not obj.slot()->direct()) {
+    obj.slot()->write(*this, objSlot);
+  }
+  return obj;
+}
+
+
+
+
+
 void Assembler::notSlot(Slot const &rhs) {
+  assert(rhs.size() == 1);
+
   pushPtr();
   moveTo(rhs);
 
@@ -82,6 +122,8 @@ void Assembler::notSlot(Slot const &rhs) {
 
 
 void Assembler::boolSlot(Slot const &rhs) {
+  assert(rhs.size() == 1);
+  
   pushPtr();
   moveTo(rhs);
 
@@ -94,3 +136,28 @@ void Assembler::boolSlot(Slot const &rhs) {
   
   popPtr();
 }
+
+void Assembler::negateSlot(Slot const &rhs) {
+  assert(rhs.size() == 1);
+
+  pushPtr();
+
+  moveTo(rhs, MacroCell::Value0);
+  if (rhs.type->usesValue1()) {
+    Slot const tmp = getTemp(ts::raw(1));
+    negate16Destructive(Cell{rhs, MacroCell::Value1},
+			Temps<6>::select(rhs, MacroCell::Scratch0,
+					 rhs, MacroCell::Scratch1,
+					 rhs, MacroCell::Payload0,
+					 rhs, MacroCell::Payload1,
+					 tmp, MacroCell::Scratch0,
+					 tmp, MacroCell::Scratch1));
+  } else {
+    negateDestructive(Temps<2>::select(rhs, MacroCell::Scratch0,
+				       rhs, MacroCell::Scratch1));
+  }
+
+  popPtr();
+}
+
+// TODO: move other unary algorithms here

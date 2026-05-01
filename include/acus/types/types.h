@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <iostream>
 
 #include "acus/core/data.h"
 
@@ -9,7 +10,11 @@
 namespace acus::types {
 
   enum TypeTag {
-    VOID, RAW, I8, I16, ARRAY, STRING, STRUCT, POINTER, FUNCTION, FUNCTION_POINTER
+    VOID, RAW, I8, S8, I16, S16, ARRAY, STRING, STRUCT, POINTER, FUNCTION, FUNCTION_POINTER
+  };
+
+  enum Signedness {
+    SIGNED, UNSIGNED
   };
   
   struct Type {
@@ -53,12 +58,28 @@ namespace acus::types {
   }; // struct VoidType
 
   struct IntegerType : Type {
-    int const bits;
-    IntegerType(int bits_): bits(bits_) {}
-    virtual TypeTag tag() const override { return bits > 8 ? I16 : I8; }
+    int const _bits;
+    Signedness _sig;
+    
+    IntegerType(int bits, Signedness sig = UNSIGNED): _bits(bits), _sig(sig) {}
+
+    virtual TypeTag tag() const override {
+      if (not isSigned() && _bits == 8)  return I8;
+      if (not isSigned() && _bits == 16) return I16;
+      if (isSigned() && _bits == 8)      return S8;
+      if (isSigned() && _bits == 16)     return S16;
+      std::unreachable();
+    }
+    
     virtual int size() const override { return 1; }
-    virtual bool usesValue1() const override { return bits > 8; }
-    virtual std::string str() const override { return tag() == I8 ? "i8" : "i16"; }
+    virtual bool usesValue1() const override { return _bits > 8;}
+    virtual std::string str() const override {
+      return std::string(isSigned() ? "s" : "u") + std::to_string(_bits);
+    }
+
+    bool isSigned() const { return _sig == SIGNED; }
+    Signedness signedness() const { return _sig; }
+    int bits() const { return _bits; }
   }; // struct IntegerType
 
   struct ArrayLike: Type {
@@ -209,7 +230,11 @@ namespace acus::types {
   // Convenience functions to check type categories
   inline bool isI8(types::TypeHandle t)       { return t->tag() == types::I8; }
   inline bool isI16(types::TypeHandle t)      { return t->tag() == types::I16; }
-  inline bool isInteger(TypeHandle t)         { return isI8(t) || isI16(t); }
+  inline bool isS8(types::TypeHandle t)       { return t->tag() == types::S8; }
+  inline bool isS16(types::TypeHandle t)      { return t->tag() == types::S16; }
+  inline bool isInteger(TypeHandle t)         { return isI8(t) || isI16(t) || isS8(t) || isS16(t); }
+  inline bool isSignedInteger(TypeHandle t)   { return isS8(t) || isS16(t); }
+  inline bool isUnsignedInteger(TypeHandle t) { return isI8(t) || isI16(t); }
   inline bool isArray(TypeHandle t)           { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)          { return t->tag() == STRING; }
   inline bool isArrayLike(TypeHandle t)       { return isArray(t) || isString(t); }
@@ -217,6 +242,7 @@ namespace acus::types {
   inline bool isPointer(TypeHandle t)         { return t->tag() == POINTER; }
   inline bool isFunction(TypeHandle t)        { return t->tag() == FUNCTION; }
   inline bool isFunctionPointer(TypeHandle t) { return t->tag() == FUNCTION_POINTER; }
+  inline bool isRaw(TypeHandle t)             { return t->tag() == RAW; }
 
 } // namespace acus::types
  

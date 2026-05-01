@@ -36,23 +36,116 @@ void Assembler::mulSlotByConst(Slot const &lhs, int factor) {
 void Assembler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
 
-  Slot const tmp = getTemp(rhs.type);
-  assignSlot(tmp, rhs);  
-  moveTo(lhs, MacroCell::Value0);
+
   if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
-    mul16Destructive(Cell{lhs, MacroCell::Value1},
-		     Cell{tmp, MacroCell::Value0},
-		     Cell{tmp, MacroCell::Value1},
-		     Temps<9>::select(lhs, MacroCell::Scratch0,
-				      lhs, MacroCell::Scratch1,
-				      lhs, MacroCell::Payload0,
-				      lhs, MacroCell::Payload1,				      
-				      tmp, MacroCell::Scratch0,
-				      tmp, MacroCell::Scratch1,
-				      tmp, MacroCell::Payload0,
-				      tmp, MacroCell::Payload1,
-				      rhs, MacroCell::Scratch0));
+    
+    /*
+      a = a0 + a1 * 256
+      b = b0 + b1 * 256
+      c = a * b = a0 * b0 + 256 * (a0 * b1 + b0 * a1) + 256^2 * (a1 * b1)
+      
+      -> c0 = a0 * b0 (mod 256)
+      -> c1 = (a0 * b1 + b0 * a1) (mod 256) + (a0 * b0 >> 8)
+
+      Given a naive 8-bit and 16-bit algorithm that simply do repeated addition,
+      we can therefore implement a 16 bit multiplication as follows:
+       -> tmp1 = mul16(a0, b0)
+       -> c0 = tmp1.low
+       -> tmp2 = mul8(a0, b1) + mul8(a1, b0)
+       -> c1 = add8(tmp2.low, tmp1.high)
+       -> c = (c0, c1)
+     */
+
+    constexpr auto Low  = MacroCell::Value0;
+    constexpr auto High = MacroCell::Value1;
+
+    auto copyByte = [&](Slot const &fromSlot, MacroCell::Field fromField, Slot const &toSlot, MacroCell::Field toField) {
+      moveTo(fromSlot, fromField);
+      copyField(Cell{toSlot, toField}, Temps<1>::select(toSlot, MacroCell::Scratch0));
+    };
+
+    auto moveByte = [&](Slot const &fromSlot, MacroCell::Field fromField, Slot const &toSlot, MacroCell::Field toField) {
+      moveTo(fromSlot, fromField);
+      moveField(Cell{toSlot, toField});
+    };
+
+    auto zeroByte = [&](Slot const &slot, MacroCell::Field field) {
+      moveTo(slot, field);
+      zeroCell();
+    };
+
+    auto addByteInto = [&](Slot const &lhs, MacroCell::Field lhsField, Slot const &rhs, MacroCell::Field rhsField) {
+      moveTo(lhs, lhsField);
+      addDestructive(Cell{rhs, rhsField});
+    };
+
+    // Copies of operands
+    auto encoded16TypeFor = [](Slot const &slot) {
+      auto intType = types::cast<types::IntegerType>(slot.type);
+      return intType->isSigned() ? ts::s16() : ts::i16();
+    };
+    
+    Slot const lhsCopy = getTemp(encoded16TypeFor(lhs));
+    Slot const rhsCopy = getTemp(encoded16TypeFor(rhs));    
+    assignSlot(lhsCopy, lhs);
+    assignSlot(rhsCopy, rhs);
+
+    // Result will be constructed in lhs; after a0*b0, lhs.low is already the final c0.
+    // We zero its high byte and leave only a0.
+    zeroByte(lhs, High);
+
+    // rhsLow = only low byte of rhs (b0), high byte zeroed
+    Slot const rhsLow = getTemp(ts::i16());    
+    copyByte(rhsCopy, Low, rhsLow, Low);
+    zeroByte(rhsLow, High);
+
+    // lhs <- a0 * b0.
+    //
+    // After this:
+    //   lhs.low  = c0
+    //   lhs.high = high(a0*b0)
+    moveTo(lhs, Low);
+    mul16Destructive(Cell{lhs, High}, Cell{rhsLow, Low}, Cell{rhsLow, High},
+		     Temps<9>::select(lhs,    MacroCell::Scratch0,  lhs,    MacroCell::Scratch1,
+				      lhs,    MacroCell::Payload0,  lhs,    MacroCell::Payload1,
+				      rhsLow, MacroCell::Scratch0,  rhsLow, MacroCell::Scratch1,
+				      rhsLow, MacroCell::Payload0,  rhsLow, MacroCell::Payload1,
+				      rhsCopy, MacroCell::Scratch0));
+
+    // Reuse rhsLow as scratch storage for one cross term, since it has
+    // been consumed by mul16Destructive and is no longer needed.
+    Slot const cross0 = rhsLow;
+
+    // Compute cross-terms a0 * b1 and a1 * b0, using the copy in lhsCopy = (a0, a1)
+    // lhsCopy.low = a0 * b1
+    moveTo(lhsCopy, Low);
+    mulDestructive(Cell{rhsCopy, High}, Temps<3>::select(lhsCopy, MacroCell::Scratch0,
+							 lhsCopy, MacroCell::Scratch1,
+							 rhsCopy, MacroCell::Scratch0));
+
+    // lhsCopy.high = a1 * b0
+    moveTo(lhsCopy, High);
+    mulDestructive(Cell{rhsCopy, Low}, Temps<3>::select(lhsCopy, MacroCell::Scratch0,
+							lhsCopy, MacroCell::Scratch1,
+							rhsCopy, MacroCell::Scratch0));
+
+    // Move low(a0*b1) out of lhsCopy.low, because lhsCopy will be considered
+    // cross-term storage now.
+    moveByte(lhsCopy, Low, cross0, Low);
+
+    // Now:
+    //   cross0.low    = low(a0*b1)
+    //   lhsCopy.high  = low(a1*b0)
+    //
+    // Complete high byte:
+    //   lhs.high += low(a0*b1) + low(a1*b0)
+    addByteInto(lhs, High, cross0, Low);
+    addByteInto(lhs, High, lhsCopy, High);
+    
   } else {
+    Slot const tmp = getTemp(rhs.type);
+    assignSlot(tmp, rhs);  
+    moveTo(lhs, MacroCell::Value0);    
     mulDestructive(Cell{tmp, MacroCell::Value0},
 		   Temps<3>::select(lhs, MacroCell::Scratch0,
 				    lhs, MacroCell::Scratch1,
@@ -79,12 +172,19 @@ void Assembler::mulConst(int factor, Temps<3> tmp) {
   copyField(copy1, tmp.select<2>());
   copyField(copy2, tmp.select<2>());
   
-  for (int i = 0; i != factor - 1; ++i) {
+  for (int i = 0; i != std::abs(factor) - 1; ++i) {
     moveTo(current);    
     addDestructive(copy1);
     moveTo(copy2);
     copyField(copy1, tmp.select<2>());
   }
+
+  // All temps have been cleared by this point
+  if (factor < 0) {
+    moveTo(current);
+    negateDestructive(tmp.select<0, 1>());
+  }
+  
   popPtr();
 }
 
@@ -115,13 +215,19 @@ void Assembler::mul16Const(int factor, Cell high, Temps<8> tmp) {
   copyField(copy1high, tmp.select<4>());
   copyField(copy2high, tmp.select<4>());
 
-  for (int i = 0; i != factor - 1; ++i) {
+  for (int i = 0; i != std::abs(factor) - 1; ++i) {
     moveTo(current);
     add16Destructive(high, copy1low, copy1high, tmp.select<4, 5, 6, 7>());
     moveTo(copy2low);
     copyField(copy1low, tmp.select<4>());
     moveTo(copy2high);
     copyField(copy1high, tmp.select<4>());      
+  }
+
+  // All tmp cells have been cleared by this point and can be reused 
+  if (factor < 0) {
+    moveTo(current);
+    negate16Destructive(high, tmp.select<0, 1, 2, 3, 4, 5>());
   }
   
   popPtr();
@@ -151,7 +257,7 @@ void Assembler::mulDestructive(Cell factor, Temps<3> tmp) {
 
   moveTo(copy1); zeroCell();
   moveTo(copy2); zeroCell();
-  
+
   popPtr();
 }
 

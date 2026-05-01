@@ -14,7 +14,10 @@ namespace acus::ts {
 
   types::VoidType const *void_t(API_FUNC);
   types::IntegerType const *i8(API_FUNC);
+  types::IntegerType const *s8(API_FUNC);
   types::IntegerType const *i16(API_FUNC);
+  types::IntegerType const *s16(API_FUNC);
+  
   types::ArrayType const *array(types::TypeHandle elem, int length, API_FUNC);
   types::StringType const *string(int maxLen, API_FUNC);    
   types::RawType const *raw(int n, API_FUNC);

@@ -149,6 +149,18 @@ namespace acus::api::impl {
 		  "expected an integer in call to '", (API_CTX_NAME).apiName(), "', but got '", \
 		  (obj).str(), "' of type '", (obj).type()->str(), "'.")
 
+#define API_REQUIRE_IS_SIGNED_INTEGER(obj)				\
+  error::throw_if(not types::isSignedInteger((obj).type()),			\
+		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
+		  "expected an signed integer in call to '", (API_CTX_NAME).apiName(), "', but got '", \
+		  (obj).str(), "' of type '", (obj).type()->str(), "'.")
+
+#define API_REQUIRE_IS_UNSIGNED_INTEGER(obj)				\
+  error::throw_if(types::isSignedInteger((obj).type()),			\
+		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
+		  "expected an unsigned integer in call to '", (API_CTX_NAME).apiName(), "', but got '", \
+		  (obj).str(), "' of type '", (obj).type()->str(), "'.")
+
 #define API_REQUIRE_IS_ARRAY(obj)					\
   error::throw_if(not types::isArray((obj).type()),			\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
@@ -221,13 +233,6 @@ namespace acus::api::impl {
 		      result.errorMsg);					\
   } while (false);
 
-
-#define API_REQUIRE_BINOP(op, lhs, rhs) do {				\
-    auto result = types::rules::binOpResult((op), (lhs), (rhs));		\
-      error::throw_if(not result,					\
-		      (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		      result.errorMsg);					\
-  } while (false);
 
 #define API_EXPECT_TYPE(t, expectedT) do {				\
     error::throw_if(t != expectedT,					\

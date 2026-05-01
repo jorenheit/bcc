@@ -9,7 +9,9 @@ namespace acus::ts::impl {
   
   std::unique_ptr<types::VoidType> _void;
   std::unique_ptr<types::IntegerType> _i8;
+  std::unique_ptr<types::IntegerType> _s8;
   std::unique_ptr<types::IntegerType> _i16;
+  std::unique_ptr<types::IntegerType> _s16;
   std::unique_ptr<types::FunctionType> _voidFunction;
 
   std::vector<std::unique_ptr<types::RawType>> _rawTypes;    
@@ -29,7 +31,9 @@ namespace acus::ts {
 
       impl::_void = std::make_unique<types::VoidType>();
       impl::_i8 = std::make_unique<types::IntegerType>(8);
+      impl::_s8 = std::make_unique<types::IntegerType>(8, types::SIGNED);
       impl::_i16 = std::make_unique<types::IntegerType>(16);
+      impl::_s16 = std::make_unique<types::IntegerType>(16, types::SIGNED);
       impl::_voidFunction = std::make_unique<types::FunctionType>(void_t());
       initialized = true;
     }
@@ -44,12 +48,22 @@ namespace acus::ts {
     API_FUNC_BEGIN_FREE();
     return impl::_i8.get();
   }
+
+  types::IntegerType const *s8(API_FUNC) {
+    API_FUNC_BEGIN_FREE();
+    return impl::_s8.get();
+  }
   
   types::IntegerType const *i16(API_FUNC) {
     API_FUNC_BEGIN_FREE();
     return impl::_i16.get();
   }
 
+  types::IntegerType const *s16(API_FUNC) {
+    API_FUNC_BEGIN_FREE();
+    return impl::_s16.get();
+  }
+  
   types::ArrayType const *array(types::TypeHandle elem, int length, API_FUNC) {
     API_FUNC_BEGIN_FREE();
 

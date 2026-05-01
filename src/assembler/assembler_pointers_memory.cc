@@ -172,17 +172,66 @@ void Assembler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Sl
   popPtr();
 }
 
+void Assembler::assignIntegerSlot(Slot const &dest, Slot const &src) {
+  assert(types::isInteger(dest.type) && types::isInteger(src.type));
+
+  auto destInt = types::cast<types::IntegerType>(dest.type);
+  auto srcInt  = types::cast<types::IntegerType>(src.type);  
+
+  if (destInt->bits() == srcInt->bits()) return assignSlotBytewise(dest, src);
+
+  assert(destInt->bits() > srcInt->bits());
+  assert(srcInt->bits() == 8);
+  assert(destInt->bits() == 16);
+  assert(destInt->signedness() == srcInt->signedness());
+
+  if (not srcInt->isSigned()) return assignSlotBytewise(dest, src);
+
+  // Signed widening
+  pushPtr();
+
+  // Copy low byte to both fields of destination
+  // TODO: optimize double-copy
+  moveTo(src, MacroCell::Value0);
+  copyField(Cell{dest, MacroCell::Value0}, Temps<1>::select(dest, MacroCell::Scratch0));
+  copyField(Cell{dest, MacroCell::Value1}, Temps<1>::select(dest, MacroCell::Scratch0));
+
+  // If src.low byte >= 128, set dest.high byte to 0xff, otherwise to zero
+  // The high byte in dest now contains a copy of its low-byte. Apply
+  // destructive less < 128 on it and subtract 1:
+  // 0 -> low byte >= 128 -> -1 = 0xff
+  // 1 -> low byte < 128 -> 0
+  
+  moveTo(dest, MacroCell::Scratch0);
+  setToValue(128);
+  moveTo(dest, MacroCell::Value1);
+  lessDestructive(Cell{dest, MacroCell::Scratch0},
+		  Temps<2>::select(dest, MacroCell::Scratch1,
+				   dest, MacroCell::Payload0));
+  dec();
+
+  popPtr();
+}
+
 void Assembler::assignSlot(Slot const &dest, Slot const &src) {
+  if (types::isInteger(dest.type) && types::isInteger(src.type))
+    return assignIntegerSlot(dest, src);
+
+  return assignSlotBytewise(dest, src);
+}
+
+
+void Assembler::assignSlotBytewise(Slot const &dest, Slot const &src) {
   assert(dest.size() >= src.size());
 
-  pushPtr();
-  // Copy src into slot
+  // Direct copy all of the cells
+  pushPtr();  
   for (int i = 0; i != dest.size(); ++i) {
     moveTo(src + i, MacroCell::Value0);
     copyField(Cell{dest + i, MacroCell::Value0},
 	      Temps<1>::select(dest + i, MacroCell::Scratch0));
     moveTo(src + i, MacroCell::Value1);
-    if (dest.type->usesValue1()) {
+    if (src.type->usesValue1()) {
       copyField(Cell{dest + i, MacroCell::Value1},
 		Temps<1>::select(dest + i, MacroCell::Scratch0));
     }
@@ -191,12 +240,13 @@ void Assembler::assignSlot(Slot const &dest, Slot const &src) {
     }
   }
   popPtr();
+
 }
 
 void Assembler::assignSlot(Slot const &slot, literal::Literal const &val) {
   pushPtr();
   if (types::isInteger(slot.type)) {
-    int const x = literal::cast<types::IntegerType>(val)->value();
+    int const x = literal::cast<types::IntegerType>(val)->encodedValue();
     moveTo(slot, MacroCell::Value0);
     setToValue(x & 0xff);
     moveTo(slot, MacroCell::Value1);    
@@ -258,54 +308,6 @@ Expression Assembler::assignImpl(Expression const &lhs, Expression const &rhs, A
   return lhs;
 }
 
-// TODO: factor out into a writeSlot? That's more consistent with the other API functions
-void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-
-  pushPtr();
-
-  Slot const slot = rhs.hasSlot()
-    ? rhs.slot()->materialize(*this)
-    : getTemp(rhs.literal());
-
-  // Special case for Strings: look for NULL terminator
-  if (types::isString(slot.type)) {
-    moveTo(slot, MacroCell::Value0);
-    setSeekMarker();
-
-    emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
-    switchField(MacroCell::Flag);
-    loopOpen(); {
-      zeroCell();
-      switchField(MacroCell::Value0);
-      emit<primitive::Out>();
-      emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
-
-      // Check if end of string was reached by using the current value as a flag.
-      // If NULL terminator hit, we exit the loop and go back to start.
-      emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
-      switchField(MacroCell::Flag);
-    } loopClose();
-
-    // We hit the end of the string -> return to seek marker (no payload, check current as well)
-    seek(MacroCell::SeekMarker, primitive::Left, {}, true);
-    resetSeekMarker();
-    popPtr();
-    return;
-  }
-
-  // All other types: just output all Values sequentially
-  for (int i = 0; i != slot.type->size(); ++i) {
-    moveTo(slot + i, MacroCell::Value0);
-    emit<primitive::Out>();
-    if (slot.type->usesValue1()) {
-      moveTo(slot + i, MacroCell::Value1);
-      emit<primitive::Out>();
-    }
-  }
-  popPtr();
-}
 
 void Assembler::moveToPointee(Slot const &ptrSlot) {
   assert(types::isPointer(ptrSlot.type));

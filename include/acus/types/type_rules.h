@@ -7,11 +7,13 @@ namespace acus::types::rules {
 
   struct OpResult {
     TypeHandle type;
+    TypeHandle workType;
     std::string errorMsg;    
     operator bool() const { return type != nullptr; }
   };
 
   OpResult binOpResult(BinOp op, TypeHandle lhs, TypeHandle rhs);
   OpResult assignResult(TypeHandle dst, TypeHandle src);
+
   
 } // namespace acus::types::rules

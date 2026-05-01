@@ -14,6 +14,11 @@ void Assembler::writeOut(auto const &rhs, API_FUNC_SOURCE) {
   writeOutImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
+void Assembler::print(auto const &val, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  printImpl(rValue(val, API_FWD), API_FWD);
+}
+
 Expression Assembler::assign(auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return assignImpl(lValue(lhs, API_FWD), rValue(rhs, API_FWD), API_FWD);
@@ -99,6 +104,17 @@ Expression Assembler::lboolAssign(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return lboolAssignImpl(rValue(rhs, API_FWD), API_FWD);
 }
+
+Expression Assembler::negate(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return negateImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
+Expression Assembler::negateAssign(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return negateAssignImpl(rValue(rhs, API_FWD), API_FWD);
+}
+
 
 // Binary operations
 Expression Assembler::binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {

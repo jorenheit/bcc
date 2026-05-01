@@ -24,11 +24,13 @@ namespace acus::literal::impl {
   using Literal = std::shared_ptr<Base>;
     
   struct Integer: Base {
-    int _value;
+    int const _semanticValue;
     Integer(types::TypeHandle t, int v);
 
     virtual std::string str() const override;
-    int value() const; 
+    //    int value() const;
+    unsigned encodedValue() const;
+    int semanticValue() const;
   };
     
   struct i8: Integer {
@@ -37,12 +39,24 @@ namespace acus::literal::impl {
     virtual Literal clone() const override;
   };
 
+  struct s8: Integer {
+    s8(s8 const &other) = default;
+    s8(int v, API_CTX_IGNORE);
+    virtual Literal clone() const override;
+  };
+  
   struct i16: Integer {
     i16(i16 const& other) = default;
     i16(int v, API_CTX_IGNORE);
     virtual Literal clone() const override;
   };      
 
+  struct s16: Integer {
+    s16(s16 const& other) = default;
+    s16(int v, API_CTX_IGNORE);
+    virtual Literal clone() const override;
+  };      
+  
   struct ArrayLike: Base {
     std::vector<Literal> arr;
 

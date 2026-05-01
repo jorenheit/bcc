@@ -2,11 +2,14 @@
 
 template <typename SpecType>
 Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
   assert(not lhs.isLiteral());
 
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_CODE_BLOCK();
+  auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
+  API_REQUIRE(opResult, opResult.errorMsg);
+
+    
   pushPtr();
 
   int stride = 1;
@@ -32,7 +35,7 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
     (this->*spec.applyWithSlot)(targetSlot, operandSlot);
   }
   else {
-    int const delta = literal::cast<types::IntegerType>(rhs.literal())->value();
+    int const delta = literal::cast<types::IntegerType>(rhs.literal())->semanticValue();
     (this->*spec.applyWithConst)(targetSlot, stride * delta);
   }
   
@@ -49,21 +52,26 @@ template <typename SpecType>
 Expression Assembler::binOpImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_BINOP(spec.op, lhs.type(), rhs.type());
 
   auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
-  assert(opResult);
+  API_REQUIRE(opResult, opResult.errorMsg);
 
   if (lhs.isLiteral() && rhs.isLiteral()) {
-    int const x = literal::cast<types::IntegerType>(lhs.literal())->value();
-    int const y = literal::cast<types::IntegerType>(rhs.literal())->value();
+    assert(types::isInteger(lhs.type()) && types::isInteger(rhs.type()));
+    
+    int const x = literal::cast<types::IntegerType>(lhs.literal())->semanticValue();
+    int const y = literal::cast<types::IntegerType>(rhs.literal())->semanticValue();
     auto const result = spec.fold(x, y);
-    if (types::isI8(opResult.type))  return Expression{literal::i8(result)};
+
+    if (types::isI8(opResult.type)) return Expression{literal::i8(result)};
+    if (types::isS8(opResult.type)) return Expression{literal::s8(result)};
     if (types::isI16(opResult.type)) return Expression{literal::i16(result)};
+    if (types::isS16(opResult.type)) return Expression{literal::s16(result)};
+
     std::unreachable();
   }
 
-  Slot result = getTemp(lhs.type());
+  Slot result = getTemp(opResult.workType);
   assignImpl(Expression{result}, lhs, API_FWD);
   binOpAssignImpl(Expression{result}, rhs, spec, API_FWD);
 

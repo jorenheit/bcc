@@ -16,6 +16,8 @@ Assembler::Mop const Assembler::modSpec {
 
 void Assembler::divSlotByConst(Slot const &lhs, int denom) {
 
+  assert(not types::isSignedInteger(lhs.type) && "not implemented yet");
+  
   pushPtr();
   if (lhs.type->usesValue1()) {
     Slot const tmp = getTemp(ts::raw(2));
@@ -54,6 +56,8 @@ void Assembler::divSlotByConst(Slot const &lhs, int denom) {
 }
 
 void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
+
+  assert(not types::isSignedInteger(lhs.type) && not types::isSignedInteger(rhs.type) && "not implemented yet");
 
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);
@@ -98,6 +102,7 @@ void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
 }
 
 void Assembler::modSlotByConst(Slot const &lhs, int denom) {
+  assert(not types::isSignedInteger(lhs.type) && "not implemented yet");
 
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
@@ -136,6 +141,7 @@ void Assembler::modSlotByConst(Slot const &lhs, int denom) {
 }
 
 void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
+  assert(not types::isSignedInteger(lhs.type) && not types::isSignedInteger(rhs.type) && "not implemented yet");
 
   Slot const rhsCopy = getTemp(rhs.type);
   assignSlot(rhsCopy, rhs);

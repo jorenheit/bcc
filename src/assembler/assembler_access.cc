@@ -43,9 +43,10 @@ Expression Assembler::arrayElementImpl(Expression const &arr, Expression const &
   API_REQUIRE_INSIDE_CODE_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
   API_REQUIRE_IS_INTEGER(index);
-
+  
   if (index.isLiteral()) {
-    int const i = literal::cast<types::IntegerType>(index.literal())->value();
+    int const i = literal::cast<types::IntegerType>(index.literal())->semanticValue();
+    API_REQUIRE(i >= 0, "index may not be negative.");
     return arrayElementImpl(arr, i, API_FWD);
   }
 

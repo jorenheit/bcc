@@ -42,6 +42,8 @@ COMMON_SRCS := \
 	src/assembler/assembler_logical.cc \
 	src/assembler/assembler_comparisons.cc \
 	src/assembler/assembler_binop_general.cc \
+	src/assembler/assembler_print.cc \
+
 
 MAIN_SRC := app/main.cc
 TEST_SRC := testsuite/testsuite.cc
