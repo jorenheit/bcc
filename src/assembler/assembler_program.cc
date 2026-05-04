@@ -1,5 +1,4 @@
 #include "assembler.ih"
-#include <iostream>
 
 Assembler::ProgramBuilder Assembler::program(std::string const &name, std::string const &entry, API_FUNC) {
   API_FUNC_BEGIN();
@@ -16,8 +15,7 @@ void Assembler::beginProgramImpl(std::string const &name, std::string const &ent
   _state.begun = true;
   _state.allowGlobalDeclarations = true;
 
-  // TODO: check if entryfunction is of correct type!
-
+  // TODO: defer entryfunction check
   
   // Globals should start at same frame offset as locals for consistency -> pad with raw
   declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart));
@@ -31,11 +29,12 @@ void Assembler::endProgram(API_FUNC) {
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
   API_REQUIRE(_program.functions.size() > 0, "a program should contain at least one function.");
       
-  // Done compiling the program. Generate the metablocks, bootstrap and hatstrap sequences.
+  // Done compiling the program. Generate the metablocks, builtin functions,  bootstrap and hatstrap sequences.
+  constructBuiltinFunctions();
   constructMetaBlocks();
   deferredFunctionCallTypeChecks();
   deferredBlockNameChecks();
-
+  
   // To bootstrap the system, we need to do the following:
   // 1. Mark cell 0 using the SeekMarker field to indicate that this is where
   //    the global data frame starts, for easy navigation to this frame. 

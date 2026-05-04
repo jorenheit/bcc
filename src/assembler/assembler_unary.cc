@@ -259,6 +259,10 @@ void Assembler::signBitSlot(Slot const &rhs) {
   signBitDestructive(Temps<3>::select(rhs, MacroCell::Scratch0,
 				      rhs, MacroCell::Scratch1,
 				      rhs, MacroCell::Payload0));
+
+  if (rhs.type->usesValue1()) {
+    moveField(Cell{rhs, MacroCell::Value0});
+  }
   popPtr();
 }
 

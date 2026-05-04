@@ -50,15 +50,27 @@ void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
 }
 
 void Assembler::printImpl(Expression const &val, API_CTX) {
+  
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_CODE_BLOCK();
   
   if (types::isInteger(val.type())) {
-    if (types::isUnsignedInteger(val.type())) return printUnsignedImpl(val, API_FWD);
-    if (types::isSignedInteger(val.type()))   return printSignedImpl(val, API_FWD);
-    std::unreachable();
+    // TODO: option to force inlining of the builtin calls?
+    
+    BuiltinFunction const func = val.type()->usesValue1()
+      ? (types::isUnsignedInteger(val.type()) ? BuiltinFunction::PrintUnsigned16 : BuiltinFunction::PrintSigned16)
+      : (types::isUnsignedInteger(val.type()) ? BuiltinFunction::PrintUnsigned8 : BuiltinFunction::PrintSigned8);
+    
+    _usedBuiltinFunctions.insert(func);
+
+    std::string const afterPrintBlockName = "__after_print_" + std::to_string(_state.builtinFunctionCallCount++);
+    callFunctionImpl(builtinFunctionName(func), afterPrintBlockName, {}, { val }, API_FWD);
+    endBlock();
+    block(afterPrintBlockName).begin();
+    return;
   }
   else {
+    // TODO: strings here; code already in writeOut
     assert(false && "non integer print not implemented yet");
   }
 
@@ -66,7 +78,7 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
 }
 
 
-void Assembler::printUnsignedImpl(Expression const &val, API_CTX) {
+void Assembler::printUnsignedImpl(Expression const &val) {
   assert(types::isUnsignedInteger(val.type()));
 
   if (val.isLiteral()) {
@@ -101,7 +113,7 @@ void Assembler::printUnsignedImpl(Expression const &val, API_CTX) {
 }
 
 
-void Assembler::printSignedImpl(Expression const &val, API_CTX) {
+void Assembler::printSignedImpl(Expression const &val) {
   assert(types::isSignedInteger(val.type()));
   
   if (val.isLiteral()) {
@@ -151,12 +163,13 @@ void Assembler::printSignedImpl(Expression const &val, API_CTX) {
 
     moveTo(valSlot, MacroCell::Flag);
     loopOpen(); {
+      // Negate valSlot while we're here
+      negateSlot(valSlot);
       setToValue('-');
       emit<primitive::Out>();
       zeroCell();
     } loopClose();
     
-    absSlot(valSlot);
     valSlot.type = valSlot.type->usesValue1() ? ts::i16() : ts::i8();
     printIntegerSlotDestructive(valSlot);    
   }
@@ -174,6 +187,8 @@ void Assembler::printIntegerSlotDestructive(Slot const &valSlot) {
   for (int i = 0; i != 5; ++i) {
     Slot const currentDigitSlot = digits.sub(ts::i16(), i);
     assignSlot(currentDigitSlot, valSlot);
+
+    // TODO: these can be combined; the divmod algorithm already computes both.
     modSlotByConst(currentDigitSlot, 10);
     divSlotByConst(valSlot, 10);
   }

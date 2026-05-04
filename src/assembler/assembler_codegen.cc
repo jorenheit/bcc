@@ -4,6 +4,17 @@ void Assembler::setTargetSequence(primitive::Sequence *seq) {
   _currentSeq = seq;
 }
 
+std::string Assembler::builtinFunctionName(BuiltinFunction func) {
+  switch (func) {
+  case BuiltinFunction::PrintUnsigned8:   return "__print_i8";
+  case BuiltinFunction::PrintUnsigned16:  return "__print_i16";
+  case BuiltinFunction::PrintSigned8:     return "__print_s8";
+  case BuiltinFunction::PrintSigned16:    return "__print_s16";
+  }
+  std::unreachable();
+}
+
+
 primitive::Context Assembler::constructContext() const {
 
   auto const constructBlockIDtoIndexMap = [&](){

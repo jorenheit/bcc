@@ -11,11 +11,29 @@ int main() try {
   c.program("test", "main").begin(); {
     c.function("main").begin(); {
       c.declareLocal("x", ts::s16());
+      c.declareLocal("y", ts::s16());
+      c.declareLocal("f", ts::s16());
       
       c.block("entry").begin(); {
-	c.assign("x", literal::s16(-433));
-	c.print("x");
-	
+
+	// ORRU
+    
+	// signBit(-1) = 1; 1 + 'P' = 'Q'
+	c.assign("x", literal::s16(-1));
+	c.assign("f", c.signBit("x"));
+	c.writeOut(c.add("f", literal::s16(CAT('P', 'Q')))); // Q
+
+	// signBit(0) = 0; 0 + 'R' = 'R'
+	c.assign("x", literal::s16(0));
+	c.assign("f", c.signBit("x"));
+	c.writeOut(c.add("f", literal::s16(CAT('R', 'R')))); // R
+
+	// signBitAssign(-32768): x becomes 1; CAT('R', 'T') + 1 = CAT('S', 'T') -> ST
+	c.assign("x", literal::s16(-32768));
+	c.signBitAssign("x");
+	c.addAssign("x", literal::s16(CAT('R', 'S')));
+	c.writeOut("x"); // ST
+
 	c.returnFromFunction();
       } c.endBlock();
     } c.endFunction();

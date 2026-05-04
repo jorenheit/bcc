@@ -937,6 +937,60 @@ tests.push_back(expectOutput("Signed Mul Literal Folding",
                              [] {
 #include "tests/signed_mul_literal_folding.cc"
                              }));
+
+tests.push_back(expectOutput("Signed s8 Unary Ops",
+                             "ABCDEFGHIJKL",
+                             [] {
+#include "tests/signed_s8_unary_ops.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Unary Ops",
+                             "ABCDEFGHIJKLMNOPQQRRSS",
+                             [] {
+#include "tests/signed_s16_unary_ops.cc"
+                             }));
+ 
+tests.push_back(expectOutput("Signed s8 Div/Mod Slots",
+                             "ABCDEFGH",
+                             [] {
+#include "tests/signed_s8_div_mod_slots.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s8 Div/Mod Consts",
+                             "ABCDEFGH",
+                             [] {
+#include "tests/signed_s8_div_mod_consts.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s8 Div/Mod Assign",
+                             "ABCDEFGH",
+                             [] {
+#include "tests/signed_s8_div_mod_assign.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Div/Mod Slots",
+                             "ABCDEFGHIJKLMNOP",
+                             [] {
+#include "tests/signed_s16_div_mod_slots.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Div/Mod Consts",
+                             "ABCDEFGHIJKLMNOP",
+                             [] {
+#include "tests/signed_s16_div_mod_consts.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Div/Mod Assign",
+                             "ABCDEFGHIJKLMNOP",
+                             [] {
+#include "tests/signed_s16_div_mod_assign.cc"
+                             }));
+ 
+tests.push_back(expectOutput("Signed Div/Mod Literal Folding",
+                             "ABCDEFGHIJKLMNOP",
+                             [] {
+#include "tests/signed_div_mod_literal_folding.cc"
+                             }));
  
  tests.push_back(expectOutput("Integer Addition: 8 bit",
 			      "ADG", []() {
@@ -1122,10 +1176,6 @@ tests.push_back(expectOutput("Integer Division i8",
 #include "tests/integer_division_i8.cc"
                              }));
 
-tests.push_back(expectOutput("Integer Division i16",
-                             "AACC", []() {
-#include "tests/integer_division_i16.cc"
-                             }));
 
 tests.push_back(expectOutput("Integer Division Mixed i16/i8",
                              "AACC", []() {
@@ -1135,11 +1185,6 @@ tests.push_back(expectOutput("Integer Division Mixed i16/i8",
 tests.push_back(expectOutput("Integer Modulo i8",
                              " !", []() {
 #include "tests/integer_modulo_i8.cc"
-                             }));
-
-tests.push_back(expectOutput("Integer Modulo i16",
-                             "  !!", []() {
-#include "tests/integer_modulo_i16.cc"
                              }));
 
 tests.push_back(expectOutput("Integer Modulo Mixed i16/i8",
@@ -1181,12 +1226,6 @@ tests.push_back(expectOutput("Integer Literal RHS i8",
                              "ABCDEABCDE", []() {
 #include "tests/integer_literals_i8.cc"
                              }));
-
-tests.push_back(expectOutput("Integer Literal RHS i16",
-                             "AABBCCDDEEAABBCCDDEE", []() {
-#include "tests/integer_literals_i16.cc"
-                             }));
-
 
  tests.push_back(expectOutput("Function Pointer Direct",
 			      "foo2foo1", []() {
@@ -1247,6 +1286,37 @@ tests.push_back(expectOutput("Integer Literal RHS i16",
 			      "XY", []() {
 #include "tests/function_pointer_second_order_dispatch.cc"
 			      }));
+
+ // THESE TAKE VERY LONG:
+
+ tests.push_back(expectOutput("Integer Division i16",
+                             "AACC", []() {
+#include "tests/integer_division_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Modulo i16",
+                             "  !!", []() {
+#include "tests/integer_modulo_i16.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Literal RHS i16",
+                             "AABBCCDDEEAABBCCDDEE", []() {
+#include "tests/integer_literals_i16.cc"
+                             }));
+ 
+tests.push_back(expectOutput("Integer Decimal Print Literals",
+                             "0 7 255 -1 -3 -128 0 42 65535 -1 -300 -32768",
+                             [] {
+#include "tests/integer_decimal_print.cc"
+                             }));
+
+tests.push_back(expectOutput("Integer Decimal Print Variables",
+                             "255 -3 65535 -300 127 -128 32767 -32768",
+                             [] {
+#include "tests/integer_decimal_print_variables.cc"
+                             })); 
+
+
  
  return tests;
 }

@@ -203,6 +203,8 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
       switch (slot.type->tag()) {
       case types::I8:
       case types::I16:
+      case types::S8:
+      case types::S16:
       case types::STRING:
       case types::FUNCTION_POINTER: {
 	copySlotToNextFrame(slot, offset);
@@ -257,7 +259,9 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
       types::TypeHandle argType = arg.type();
       switch(argType->tag()) {
       case types::I8:
-      case types::I16: {
+      case types::S8:
+      case types::I16:
+      case types::S16: {
 	// Construct integer
 	int const value = literal::cast<types::IntegerType>(arg.literal())->encodedValue();
 	moveTo(0, MacroCell::Value0);

@@ -75,7 +75,6 @@ namespace acus {
     Expression arrayElement(auto const &arr, int index, API_FUNC);  
     Expression arrayElement(auto const &arr, auto const &index, API_FUNC);
 
-
     Expression unOp(UnOp op, auto const &rhs, API_FUNC);
     Expression unOpAssign(UnOp op, auto const &rhs, API_FUNC);
 
@@ -164,6 +163,7 @@ namespace acus {
     struct {
       bool begun = false;
       bool allowGlobalDeclarations = true;
+      int  builtinFunctionCallCount = 0;
     } _state;
 
     std::stack<Cell> _ptrStack;
@@ -179,6 +179,11 @@ namespace acus {
     };
     std::vector<MetaBlock> _metaBlocks;
 
+    enum class BuiltinFunction {
+      PrintUnsigned8, PrintUnsigned16,
+      PrintSigned8, PrintSigned16
+    };
+    std::unordered_set<BuiltinFunction> _usedBuiltinFunctions;
 
     struct FunctionCallInfo {
       api::impl::Context API_CTX_NAME;
@@ -244,8 +249,8 @@ namespace acus {
     void branchIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX); 
-    void printUnsignedImpl(Expression const &val, API_CTX);
-    void printSignedImpl(Expression const &val, API_CTX);
+    void printUnsignedImpl(Expression const &val);
+    void printSignedImpl(Expression const &val);
   
     // Unrary operators implementation
     Expression lnotImpl(Expression const &obj, API_CTX);
@@ -530,8 +535,10 @@ namespace acus {
     void blockOpen();
     void blockClose();
     void constructMetaBlocks();
-
+    void constructBuiltinFunctions();
+    
     // Code generation (builder_codegen.cc)
+    std::string builtinFunctionName(BuiltinFunction func);
     void setTargetSequence(primitive::Sequence *seq);
     primitive::Context constructContext() const;    
     primitive::Sequence compilePrimitives() const;
