@@ -158,3 +158,5 @@ std::string Assembler::simplifyBrainfuck(std::string const &bf) {
   
   return cancel(cancel(bf, '>', '<'), '+', '-');
 }
+
+

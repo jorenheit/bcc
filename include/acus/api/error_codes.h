@@ -2,7 +2,6 @@
 namespace acus::error {
 
   enum class ErrorCode {
-    GenericApiRequirement,
     UnexpectedApiCall,
     EmptyProgram,
     DuplicateFunctionParameters,
@@ -15,6 +14,8 @@ namespace acus::error {
     NotPrintable,
     EntryFunctionNotDefined,
     WrongEntryFunctionType,
+    ExecutionPathWithoutReturn,
+    UnreachableCodeSection,
     
     ExpectedOutsideProgramBlock,
     ExpectedInsideProgramBlock,

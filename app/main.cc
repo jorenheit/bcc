@@ -6,35 +6,42 @@ using namespace acus::api;
 #define CAT(c1, c2) (((int)c1) | ((int)(c2 << 8)))
 
 int main() try {
-  Assembler c;
+  Assembler a;
 
-  c.program("test", "main").begin(); {
-
-
-    c.declareGlobal("g", ts::i8());
+  auto voidf = ts::void_function();
+  auto fptr = ts::function_pointer(voidf);
   
-    c.function("main").param("z", ts::i8()).begin(); {
-      c.declareLocal("x", ts::i8());
-      c.assign("x", literal::i8('x'));
-      c.referGlobals({"g"});
-      c.assign("g", literal::i8('A'));
-      c.callFunction("foo").done();
-      c.writeOut("g");          // should print 'F'
-      c.returnFromFunction();
-    } c.endFunction();
+  a.program("test", "main").begin(); {
 
-    c.function("foo").begin(); {
-      c.referGlobals({"g"});
-      c.writeOut("g");          // should print 'A'
-      c.assign("g", literal::i8('F'));  // modify global shadow
-      c.returnFromFunction();
-    } c.endFunction();
-  
+    a.function("main").begin(); {
+      a.declareLocal("x", ts::i8());
+      a.declareLocal("f", fptr);
 
+      a.assign("x", literal::i8(0));
+      a.jumpIf("x", "true", "false");
+      a.label("true");
+      a.assign("f", literal::function_pointer(voidf, "foo"));
+      a.jump("exec");
+      a.label("false");
+      a.assign("f", literal::function_pointer(voidf, "bar"));
+      a.label("exec");
+      a.callFunctionPointer("f").done();
+      a.returnFromFunction();
+    } a.endFunction();
 
-  } c.endProgram();
+    a.function("foo").begin(); {
+      a.writeOut(literal::string("true"));
+      a.returnFromFunction();
+    } a.endFunction();
+    
+    a.function("bar").begin(); {
+      a.writeOut(literal::string("false"));
+      a.returnFromFunction();
+    } a.endFunction();
+    
+  } a.endProgram();
 
-  std::cout << c.brainfuck("test") << '\n';
+  std::cout << a.brainfuck("test") << '\n';
  } catch (std::exception const &e) {
   std::cerr << e.what() << '\n';
  }

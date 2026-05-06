@@ -138,6 +138,7 @@ namespace acus {
     void label(std::string const &jumpLabel, API_FUNC);
     void jump(std::string const &jumpLabel, API_FUNC);    
     void jumpIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
+    void unreachable(API_FUNC);
   
   private:
     friend class proxy::impl::Direct;
@@ -542,7 +543,9 @@ namespace acus {
     void functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX);
     void deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX);
     void deferredFunctionCallTypeChecks();
+    void checkFunctionFlowValidity(API_CTX);
 
+    
     void labelCheck(std::string const &functionName, std::string const &blockName, API_CTX);
     void deferLabelCheck(std::string const &f, std::string const &b, API_CTX);
     void deferredLabelChecks();

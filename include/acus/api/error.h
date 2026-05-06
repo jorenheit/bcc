@@ -13,8 +13,7 @@ namespace acus::error {
     ErrorCode errorCode;
     std::string msg;
 
-    Error(ErrorCode errorCode = ErrorCode::GenericApiRequirement,
-          std::string const &msgHead = ""):
+    Error(ErrorCode errorCode, std::string const &msgHead = ""):
       errorCode(errorCode), msg(msgHead) {}
 
     ErrorCode code() const noexcept {
@@ -43,14 +42,6 @@ namespace acus::error {
     (err << filename << ":" << line << ":" << column << ": " << ... << args);
     throw err;
     std::unreachable();
-  }
-
-  template <typename ... Args>
-  void throw_if(bool condition,
-                std::string const &filename, int line, int column,
-                Args ... args) {
-    throw_if(condition, ErrorCode::GenericApiRequirement,
-             filename, line, column, args...);
-  }
+  }  
 
 } // namespace acus::error

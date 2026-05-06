@@ -75,6 +75,10 @@ void Assembler::label(std::string const &labelName, API_FUNC) {
 
 void Assembler::setNextBlock(std::string const &f, std::string const &b) {
 
+  if (_currentBlock != nullptr) {
+    _currentBlock->children.emplace_back(f, b);
+  }
+  
   pushPtr();
 
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
@@ -211,4 +215,12 @@ void Assembler::constructMetaBlocks() {
   _currentFunction = nullptr;
   assert(_currentBlock == nullptr);
   _metaBlocks.clear();
+}
+
+void Assembler::unreachable(API_FUNC) {
+  API_FUNC_BEGIN();
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+
+  _currentBlock->reachable = false;
 }

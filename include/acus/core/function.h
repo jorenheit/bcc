@@ -25,6 +25,17 @@ struct Function {
     std::string name;
     std::string id;
     primitive::Sequence code;
+
+    bool returns = false;
+    bool reached = false;
+    bool reachable = true;
+    
+    struct Child {
+      std::string functionName;
+      std::string blockName;
+    };
+
+    std::vector<Child> children;
   };
 
   struct Scope {

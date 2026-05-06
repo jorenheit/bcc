@@ -47,6 +47,10 @@ void Assembler::endProgram(API_FUNC) {
   // Generate the metablocks, builtin functions, bootstrap and hatstrap sequences.
   constructBuiltinFunctions();
   constructMetaBlocks();
+
+  // Check all functions for flow validity: each path should terminate in a return statement
+  // and all code-blocks should be reachable.
+  checkFunctionFlowValidity(API_FWD);
   
   // To bootstrap the system, we need to do the following:
   // 1. Mark cell 0 using the SeekMarker field to indicate that this is where
@@ -122,6 +126,8 @@ void Assembler::beginFunctionImpl(std::string const &name, types::TypeHandle typ
 
   beginBlock(generateUniqueBlockName());
 }
+
+
 
 void Assembler::endFunction(API_FUNC) {
   API_FUNC_BEGIN();
