@@ -15,55 +15,35 @@ c.function("main").begin(); {
   c.declareLocal("idx", i8);
   c.declareLocal("count", i8);
 
-  c.block("entry").begin(); {
-    c.assign(c.arrayElement("arr", 0), literal::function_pointer(actionType, "printA"));
-    c.assign(c.arrayElement("arr", 1), literal::function_pointer(actionType, "printB"));
-    c.assign("idx", literal::i8(0));
-    c.assign("count", literal::i8(0));
-    c.setNextBlock("check");
-  } c.endBlock();
-
-  c.block("check").begin(); {
-    c.branchIf(c.lt("count", literal::i8(4)), "body", "end");
-  } c.endBlock();
-
-  c.block("body").begin(); {
-    c.callFunctionPointer(c.arrayElement("arr", "idx"), "toggle").done();
-  } c.endBlock();
-
-  c.block("toggle").begin(); {
-    c.branchIf("idx", "setZero", "setOne");
-  } c.endBlock();
-
-  c.block("setZero").begin(); {
-    c.assign("idx", literal::i8(0));
-    c.assign("count", c.add("count", literal::i8(1)));
-    c.setNextBlock("check");
-  } c.endBlock();
-
-  c.block("setOne").begin(); {
-    c.assign("idx", literal::i8(1));
-    c.assign("count", c.add("count", literal::i8(1)));
-    c.setNextBlock("check");
-  } c.endBlock();
-
-  c.block("end").begin(); {
-    c.returnFromFunction();
-  } c.endBlock();
+  c.assign(c.arrayElement("arr", 0), literal::function_pointer(actionType, "printA"));
+  c.assign(c.arrayElement("arr", 1), literal::function_pointer(actionType, "printB"));
+  c.assign("idx", literal::i8(0));
+  c.assign("count", literal::i8(0));
+  c.label("check");
+  c.jumpIf(c.lt("count", literal::i8(4)), "body", "end");
+  c.label("body");
+  c.callFunctionPointer(c.arrayElement("arr", "idx")).done();
+  c.jumpIf("idx", "setZero", "setOne");
+  c.label("setZero");
+  c.assign("idx", literal::i8(0));
+  c.assign("count", c.add("count", literal::i8(1)));
+  c.jump("check");
+  c.label("setOne");
+  c.assign("idx", literal::i8(1));
+  c.assign("count", c.add("count", literal::i8(1)));
+  c.jump("check");
+  c.label("end");
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printA").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('A'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('A'));
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printB").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('B'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('B'));
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

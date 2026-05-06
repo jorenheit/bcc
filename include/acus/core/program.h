@@ -50,11 +50,8 @@ struct Program {
     return functions.at(functionByName.at(name));
   }
 
-  inline size_t nextGlobalBlockIndex() const {
-    return globalBlockOrder.size();
-  }
-
   inline void registerBlock(Function::Block &block) {
+    block.globalBlockIndex = globalBlockOrder.size();
     globalBlockOrder.push_back(&block);
   }
 

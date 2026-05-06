@@ -1,8 +1,16 @@
 #include "assembler.ih"
 
-void Assembler::blockOpen() {
-  assert(_dp.current().offset == 0);
-  assert(_currentBlock != nullptr);
+void Assembler::beginBlock(std::string const &name) {
+
+  Function::Block &block = _currentFunction->createBlock(name);
+  _program.registerBlock(block);
+
+  if (_currentFunction->blocks.size() == 1) {
+    _currentFunction->entryBlockIndex = block.globalBlockIndex;
+  }
+
+  _currentBlock = &block;
+  setTargetSequence(&block.code);
 
   // To start a block, we need to check 2 conditions:
   // 1. Does the block-index match the value stored in the TargetBlock cell?
@@ -11,7 +19,8 @@ void Assembler::blockOpen() {
   // If both are true, the Flag field of the TargetBlock cell is set to 1 and
   // used as the conditional cell upon which it is decided whether or not to enter
   // the block.
-
+  
+  resetOrigin();
   moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
   compare16ToConstConstructive(/* value =    */ _currentBlock->globalBlockIndex,
 			       /* highByte = */ Cell{FrameLayout::TargetBlock, MacroCell::Value1},
@@ -31,18 +40,111 @@ void Assembler::blockOpen() {
 
   // Open the block, conditional on the run-flag
   moveTo(FrameLayout::RunState, MacroCell::Flag);
-  loopOpen("block open");
+  loopOpen();
   zeroCell();
   moveToOrigin();
 }
 
-void Assembler::blockClose() {
+void Assembler::endBlock() {
   assert(_currentBlock != nullptr);
 
   // We move back to the Flag stored in the RunState cell (guaranteed zero)
   moveTo(FrameLayout::RunState, MacroCell::Flag);
-  loopClose("block close");
+  loopClose();
   moveToOrigin();
+  freeTemps();
+  _currentBlock = nullptr;
+}
+
+std::string Assembler::generateUniqueBlockName() {
+  static int blockID = 0;
+  return "__block_" + std::to_string(blockID++);
+}
+
+void Assembler::label(std::string const &labelName, API_FUNC) {
+  API_FUNC_BEGIN();
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  
+  if (_currentBlock != nullptr) {
+    setNextBlock(_currentFunction->name, labelName);    
+    endBlock();
+  }
+  beginBlock(labelName);
+}
+
+void Assembler::setNextBlock(std::string const &f, std::string const &b) {
+
+  pushPtr();
+
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
+  zeroCell();
+  emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
+    return ctx.getBlockIndex(f, b) & 0xff;
+  });
+  
+  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
+  zeroCell();
+  emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
+    return (ctx.getBlockIndex(f, b) >> 8) & 0xff;
+  });
+  
+  popPtr();
+}
+
+void Assembler::setNextBlock(Expression const &obj) {
+  assert(types::isFunctionPointer(obj.type()));
+  
+  Slot const targetSlot {
+    .name = "target_block",
+    .type = obj.type(),
+    .kind = Slot::Dummy,
+    .offset = FrameLayout::TargetBlock
+  };
+  
+  if (obj.hasSlot()) {
+    Slot const ptrSlot = obj.slot()->materialize(*this);
+    assignSlot(targetSlot, ptrSlot);
+  } else {
+    assignSlot(targetSlot, obj.literal());
+  }
+}
+
+void Assembler::jump(std::string const &jumpLabel, API_FUNC) {
+  API_FUNC_BEGIN();
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+
+  deferLabelCheck(_currentFunction->name, jumpLabel, API_FWD);
+  
+  // A jump ends the current block and sets the target to the indicated jump label.
+  // After a jump, a label is expected to prevent unreachable code.
+
+  assert(_currentBlock != nullptr);
+  setNextBlock(_currentFunction->name, jumpLabel);
+  endBlock();
+
+  API_EXPECT_NEXT("label");
+}
+
+void Assembler::jumpIfImpl(Expression const &obj, std::string const &trueLabel,
+		       std::string const &falseLabel, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_IS_INTEGER(obj);
+
+  if (obj.hasSlot()) {
+    branchIfSlot(obj.slot()->materialize(*this), trueLabel, falseLabel);
+  } else {  
+    bool const value = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
+    setNextBlock(_currentFunction->name, value ? trueLabel : falseLabel);
+  }
+
+  deferLabelCheck(_currentFunction->name, trueLabel, API_FWD);
+  deferLabelCheck(_currentFunction->name, falseLabel, API_FWD);
+  endBlock();
+  
+  API_EXPECT_NEXT("label");
 }
 
 void Assembler::constructMetaBlocks() {
@@ -57,7 +159,7 @@ void Assembler::constructMetaBlocks() {
 
     // Set current function to caller (owner of metablock) and construct block
     _currentFunction = &_program.function(m.caller);    
-    block(m.name).begin(); {
+    beginBlock(m.name); {
 
       if (returnType == ts::void_t() || not m.returnSlot){
 	fetchReturnData();
@@ -103,46 +205,10 @@ void Assembler::constructMetaBlocks() {
 	popFrame(); // This leaves us at the Scratch1 cell in another frame: guaranteed 0
       } loopClose();
       switchField(MacroCell::Value0);
-
-      API_EXPECT_NEXT("endBlock");
     } endBlock();
   }
 
   _currentFunction = nullptr;
   assert(_currentBlock == nullptr);
   _metaBlocks.clear();
-}
-
-void Assembler::constructBuiltinFunctions() {
-  assert(_currentFunction == nullptr);
-  assert(_currentBlock == nullptr);
-
-  for (auto func: _usedBuiltinFunctions) {
-
-    types::TypeHandle const paramType = [&] {
-      switch (func) {
-      case BuiltinFunction::PrintUnsigned8:  return ts::i8();
-      case BuiltinFunction::PrintUnsigned16: return ts::i16();
-      case BuiltinFunction::PrintSigned8:    return ts::s8();
-      case BuiltinFunction::PrintSigned16:   return ts::s16();
-      }
-      std::unreachable();
-    }();
-
-    std::string const funcName = builtinFunctionName(func);
-    
-    function(funcName).param("x", paramType).begin(); {
-      block("entry").begin(); {
-	if (types::isSignedInteger(paramType)) {
-	  printSignedImpl(Expression{ local("x") });
-	} else {
-	  printUnsignedImpl(Expression{ local("x") });
-	}
-	returnFromFunction();
-      } endBlock();
-    } endFunction();
-    
-  }
-
-  _usedBuiltinFunctions.clear();
 }

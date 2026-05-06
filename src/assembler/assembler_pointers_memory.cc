@@ -2,7 +2,7 @@
 
 Expression Assembler::addressOfImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   assert(not obj.isLiteral());
   
   if (obj.slot()->direct()) {
@@ -296,7 +296,7 @@ void Assembler::assignSlot(Slot const &slot, literal::Literal const &val) {
 
 Expression Assembler::assignImpl(Expression const &lhs, Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_ASSIGNABLE(lhs.type(), rhs.type());
 
   if (rhs.hasSlot()) {

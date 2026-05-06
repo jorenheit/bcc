@@ -14,6 +14,37 @@ std::string Assembler::builtinFunctionName(BuiltinFunction func) {
   std::unreachable();
 }
 
+void Assembler::constructBuiltinFunctions() {
+  assert(_currentFunction == nullptr);
+  assert(_currentBlock == nullptr);
+
+  for (auto func: _usedBuiltinFunctions) {
+
+    types::TypeHandle const paramType = [&] {
+      switch (func) {
+      case BuiltinFunction::PrintUnsigned8:  return ts::i8();
+      case BuiltinFunction::PrintUnsigned16: return ts::i16();
+      case BuiltinFunction::PrintSigned8:    return ts::s8();
+      case BuiltinFunction::PrintSigned16:   return ts::s16();
+      }
+      std::unreachable();
+    }();
+
+    std::string const funcName = builtinFunctionName(func);
+    
+    function(funcName).param("x", paramType).begin(); {
+      if (types::isSignedInteger(paramType)) {
+	printSignedImpl(Expression{ local("x") });
+      } else {
+	printUnsignedImpl(Expression{ local("x") });
+      }
+      returnFromFunction();
+    } endFunction();
+    
+  }
+
+  _usedBuiltinFunctions.clear();
+}
 
 primitive::Context Assembler::constructContext() const {
 

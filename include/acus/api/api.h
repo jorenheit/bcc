@@ -96,17 +96,6 @@ namespace acus::api::impl {
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
 		  "called '", (API_CTX_NAME).apiName(), "' outside a function-block.")
 
-#define API_REQUIRE_OUTSIDE_CODE_BLOCK()				\
-  error::throw_if(not (API_CTX_NAME).currentBlock().empty(),	\
-		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "called '", (API_CTX_NAME).apiName(), "' while inside code-block '", \
-		  (API_CTX_NAME).currentBlock(), "'; call 'endBlock' first.")
-
-#define API_REQUIRE_INSIDE_CODE_BLOCK()					\
-  error::throw_if((API_CTX_NAME).currentBlock().empty(),		\
-		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "called '", (API_CTX_NAME).apiName(), "' outside a code-block.")
-
 #define API_REQUIRE_NO_SCOPE()						\
   error::throw_if((API_CTX_NAME).currentScopeDepth() > 0,		\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \

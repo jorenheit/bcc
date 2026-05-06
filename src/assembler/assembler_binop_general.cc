@@ -5,7 +5,7 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
   assert(not lhs.isLiteral());
 
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
   API_REQUIRE(opResult, opResult.errorMsg);
 
@@ -51,7 +51,7 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
 template <typename SpecType>
 Expression Assembler::binOpImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
   auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
   API_REQUIRE(opResult, opResult.errorMsg);

@@ -1,7 +1,7 @@
 
-Assembler::FunctionCallBuilder Assembler::callFunctionPointer(auto const &functionPointer, std::string const &nextBlockName, API_FUNC_SOURCE) {
+Assembler::FunctionCallBuilder Assembler::callFunctionPointer(auto const &functionPointer, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-  return FunctionCallBuilder { *this, rValue(functionPointer, API_FWD), nextBlockName, API_FWD };
+  return FunctionCallBuilder { *this, rValue(functionPointer, API_FWD), API_FWD };
 }
 
 void Assembler::returnFromFunction(auto const &rhs, API_FUNC_SOURCE) {
@@ -54,9 +54,9 @@ Expression Assembler::addressOf(auto const &obj, API_FUNC_SOURCE) {
   return addressOfImpl(lValue(obj, API_FWD), API_FWD);
 }
 
-void Assembler::branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC_SOURCE) {
+void Assembler::jumpIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-  return branchIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
+  return jumpIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
 }
 
 Expression Assembler::expr(auto const &obj, API_FUNC_SOURCE) {

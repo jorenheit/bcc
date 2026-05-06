@@ -77,35 +77,17 @@ namespace acus {
   {}
   
 } // namespace acus
-
-
-// BlockBuilder
-namespace acus {
-
-  void Assembler::BlockBuilder::begin() {
-    _finalized.done();
-    _assembler.beginBlockImpl(_name, API_FWD);
-  }
-
-  Assembler::BlockBuilder::BlockBuilder(Assembler &a, std::string const &name, api::impl::Context const &ctx):
-    BuilderBase("BlockBuilder", "begin", ctx),
-    _assembler(a),
-    _name(name)
-  {}
-
-}  // namespace acus
   
 
 // FunctionCallBuilder
 namespace acus {
 
   void Assembler::FunctionCallBuilder::done() {
-    API_REQUIRE(not _nextBlockName.empty(), "then() was never called on the FunctionCallBuilder.");
     _finalized.done();
     if (std::holds_alternative<std::string>(_function)) {
-      _assembler.callFunctionImpl(std::get<std::string>(_function), _nextBlockName, _result, _args, API_FWD);
+      _assembler.callFunctionImpl(std::get<std::string>(_function), _result, _args, API_FWD);
     } else {
-      _assembler.callFunctionImpl(std::get<Expression>(_function), _nextBlockName, _result, _args, API_FWD);
+      _assembler.callFunctionImpl(std::get<Expression>(_function), _result, _args, API_FWD);
     }
   }
 

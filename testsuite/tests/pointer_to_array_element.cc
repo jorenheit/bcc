@@ -13,24 +13,22 @@ c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("arr", arr3);
 
-  c.block("entry").begin(); {
-    c.assign(c.arrayElement("arr", 0), literal::i8('A'));
-    c.assign(c.arrayElement("arr", 1), literal::i8('B'));
-    c.assign(c.arrayElement("arr", 2), literal::i8('C'));
+  c.assign(c.arrayElement("arr", 0), literal::i8('A'));
+  c.assign(c.arrayElement("arr", 1), literal::i8('B'));
+  c.assign(c.arrayElement("arr", 2), literal::i8('C'));
 
-    c.assign("p", c.addressOf(c.arrayElement("arr", 1)));
+  c.assign("p", c.addressOf(c.arrayElement("arr", 1)));
 
-    auto pDeref = c.dereferencePointer("p");
-    c.writeOut(pDeref); // B
+  auto pDeref = c.dereferencePointer("p");
+  c.writeOut(pDeref); // B
 
-    c.assign(pDeref, literal::i8('X'));
+  c.assign(pDeref, literal::i8('X'));
 
-    c.writeOut(c.arrayElement("arr", 0)); // A
-    c.writeOut(c.arrayElement("arr", 1)); // X
-    c.writeOut(c.arrayElement("arr", 2)); // C
+  c.writeOut(c.arrayElement("arr", 0)); // A
+  c.writeOut(c.arrayElement("arr", 1)); // X
+  c.writeOut(c.arrayElement("arr", 2)); // C
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

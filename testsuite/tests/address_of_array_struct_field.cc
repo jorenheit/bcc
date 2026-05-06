@@ -13,24 +13,22 @@ c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("arr", arrT);
 
-  c.block("entry").begin(); {
-    c.assign(c.structField(c.arrayElement("arr", 0), "y"), literal::i8('a'));
-    c.assign(c.structField(c.arrayElement("arr", 1), "y"), literal::i8('b'));
-    c.assign(c.structField(c.arrayElement("arr", 2), "y"), literal::i8('c'));
+  c.assign(c.structField(c.arrayElement("arr", 0), "y"), literal::i8('a'));
+  c.assign(c.structField(c.arrayElement("arr", 1), "y"), literal::i8('b'));
+  c.assign(c.structField(c.arrayElement("arr", 2), "y"), literal::i8('c'));
 
-    c.assign("p", c.addressOf(c.structField(c.arrayElement("arr", 1), "y")));
+  c.assign("p", c.addressOf(c.structField(c.arrayElement("arr", 1), "y")));
 
-    auto pDeref = c.dereferencePointer("p");
-    c.writeOut(pDeref);                                    // b
+  auto pDeref = c.dereferencePointer("p");
+  c.writeOut(pDeref);                                    // b
 
-    c.assign(pDeref, literal::i8('X'));
+  c.assign(pDeref, literal::i8('X'));
 
-    c.writeOut(c.structField(c.arrayElement("arr", 0), "y")); // a
-    c.writeOut(c.structField(c.arrayElement("arr", 1), "y")); // X
-    c.writeOut(c.structField(c.arrayElement("arr", 2), "y")); // c
+  c.writeOut(c.structField(c.arrayElement("arr", 0), "y")); // a
+  c.writeOut(c.structField(c.arrayElement("arr", 1), "y")); // X
+  c.writeOut(c.structField(c.arrayElement("arr", 2), "y")); // c
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

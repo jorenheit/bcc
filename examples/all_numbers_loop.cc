@@ -10,22 +10,16 @@ int main() try {
 
     c.function("main").begin(); {
       c.declareLocal("x", ts::i8());
+      c.assign("x", literal::i8(0));
 
-      c.block("entry").begin(); {
-	c.assign("x", literal::i8(0));
-	c.setNextBlock("print");
-      } c.endBlock();
+      c.label("print");
+      c.writeOut("x");
+      c.addAssign("x", literal::i8(1));
+      c.jumpIf(c.eq("x", literal::i8(0)), "done", "print");
 
-      c.block("print").begin(); {
-	c.writeOut("x");
-	c.addAssign("x", literal::i8(1));
-	c.branchIf(c.eq("x", literal::i8(0)), "done", "print");
-      } c.endBlock();
+      c.label("done");
+      c.returnFromFunction();
 
-      c.block("done").begin(); {
-	c.returnFromFunction();
-      } c.endBlock();
-      
     } c.endFunction();
 
   } c.endProgram();

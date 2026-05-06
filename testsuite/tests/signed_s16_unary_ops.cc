@@ -8,76 +8,74 @@ c.function("main").begin(); {
   c.declareLocal("z", ts::s16());
   c.declareLocal("f", ts::s16());
 
-  
-  c.block("entry").begin(); {
-    // negate(-1) = 1; CAT('@', 'B') + 1 = CAT('A', 'B') -> AB
-    c.assign("x", literal::s16(-1));
-    c.assign("z", c.negate("x"));
-    c.addAssign("z", literal::s16(CAT('@', 'B')));
-    c.writeOut("z"); // AB
 
-    // negate(2) = -2; CAT('E', 'D') - 2 = CAT('C', 'D') -> CD
-    c.assign("x", literal::s16(2));
-    c.assign("z", c.negate("x"));
-    c.addAssign("z", literal::s16(CAT('E', 'D')));
-    c.writeOut("z"); // CD
+  // negate(-1) = 1; CAT('@', 'B') + 1 = CAT('A', 'B') -> AB
+  c.assign("x", literal::s16(-1));
+  c.assign("z", c.negate("x"));
+  c.addAssign("z", literal::s16(CAT('@', 'B')));
+  c.writeOut("z"); // AB
 
-    // negateAssign(-3) = 3; CAT('B', 'F') + 3 = CAT('E', 'F') -> EF
-    c.assign("x", literal::s16(-3));
-    c.negateAssign("x");
-    c.addAssign("x", literal::s16(CAT('B', 'F')));
-    c.writeOut("x"); // EF
+  // negate(2) = -2; CAT('E', 'D') - 2 = CAT('C', 'D') -> CD
+  c.assign("x", literal::s16(2));
+  c.assign("z", c.negate("x"));
+  c.addAssign("z", literal::s16(CAT('E', 'D')));
+  c.writeOut("z"); // CD
 
-    // negateAssign(4) = -4; CAT('K', 'H') - 4 = CAT('G', 'H') -> GH
-    c.assign("x", literal::s16(4));
-    c.negateAssign("x");
-    c.addAssign("x", literal::s16(CAT('K', 'H')));
-    c.writeOut("x"); // GH
+  // negateAssign(-3) = 3; CAT('B', 'F') + 3 = CAT('E', 'F') -> EF
+  c.assign("x", literal::s16(-3));
+  c.negateAssign("x");
+  c.addAssign("x", literal::s16(CAT('B', 'F')));
+  c.writeOut("x"); // EF
 
-    // abs(-5) = 5; CAT('D', 'J') + 5 = CAT('I', 'J') -> IJ
-    c.assign("x", literal::s16(-5));
-    c.assign("z", c.abs("x"));
-    c.addAssign("z", literal::s16(CAT('D', 'J')));
-    c.writeOut("z"); // IJ
+  // negateAssign(4) = -4; CAT('K', 'H') - 4 = CAT('G', 'H') -> GH
+  c.assign("x", literal::s16(4));
+  c.negateAssign("x");
+  c.addAssign("x", literal::s16(CAT('K', 'H')));
+  c.writeOut("x"); // GH
 
-    // abs(6) = 6; CAT('E', 'L') + 6 = CAT('K', 'L') -> KL
-    c.assign("x", literal::s16(6));
-    c.assign("z", c.abs("x"));
-    c.addAssign("z", literal::s16(CAT('E', 'L')));
-    c.writeOut("z"); // KL
+  // abs(-5) = 5; CAT('D', 'J') + 5 = CAT('I', 'J') -> IJ
+  c.assign("x", literal::s16(-5));
+  c.assign("z", c.abs("x"));
+  c.addAssign("z", literal::s16(CAT('D', 'J')));
+  c.writeOut("z"); // IJ
 
-    // absAssign(-7) = 7; CAT('F', 'N') + 7 = CAT('M', 'N') -> MN
-    c.assign("x", literal::s16(-7));
-    c.absAssign("x");
-    c.addAssign("x", literal::s16(CAT('F', 'N')));
-    c.writeOut("x"); // MN
+  // abs(6) = 6; CAT('E', 'L') + 6 = CAT('K', 'L') -> KL
+  c.assign("x", literal::s16(6));
+  c.assign("z", c.abs("x"));
+  c.addAssign("z", literal::s16(CAT('E', 'L')));
+  c.writeOut("z"); // KL
 
-    // absAssign(8) = 8; CAT('G', 'P') + 8 = CAT('O', 'P') -> OP
-    c.assign("x", literal::s16(8));
-    c.absAssign("x");
-    c.addAssign("x", literal::s16(CAT('G', 'P')));
-    c.writeOut("x"); // OP
+  // absAssign(-7) = 7; CAT('F', 'N') + 7 = CAT('M', 'N') -> MN
+  c.assign("x", literal::s16(-7));
+  c.absAssign("x");
+  c.addAssign("x", literal::s16(CAT('F', 'N')));
+  c.writeOut("x"); // MN
 
-    // ORRU
+  // absAssign(8) = 8; CAT('G', 'P') + 8 = CAT('O', 'P') -> OP
+  c.assign("x", literal::s16(8));
+  c.absAssign("x");
+  c.addAssign("x", literal::s16(CAT('G', 'P')));
+  c.writeOut("x"); // OP
 
-    // signBit(-1) = 1; 1 + 'P' = 'Q'
-    c.assign("x", literal::s16(-1));
-    c.assign("f", c.signBit("x"));
-    c.writeOut(c.add("f", literal::s16(CAT('P', 'Q')))); // QQ
+  // ORRU
 
-    // signBit(0) = 0; 0 + 'R' = 'R'
-    c.assign("x", literal::s16(0));
-    c.assign("f", c.signBit("x"));
-    c.writeOut(c.add("f", literal::s16(CAT('R', 'R')))); // RR
+  // signBit(-1) = 1; 1 + 'P' = 'Q'
+  c.assign("x", literal::s16(-1));
+  c.assign("f", c.signBit("x"));
+  c.writeOut(c.add("f", literal::s16(CAT('P', 'Q')))); // QQ
 
-    // signBitAssign(-32768): x becomes 1; CAT('R', 'T') + 1 = CAT('S', 'T') -> SS
-    c.assign("x", literal::s16(-32768));
-    c.signBitAssign("x");
-    c.addAssign("x", literal::s16(CAT('R', 'S')));
-    c.writeOut("x"); // ST
+  // signBit(0) = 0; 0 + 'R' = 'R'
+  c.assign("x", literal::s16(0));
+  c.assign("f", c.signBit("x"));
+  c.writeOut(c.add("f", literal::s16(CAT('R', 'R')))); // RR
 
-    c.returnFromFunction();
-  } c.endBlock();
+  // signBitAssign(-32768): x becomes 1; CAT('R', 'T') + 1 = CAT('S', 'T') -> SS
+  c.assign("x", literal::s16(-32768));
+  c.signBitAssign("x");
+  c.addAssign("x", literal::s16(CAT('R', 'S')));
+  c.writeOut("x"); // ST
+
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

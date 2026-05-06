@@ -28,12 +28,12 @@ void Assembler::endProgram(API_FUNC) {
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
   API_REQUIRE(_program.functions.size() > 0, "a program should contain at least one function.");
-      
+
   // Done compiling the program. Generate the metablocks, builtin functions,  bootstrap and hatstrap sequences.
   constructBuiltinFunctions();
   constructMetaBlocks();
   deferredFunctionCallTypeChecks();
-  deferredBlockNameChecks();
+  deferredLabelChecks();
   
   // To bootstrap the system, we need to do the following:
   // 1. Mark cell 0 using the SeekMarker field to indicate that this is where
@@ -58,7 +58,7 @@ void Assembler::endProgram(API_FUNC) {
   switchField(MacroCell::FrameMarker);
   setToValue(1);
 
-  setNextBlockImpl(_program.entryFunctionName, "");
+  setNextBlock(_program.entryFunctionName, "");
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   setToValue(1);
   loopOpen("main loop");
@@ -104,6 +104,8 @@ void Assembler::beginFunctionImpl(std::string const &name, types::TypeHandle typ
     API_REQUIRE(unique, "parameter name '", name, "' used more than once.");
     declareLocal(name, fType->paramTypes()[i]);
   }
+
+  beginBlock(generateUniqueBlockName());
 }
 
 void Assembler::endFunction(API_FUNC) {
@@ -112,7 +114,8 @@ void Assembler::endFunction(API_FUNC) {
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_NO_SCOPE();
   API_REQUIRE(_currentFunction->blocks.size() > 0, "a function should contain at least 1 code-block.");
-  
+
+  endBlock();
   _currentFunction = nullptr;
 }
 
@@ -124,7 +127,6 @@ Assembler::ScopeBuilder Assembler::scope(API_FUNC) {
 void Assembler::beginScopeImpl(API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
   _currentScope = &_currentFunction->createScope(_currentScope);
 }
@@ -133,119 +135,10 @@ void Assembler::endScope(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
   freeScope(_currentScope);
   _currentScope = _currentScope->parent;
 }
 
-
-Assembler::BlockBuilder Assembler::block(std::string const &name, API_FUNC) {
-  API_FUNC_BEGIN();
-  return BlockBuilder { *this, name, API_FWD };
-}
-
-void Assembler::beginBlockImpl(std::string const &name, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_OUTSIDE_CODE_BLOCK();
-  
-  auto globalIdx = _program.nextGlobalBlockIndex();
-  Function::Block &block = _currentFunction->createBlock(name, globalIdx);
-  _program.registerBlock(block);
-
-  if (_currentFunction->blocks.size() == 1) {
-    _currentFunction->entryBlockIndex = globalIdx;
-  }
-
-  _currentBlock = &block;
-  resetOrigin();
-
-  setTargetSequence(&block.code);
-  blockOpen();
-}
-
-void Assembler::endBlock(API_FUNC) {
-  API_FUNC_BEGIN();
-  API_CHECK_EXPECTED_STRICT();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-
-  blockClose();
-  freeTemps();
-  _currentBlock = nullptr;
-}
-
-void Assembler::setNextBlock(std::string const &f, std::string const &b, API_FUNC) {
-  API_FUNC_BEGIN();
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-
-  setNextBlockImpl(f, b);
-  deferBlockNameCheck(f, b, API_FWD);
-
-  API_EXPECT_NEXT("endBlock");  
-}
-
-void Assembler::setNextBlock(std::string const &b, API_FUNC) {
-  API_FUNC_BEGIN();
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-
-  setNextBlockImpl(_currentFunction->name, b);
-  deferBlockNameCheck(_currentFunction->name, b, API_FWD);
-
-  API_EXPECT_NEXT("endBlock");  
-}
-
-
-void Assembler::setNextBlockImpl(std::string const &f, std::string const &b) {
-
-  pushPtr();
-  
-  // Could not determine block index yet -> postpone until actual code generation
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  zeroCell();
-  emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
-    return ctx.getBlockIndex(f, b) & 0xff;
-  });
-  
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value1);
-  zeroCell();
-  emit<primitive::ChangeBy>([f, b](primitive::Context const &ctx) -> int {
-    return (ctx.getBlockIndex(f, b) >> 8) & 0xff;
-  });
-  
-  popPtr();
-}
-
-void Assembler::setNextBlockImpl(int index) {
-  pushPtr();
-  moveTo(FrameLayout::TargetBlock, MacroCell::Value0);
-  setToValue16(index, Cell{FrameLayout::TargetBlock, MacroCell::Value1});
-  popPtr();
-}
-
-void Assembler::setNextBlockImpl(Expression const &obj) {
-  assert(types::isFunctionPointer(obj.type()));
-  
-  Slot const targetSlot {
-    .name = "target_block",
-    .type = obj.type(),
-    .kind = Slot::Dummy,
-    .offset = FrameLayout::TargetBlock
-  };
-  
-  if (obj.hasSlot()) {
-    Slot const ptrSlot = obj.slot()->materialize(*this);
-    assignSlot(targetSlot, ptrSlot);
-  } else {
-    assignSlot(targetSlot, obj.literal());
-  }
-
-  pushPtr();
-  moveTo(FrameLayout::TargetBlock);
-  emit<primitive::Out>();
-  popPtr();
-}
 
 

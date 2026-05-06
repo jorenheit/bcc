@@ -10,32 +10,25 @@ c.declareGlobal("g", point);
 
 c.function("main").begin(); {
   c.referGlobals({"g"});
-      
-  c.block("entry").begin(); {
-    auto gx = c.structField("g", "x");
-    auto gy = c.structField("g", "y");
 
-    c.assign(gx, literal::i8('A'));
-    c.assign(gy, literal::i8('B'));
-    c.writeOut("g");
+  auto gx = c.structField("g", "x");
+  auto gy = c.structField("g", "y");
 
-    c.callFunction("foo", "after_foo").done();
-  } c.endBlock();
+  c.assign(gx, literal::i8('A'));
+  c.assign(gy, literal::i8('B'));
+  c.writeOut("g");
 
-  c.block("after_foo").begin(); {
-    c.writeOut("g");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("foo").done();
+  c.writeOut("g");
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").begin(); {
   c.referGlobals({"g"});
-      
-  c.block("entry").begin(); {
-    auto gy = c.structField("g", "y");
-    c.assign(gy, literal::i8('C'));
-    c.returnFromFunction();
-  } c.endBlock();
+
+  auto gy = c.structField("g", "y");
+  c.assign(gy, literal::i8('C'));
+  c.returnFromFunction();
 } c.endFunction();
-    
+
 TEST_END

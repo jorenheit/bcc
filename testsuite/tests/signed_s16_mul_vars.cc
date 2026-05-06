@@ -8,37 +8,35 @@ c.function("main").begin(); {
   c.declareLocal("y", ts::s16());
   c.declareLocal("z", ts::s16());
 
-  c.block("entry").begin(); {
-    // 1. -1 * 2 = -2
-    c.assign("x", literal::s16(-1));
-    c.assign("y", literal::s16(2));
-    c.assign("z", c.mul("x", "y"));
-    c.addAssign("z", literal::s16(CAT('C', 'B')));
-    c.writeOut("z"); // AB
+  // 1. -1 * 2 = -2
+  c.assign("x", literal::s16(-1));
+  c.assign("y", literal::s16(2));
+  c.assign("z", c.mul("x", "y"));
+  c.addAssign("z", literal::s16(CAT('C', 'B')));
+  c.writeOut("z"); // AB
 
-    // 2. -3 * -2 = 6
-    c.assign("x", literal::s16(-3));
-    c.assign("y", literal::s16(-2));
-    c.assign("z", c.mul("x", "y"));
-    c.addAssign("z", literal::s16(CAT('=', 'D')));
-    c.writeOut("z"); // CD
+  // 2. -3 * -2 = 6
+  c.assign("x", literal::s16(-3));
+  c.assign("y", literal::s16(-2));
+  c.assign("z", c.mul("x", "y"));
+  c.addAssign("z", literal::s16(CAT('=', 'D')));
+  c.writeOut("z"); // CD
 
-    // 3. 300 * 2 = 600
-    c.assign("x", literal::s16(300));
-    c.assign("y", literal::s16(2));
-    c.assign("z", c.mul("x", "y"));
-    c.addAssign("z", literal::s16(CAT('E', 'F') - 600));
-    c.writeOut("z"); // EF
+  // 3. 300 * 2 = 600
+  c.assign("x", literal::s16(300));
+  c.assign("y", literal::s16(2));
+  c.assign("z", c.mul("x", "y"));
+  c.addAssign("z", literal::s16(CAT('E', 'F') - 600));
+  c.writeOut("z"); // EF
 
-    // 4. -20 * -10 = 200
-    c.assign("x", literal::s16(-20));
-    c.assign("y", literal::s16(-10));
-    c.assign("z", c.mul("x", "y"));
-    c.addAssign("z", literal::s16(CAT('G', 'H') - 200));
-    c.writeOut("z"); // GH
+  // 4. -20 * -10 = 200
+  c.assign("x", literal::s16(-20));
+  c.assign("y", literal::s16(-10));
+  c.assign("z", c.mul("x", "y"));
+  c.addAssign("z", literal::s16(CAT('G', 'H') - 200));
+  c.writeOut("z"); // GH
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

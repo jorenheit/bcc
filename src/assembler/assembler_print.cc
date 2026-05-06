@@ -3,7 +3,7 @@
 // TODO: factor out into a writeSlot? That's more consistent with the other API functions
 void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
   pushPtr();
 
@@ -52,7 +52,7 @@ void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
 void Assembler::printImpl(Expression const &val, API_CTX) {
   
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   
   if (types::isInteger(val.type())) {
     // TODO: option to force inlining of the builtin calls?
@@ -63,10 +63,7 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
     
     _usedBuiltinFunctions.insert(func);
 
-    std::string const afterPrintBlockName = "__after_print_" + std::to_string(_state.builtinFunctionCallCount++);
-    callFunctionImpl(builtinFunctionName(func), afterPrintBlockName, {}, { val }, API_FWD);
-    endBlock();
-    block(afterPrintBlockName).begin();
+    callFunctionImpl(builtinFunctionName(func), {}, { val }, API_FWD);
     return;
   }
   else {

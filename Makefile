@@ -27,7 +27,7 @@ COMMON_SRCS := \
 	src/assembler/assembler_calls_control.cc \
 	src/assembler/assembler_pointers_memory.cc \
 	src/assembler/assembler_algorithms.cc \
-	src/assembler/assembler_codeblocks.cc \
+	src/assembler/assembler_blocks.cc \
 	src/assembler/assembler_framenav.cc \
 	src/assembler/assembler_diag.cc \
 	src/assembler/assembler_codegen.cc \

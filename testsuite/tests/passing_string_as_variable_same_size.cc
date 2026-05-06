@@ -10,23 +10,14 @@ auto string = ts::string(str.size());
 c.function("main").begin(); {
   c.declareLocal("s", string);
 
-  c.block("entry").begin(); {
-    c.assign("s", literal::string(str));
-    c.callFunction("print", "return").arg("s").done();
-  } c.endBlock();
-
-  c.block("return").begin(); {
-    c.returnFromFunction();
-  } c.endBlock();
-      
+  c.assign("s", literal::string(str));
+  c.callFunction("print").arg("s").done();
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("print").param("s", string).ret(ts::void_t()).begin(); {
-  c.block("entry").begin(); {
-    c.writeOut("s");
-    c.returnFromFunction();
-  } c.endBlock();
-      
+  c.writeOut("s");
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

@@ -13,24 +13,22 @@ c.function("main").begin(); {
   c.declareLocal("q", i16p);
   c.declareLocal("arr", arrT);
 
-  c.block("entry").begin(); {
-    c.assign(c.arrayElement("arr", 0), literal::i16(CAT('A', 'a')));
-    c.assign(c.arrayElement("arr", 1), literal::i16(CAT('B', 'b')));
-    c.assign(c.arrayElement("arr", 2), literal::i16(CAT('C', 'c')));
+  c.assign(c.arrayElement("arr", 0), literal::i16(CAT('A', 'a')));
+  c.assign(c.arrayElement("arr", 1), literal::i16(CAT('B', 'b')));
+  c.assign(c.arrayElement("arr", 2), literal::i16(CAT('C', 'c')));
 
-    c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
-    c.writeOut(c.dereferencePointer("p"));        // Aa
+  c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
+  c.writeOut(c.dereferencePointer("p"));        // Aa
 
-    c.assign("idx", literal::i16(2));
-    c.assign("q", c.add("p", "idx"));
-    c.writeOut(c.dereferencePointer("q"));        // Cc
+  c.assign("idx", literal::i16(2));
+  c.assign("q", c.add("p", "idx"));
+  c.writeOut(c.dereferencePointer("q"));        // Cc
 
-    c.assign("idx", literal::i16(1));
-    c.subAssign("q", "idx");
-    c.writeOut(c.dereferencePointer("q"));        // Bb
+  c.assign("idx", literal::i16(1));
+  c.subAssign("q", "idx");
+  c.writeOut(c.dereferencePointer("q"));        // Bb
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

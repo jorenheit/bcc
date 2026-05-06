@@ -143,7 +143,6 @@ Slot Assembler::declareLocal(std::string const& name, types::TypeHandle type, AP
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_OUTSIDE_CODE_BLOCK();
   API_REQUIRE_NOT_IN_CURRENT_SCOPE(name);
 
   return allocSlot(name, type, Slot::Local);
@@ -152,7 +151,7 @@ Slot Assembler::declareLocal(std::string const& name, types::TypeHandle type, AP
 Slot Assembler::declareGlobalReference(Slot const &globalSlot) {
   assert(globalSlot.kind == Slot::Global);
   assert(_currentFunction != nullptr);
-  assert(_currentBlock != nullptr && _currentBlock->name.starts_with("__prologue_"));
+  assert(_currentBlock != nullptr);
   
   FrameLayout &frame = _currentFunction->frame;
   int const offset = frame.localBase() + frame.localAreaSize();
@@ -172,21 +171,15 @@ void Assembler::referGlobals(std::vector<std::string> const &names, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_OUTSIDE_CODE_BLOCK();
   
-  block(std::string("__prologue_") + _currentFunction->name).begin(); {
+  std::unordered_set<std::string> declared;
+  for (std::string const &name: names) {
+    API_REQUIRE_IS_GLOBAL(name);
 
-    std::unordered_set<std::string> declared;
-    for (std::string const &name: names) {
-      API_REQUIRE_IS_GLOBAL(name);
+    auto [_, unique] = declared.insert(name);
+    API_REQUIRE(unique, "multiple references to ", name, ".");
+    declareGlobalReference(_program.globalSlot(name));      
+  }
 
-      auto [_, unique] = declared.insert(name);
-      API_REQUIRE(unique, "multiple references to ", name, ".");
-      declareGlobalReference(_program.globalSlot(name));      
-    }
-
-    syncGlobalToLocal();
-    setNextBlockImpl(_program.nextGlobalBlockIndex());
-    API_EXPECT_NEXT("endBlock");
-  } endBlock();
+  syncGlobalToLocal();
 }

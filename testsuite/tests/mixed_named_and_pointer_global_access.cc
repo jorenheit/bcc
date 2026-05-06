@@ -14,28 +14,21 @@ c.function("main").begin(); {
   c.referGlobals({"g"});
   c.declareLocal("p", i8p);
 
-  c.block("entry").begin(); {
-    c.assign("g", literal::i8('A'));
-    c.assign("p", c.addressOf("g"));
+  c.assign("g", literal::i8('A'));
+  c.assign("p", c.addressOf("g"));
 
-    c.callFunction("foo", "after").arg("p").done();
-  } c.endBlock();
-
-  c.block("after").begin(); {
-    c.writeOut("g");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("foo").arg("p").done();
+  c.writeOut("g");
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
   c.referGlobals({"g"});
-  c.block("entry").begin(); {
-    auto pDeref = c.dereferencePointer("p");
-    c.writeOut(pDeref);
-    c.assign(pDeref, literal::i8('X'));
-    c.writeOut("g");
-    c.returnFromFunction();
-  } c.endBlock();
+  auto pDeref = c.dereferencePointer("p");
+  c.writeOut(pDeref);
+  c.assign(pDeref, literal::i8('X'));
+  c.writeOut("g");
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

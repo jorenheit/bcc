@@ -12,53 +12,29 @@ auto targetPtr = ts::function_pointer(targetType);
 c.function("main").begin(); {
   c.declareLocal("fptr", targetPtr);
 
-  c.block("entry").begin(); {
-    c.callFunction("choose", "call_true").into("fptr").arg(literal::i8(1)).done();
-  } c.endBlock();
-
-  c.block("call_true").begin(); {
-    c.callFunctionPointer("fptr", "choose_false").done();
-  } c.endBlock();
-
-  c.block("choose_false").begin(); {
-    c.callFunction("choose", "call_false").into("fptr").arg(literal::i8(0)).done();
-  } c.endBlock();
-
-  c.block("call_false").begin(); {
-    c.callFunctionPointer("fptr", "end").done();
-  } c.endBlock();
-
-  c.block("end").begin(); {
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("choose").into("fptr").arg(literal::i8(1)).done();
+  c.callFunctionPointer("fptr").done();
+  c.callFunction("choose").into("fptr").arg(literal::i8(0)).done();
+  c.callFunctionPointer("fptr").done();
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("choose").param("flag", i8).ret(targetPtr).begin(); {
-  c.block("entry").begin(); {
-    c.branchIf("flag", "true", "false");
-  } c.endBlock();
-
-  c.block("true").begin(); {
-    c.returnFromFunction(literal::function_pointer(targetType, "printT"));
-  } c.endBlock();
-
-  c.block("false").begin(); {
-    c.returnFromFunction(literal::function_pointer(targetType, "printF"));
-  } c.endBlock();
+  c.jumpIf("flag", "true", "false");
+  c.label("true");
+  c.returnFromFunction(literal::function_pointer(targetType, "printT"));
+  c.label("false");
+  c.returnFromFunction(literal::function_pointer(targetType, "printF"));
 } c.endFunction();
 
 c.function("printT").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('T'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('T'));
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printF").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('F'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('F'));
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

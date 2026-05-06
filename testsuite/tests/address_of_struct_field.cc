@@ -12,22 +12,20 @@ c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("s", pairT);
 
-  c.block("entry").begin(); {
-    c.assign(c.structField("s", "x"), literal::i8('A'));
-    c.assign(c.structField("s", "y"), literal::i8('B'));
+  c.assign(c.structField("s", "x"), literal::i8('A'));
+  c.assign(c.structField("s", "y"), literal::i8('B'));
 
-    c.assign("p", c.addressOf(c.structField("s", "y")));
+  c.assign("p", c.addressOf(c.structField("s", "y")));
 
-    auto pDeref = c.dereferencePointer("p");
-    c.writeOut(pDeref);                  // B
+  auto pDeref = c.dereferencePointer("p");
+  c.writeOut(pDeref);                  // B
 
-    c.assign(pDeref, literal::i8('X'));
+  c.assign(pDeref, literal::i8('X'));
 
-    c.writeOut(c.structField("s", "x")); // A
-    c.writeOut(c.structField("s", "y")); // X
+  c.writeOut(c.structField("s", "x")); // A
+  c.writeOut(c.structField("s", "y")); // X
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

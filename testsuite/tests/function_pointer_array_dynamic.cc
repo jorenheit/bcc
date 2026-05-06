@@ -14,35 +14,23 @@ c.function("main").begin(); {
   c.declareLocal("arr", fnArray);
   c.declareLocal("idx", i8);
 
-  c.block("entry").begin(); {
-    c.assign(c.arrayElement("arr", 0), literal::function_pointer(fnType, "printA"));
-    c.assign(c.arrayElement("arr", 1), literal::function_pointer(fnType, "printB"));
-    c.assign("idx", literal::i8(0));
-    c.callFunctionPointer(c.arrayElement("arr", "idx"), "second").done();
-  } c.endBlock();
-
-  c.block("second").begin(); {
-    c.assign("idx", literal::i8(1));
-    c.callFunctionPointer(c.arrayElement("arr", "idx"), "end").done();
-  } c.endBlock();
-
-  c.block("end").begin(); {
-    c.returnFromFunction();
-  } c.endBlock();
+  c.assign(c.arrayElement("arr", 0), literal::function_pointer(fnType, "printA"));
+  c.assign(c.arrayElement("arr", 1), literal::function_pointer(fnType, "printB"));
+  c.assign("idx", literal::i8(0));
+  c.callFunctionPointer(c.arrayElement("arr", "idx")).done();
+  c.assign("idx", literal::i8(1));
+  c.callFunctionPointer(c.arrayElement("arr", "idx")).done();
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printA").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('A'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('A'));
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printB").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('B'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('B'));
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

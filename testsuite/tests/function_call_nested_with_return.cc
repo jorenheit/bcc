@@ -5,32 +5,20 @@ TEST_BEGIN
 c.function("main").begin(); {
   c.declareLocal("r", ts::i8());
 
-  c.block("entry").begin(); {
-    c.callFunction("foo", "after_foo").into("r").arg(literal::i8('Z')).done();
-  } c.endBlock();
-
-  c.block("after_foo").begin(); {
-    c.writeOut("r");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("foo").into("r").arg(literal::i8('Z')).done();
+  c.writeOut("r");
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("x", ts::i8()).ret(ts::i8()).begin(); {
   c.declareLocal("tmp", ts::i8());
 
-  c.block("entry").begin(); {
-    c.callFunction("bar", "after_bar").into("tmp").arg("x").done();
-  } c.endBlock();
-
-  c.block("after_bar").begin(); {
-    c.returnFromFunction("tmp");
-  } c.endBlock();
+  c.callFunction("bar").into("tmp").arg("x").done();
+  c.returnFromFunction("tmp");
 } c.endFunction();
 
 c.function("bar").param("y", ts::i8()).ret(ts::i8()).begin(); {
-  c.block("entry").begin(); {
-    c.returnFromFunction("y");
-  } c.endBlock();
+  c.returnFromFunction("y");
 } c.endFunction();
 
 TEST_END

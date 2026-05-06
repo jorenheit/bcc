@@ -8,18 +8,16 @@ c.function("main").begin(); {
   c.declareLocal("y", ts::i16());
   c.declareLocal("z", ts::i16());
 
-  c.block("entry").begin(); {
-    c.assign("x", literal::i16(CAT('E', 'A'))); // low='D', high='A'
-    c.assign("y", literal::i16(254));
+  c.assign("x", literal::i16(CAT('E', 'A'))); // low='D', high='A'
+  c.assign("y", literal::i16(254));
 
-    c.writeOut("x");                    // EA
-    c.addAssign("x", "y");              // EA + 254 -> CB
-    c.writeOut("x");                    // CB
-    c.assign("z", c.add("x", "y"));     // CB + 254 -> AC
-    c.writeOut("z");                    // AC
+  c.writeOut("x");                    // EA
+  c.addAssign("x", "y");              // EA + 254 -> CB
+  c.writeOut("x");                    // CB
+  c.assign("z", c.add("x", "y"));     // CB + 254 -> AC
+  c.writeOut("z");                    // AC
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

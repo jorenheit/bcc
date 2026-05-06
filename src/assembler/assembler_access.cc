@@ -2,7 +2,7 @@
 
 Expression Assembler::structFieldImpl(Expression const &obj, int fieldIndex, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
   API_REQUIRE_FIELD_INDEX_IN_BOUNDS(obj, fieldIndex);
   
@@ -12,7 +12,7 @@ Expression Assembler::structFieldImpl(Expression const &obj, int fieldIndex, API
 
 Expression Assembler::structFieldImpl(Expression const &obj, std::string const &fieldName, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_STRUCT(obj);
   API_REQUIRE_IS_FIELD(obj, fieldName);
 
@@ -26,7 +26,7 @@ Expression Assembler::structFieldImpl(Expression const &obj, std::string const &
 
 Expression Assembler::arrayElementImpl(Expression const &arr, int index, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
   API_REQUIRE_INDEX_IN_BOUNDS(arr, index);
 
@@ -40,7 +40,7 @@ Expression Assembler::arrayElementImpl(Expression const &arr, int index, API_CTX
 
 Expression Assembler::arrayElementImpl(Expression const &arr, Expression const &index, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_ARRAY_OR_STRING(arr);
   API_REQUIRE_IS_INTEGER(index);
   
@@ -61,7 +61,7 @@ Expression Assembler::arrayElementImpl(Expression const &arr, Expression const &
 
 Expression Assembler::dereferencePointerImpl(Expression const &ptr, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_POINTER(ptr);
   assert(not ptr.isLiteral());
   

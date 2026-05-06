@@ -4,7 +4,7 @@
 
 Expression Assembler::lnotImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
 
   if (obj.isLiteral()) {
@@ -22,7 +22,7 @@ Expression Assembler::lnotImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::lnotAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
   assert(not obj.isLiteral());
 
@@ -36,7 +36,7 @@ Expression Assembler::lnotAssignImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::lboolImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
 
   if (obj.isLiteral()) {
@@ -54,7 +54,7 @@ Expression Assembler::lboolImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::lboolAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
   assert(not obj.isLiteral());
 
@@ -68,7 +68,7 @@ Expression Assembler::lboolAssignImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::negateImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_SIGNED_INTEGER(obj);
 
   if (obj.isLiteral()) {
@@ -88,7 +88,7 @@ Expression Assembler::negateImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_SIGNED_INTEGER(obj);
   assert(not obj.isLiteral());
 
@@ -103,7 +103,7 @@ Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::absImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
 
   if (obj.isLiteral()) {
@@ -124,7 +124,7 @@ Expression Assembler::absImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::absAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj);
   assert(not obj.isLiteral());
 
@@ -139,7 +139,7 @@ Expression Assembler::absAssignImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::signBitImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_SIGNED_INTEGER(obj);
 
   if (obj.isLiteral()) {
@@ -159,7 +159,7 @@ Expression Assembler::signBitImpl(Expression const &obj, API_CTX) {
 
 Expression Assembler::signBitAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_SIGNED_INTEGER(obj);
   assert(not obj.isLiteral());
 

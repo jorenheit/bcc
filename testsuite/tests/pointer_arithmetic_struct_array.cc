@@ -13,26 +13,24 @@ c.function("main").begin(); {
   c.declareLocal("q", pairP);
   c.declareLocal("arr", arrT);
 
-  c.block("entry").begin(); {
-    c.assign(c.structField(c.arrayElement("arr", 0), "x"), literal::i8('A'));
-    c.assign(c.structField(c.arrayElement("arr", 1), "x"), literal::i8('B'));
-    c.assign(c.structField(c.arrayElement("arr", 2), "x"), literal::i8('C'));
+  c.assign(c.structField(c.arrayElement("arr", 0), "x"), literal::i8('A'));
+  c.assign(c.structField(c.arrayElement("arr", 1), "x"), literal::i8('B'));
+  c.assign(c.structField(c.arrayElement("arr", 2), "x"), literal::i8('C'));
 
-    c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
+  c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
 
-    auto pObj = c.dereferencePointer("p");
-    c.writeOut(c.structField(pObj, "x"));        // A
+  auto pObj = c.dereferencePointer("p");
+  c.writeOut(c.structField(pObj, "x"));        // A
 
-    c.assign("q", c.add("p", literal::i16(2)));
-    auto qObj = c.dereferencePointer("q");
-    c.writeOut(c.structField(qObj, "x"));        // C
+  c.assign("q", c.add("p", literal::i16(2)));
+  auto qObj = c.dereferencePointer("q");
+  c.writeOut(c.structField(qObj, "x"));        // C
 
-    c.subAssign("q", literal::i16(1));
-    auto qPrev = c.dereferencePointer("q");
-    c.writeOut(c.structField(qPrev, "x"));       // B
+  c.subAssign("q", literal::i16(1));
+  auto qPrev = c.dereferencePointer("q");
+  c.writeOut(c.structField(qPrev, "x"));       // B
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

@@ -14,27 +14,25 @@ c.function("main").begin(); {
   c.declareLocal("a", i8);
   c.declareLocal("b", i8);
 
-  c.block("entry").begin(); {
-    c.assign("a", literal::i8('A'));
-    c.assign("b", literal::i8('B'));
+  c.assign("a", literal::i8('A'));
+  c.assign("b", literal::i8('B'));
 
-    c.assign(c.arrayElement("p", 0), c.addressOf("a")); 
-    c.assign(c.arrayElement("p", 1), c.addressOf("b"));
+  c.assign(c.arrayElement("p", 0), c.addressOf("a"));
+  c.assign(c.arrayElement("p", 1), c.addressOf("b"));
 
-    auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
-    auto p1Deref = c.dereferencePointer(c.arrayElement("p", 1));
+  auto p0Deref = c.dereferencePointer(c.arrayElement("p", 0));
+  auto p1Deref = c.dereferencePointer(c.arrayElement("p", 1));
 
-    c.writeOut(p0Deref);
-    c.writeOut(p1Deref);
+  c.writeOut(p0Deref);
+  c.writeOut(p1Deref);
 
-    c.assign(p0Deref, literal::i8('X'));
-    c.assign(p1Deref, literal::i8('Y'));
+  c.assign(p0Deref, literal::i8('X'));
+  c.assign(p1Deref, literal::i8('Y'));
 
-    c.writeOut("a");
-    c.writeOut("b");
+  c.writeOut("a");
+  c.writeOut("b");
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

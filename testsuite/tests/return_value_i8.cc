@@ -7,24 +7,15 @@ TEST_BEGIN
 c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
 
-  c.block("entry").begin(); {
-    c.callFunction("foo", "after_foo").into("x").done();
-  } c.endBlock();
-
-  c.block("after_foo").begin(); {
-    c.writeOut("x");
-    c.returnFromFunction();
-  } c.endBlock();
-
+  c.callFunction("foo").into("x").done();
+  c.writeOut("x");
+  c.returnFromFunction();
 } c.endFunction();
 
 // foo: returns i8
 c.function("foo").ret(ts::i8()).begin(); {
 
-  c.block("entry").begin(); {
-    c.returnFromFunction(literal::i8('X'));
-  } c.endBlock();
-
+  c.returnFromFunction(literal::i8('X'));
 } c.endFunction();
 
 TEST_END

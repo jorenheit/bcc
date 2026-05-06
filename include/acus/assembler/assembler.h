@@ -36,23 +36,17 @@ namespace acus {
 
     struct ProgramBuilder;
     struct ScopeBuilder;
-    struct BlockBuilder;
     struct FunctionBuilder;
     struct FunctionCallBuilder;
 
     ProgramBuilder program(std::string const &name, std::string const &entry, API_FUNC);
     FunctionBuilder function(std::string const &name, API_FUNC);
     ScopeBuilder scope(API_FUNC);
-    BlockBuilder block(std::string const &name, API_FUNC);
 
     void endProgram(API_FUNC);
     void endFunction(API_FUNC);
     void endScope(API_FUNC);
-    void endBlock(API_FUNC);
 
-    // TODO: rename jump
-    void setNextBlock(std::string const &b, API_FUNC);
-    void setNextBlock(std::string const &f, std::string const &b, API_FUNC);
 
     void referGlobals(std::vector<std::string> const &names, API_FUNC);
     // TODO: these should return Expression
@@ -63,8 +57,8 @@ namespace acus {
     void returnFromFunction(API_FUNC);
     void abortProgram(API_FUNC);
 
-    FunctionCallBuilder callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC);
-    FunctionCallBuilder callFunctionPointer(auto const &functionPtr, std::string const &nextBlockName, API_FUNC);
+    FunctionCallBuilder callFunction(std::string const &functionName, API_FUNC);
+    FunctionCallBuilder callFunctionPointer(auto const &functionPtr, API_FUNC);
 
     Expression expr(auto const &obj, API_FUNC);
     Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
@@ -140,8 +134,10 @@ namespace acus {
 
     void writeOut(auto const &val, API_FUNC);
     void print(auto const &val, API_FUNC);
-    
-    void branchIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
+
+    void label(std::string const &jumpLabel, API_FUNC);
+    void jump(std::string const &jumpLabel, API_FUNC);    
+    void jumpIf(auto const &condition, std::string const &trueLabel, std::string const &falseLabel, API_FUNC);
   
   private:
     friend class proxy::impl::Direct;
@@ -192,17 +188,16 @@ namespace acus {
     };
     std::vector<FunctionCallInfo> _deferredFunctionCallTypeChecks;
 
-    struct BlockNameCheck {
+    struct LabelCheck {
       api::impl::Context API_CTX_NAME;
-      std::string functionName, blockName;
+      std::string functionName, labelName;
     };
-    std::vector<BlockNameCheck> _deferredBlockNameChecks;
+    std::vector<LabelCheck> _deferredLabelChecks;
 
     std::unordered_set<std::string> _aliasedGlobals;
   
-    // Diagnostics (builder_diag.cc)
+    // Diagnostics (assembler_diag.cc)
     std::string currentFunction() const;
-    std::string currentBlock() const;
     bool programStarted() const;
     bool declaredAsGlobal(std::string const &name) const;
     bool globalDeclarationsAllowed() const;
@@ -210,7 +205,7 @@ namespace acus {
     bool inCurrentScope(std::string const &name) const;
     int currentScopeDepth() const;
   
-    // Normalize to RValue or LValue (builder_rlvalue.cc)
+    // Normalize to RValue or LValue (assembler_rlvalue.cc)
     Expression rValue(Expression const &val, API_CTX) const;
     Expression rValue(std::string const &var, API_CTX) const;
     Expression rValue(SlotProxy const &slot, API_CTX) const;
@@ -220,22 +215,28 @@ namespace acus {
     Expression lValue(std::string const &var, API_CTX) const;  
     Expression lValue(SlotProxy const &slot, API_CTX) const;
 
+
+    // Block management (assembler_blocks.cc)
+    std::string generateUniqueBlockName();
+    void beginBlock(std::string const &name);
+    void endBlock();    
+    void constructMetaBlocks();
+    void setNextBlock(std::string const &f, std::string const &b);
+    void setNextBlock(Expression const &obj);
+    
     // Implementation functions for public interface
     void beginProgramImpl(std::string const &name, std::string const &entry, API_CTX);
     void beginFunctionImpl(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_CTX);
-    void beginScopeImpl(API_CTX);    
-    void beginBlockImpl(std::string const &name, API_CTX);
-  
-    void setNextBlockImpl(int index);
-    void setNextBlockImpl(std::string const &f, std::string const &b);
-    void setNextBlockImpl(Expression const &obj);
+    void beginScopeImpl(API_CTX);
+
+
 
     types::TypeHandle defineStructImpl(std::string const& name, std::vector<types::NameTypePair> const &fields, API_CTX);
 
-    void callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
-			  std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
-    void callFunctionImpl(Expression const &functionPointer, std::string const& nextBlockName,
-			  std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX);
+    void callFunctionImpl(std::string const &functionName, std::optional<Expression> const &returnSlot,
+			  std::vector<Expression> const &args, API_CTX);
+    void callFunctionImpl(Expression const &functionPointer, std::optional<Expression> const &returnSlot,
+			  std::vector<Expression> const &args, API_CTX);
     void returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX);
     Expression structFieldImpl(Expression const &obj, std::string const &field, API_CTX);
     Expression structFieldImpl(Expression const &obj, int fieldIndex, API_CTX);
@@ -246,7 +247,7 @@ namespace acus {
     Expression addressOfImpl(Expression const &obj, API_CTX);
     Expression assignImpl(Expression const &lhs, Expression const &rhs, API_CTX);
   
-    void branchIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
+    void jumpIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX); 
     void printUnsignedImpl(Expression const &val);
@@ -348,7 +349,7 @@ namespace acus {
     void writeSlotThroughDereferencedPointer(Slot const &ptrSlot, Slot const &srcSlot);
     Slot addressOfSlot(Slot const &slot);
   
-    // Algorithms: all applied to the current DP (builder_algorithms.cc)
+    // Algorithms: all applied to the current DP (assembler_algorithms.cc)
     void moveTo(Cell cell);
     void moveTo(int offset, MacroCell::Field field = MacroCell::Value0);
     void moveToOrigin();
@@ -488,7 +489,7 @@ namespace acus {
     void greaterOrEqual16Constructive(Cell high, Cell result, Cell otherLow, Cell otherHigh, Temps<8>);
 
   
-    // Frame Navigation (builder_framenav.cc)
+    // Frame Navigation (assembler_framenav.cc)
     void resetOrigin();
     void pushPtr();
     void popPtr();  
@@ -501,14 +502,11 @@ namespace acus {
     void initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramOffset, std::vector<Expression> const &args, API_CTX);
     void prepareNextFrame(std::string const &functionName, std::vector<Expression> const &args, API_CTX);
     void prepareNextFrame(Expression const &fptr, std::vector<Expression> const &args, API_CTX);
-  
-    //  void initializeArguments(Expression const &fptr, std::vector<Expression> const &args, API_CTX);
     void fetchReturnData();
     void fetchReturnData(Slot const &returnSlot);
     void moveToPointee(Slot const &ptrSlot);
 
-
-    // Temporaries and memory management (builder_memory.cc)
+    // Temporaries and memory management (assembler_memory.cc)
     void freeSlot(Slot &slot);
     void freeTemps();
     void freeScope(Function::Scope const *scope);
@@ -518,7 +516,7 @@ namespace acus {
     void swapLocalWithTemp(Slot const &local, Slot const &tmp);
     Slot declareGlobalReference(Slot const &globalSlot);
   
-    // Global Data Synchronization (builder_globals.cc)
+    // Global Data Synchronization (assembler_globals.cc)
     void fetchGlobal(Slot const &globalSlot, Slot const &localSlot);
     void putGlobal(Slot const &globalSlot, Slot const &localSlot);
 
@@ -531,14 +529,9 @@ namespace acus {
     void syncGlobalToLocal(bool onlyAliasedGlobals = false);
     void syncLocalToGlobal(bool onlyAliasedGlobals = false);
   
-    // Codeblock construction (builder_codeblocks.cc)
-    void blockOpen();
-    void blockClose();
-    void constructMetaBlocks();
-    void constructBuiltinFunctions();
-    
-    // Code generation (builder_codegen.cc)
+    // Code generation (assembler_codegen.cc)
     std::string builtinFunctionName(BuiltinFunction func);
+    void constructBuiltinFunctions();    
     void setTargetSequence(primitive::Sequence *seq);
     primitive::Context constructContext() const;    
     primitive::Sequence compilePrimitives() const;
@@ -550,11 +543,11 @@ namespace acus {
     void deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX);
     void deferredFunctionCallTypeChecks();
 
-    void blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX);
-    void deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX);
-    void deferredBlockNameChecks();
+    void labelCheck(std::string const &functionName, std::string const &blockName, API_CTX);
+    void deferLabelCheck(std::string const &f, std::string const &b, API_CTX);
+    void deferredLabelChecks();
 
-    // General helpers (inline definitions, builder_private.tpp)
+    // General helpers (inline definitions, assembler_private.tpp)
     template <typename Primitive, typename ... Args>
     void emit(Args&& ... args);
 
@@ -612,17 +605,6 @@ namespace acus {
     Assembler& _assembler;
 
   }; // ScopeBuilder
-
-
-  struct Assembler::BlockBuilder: builder::BuilderBase {
-    void begin();
-    BlockBuilder(Assembler &b, std::string const &name, api::impl::Context const &ctx);
-  
-  private:
-    Assembler& _assembler;
-    std::string _name;
-  
-  }; // BlockBuilder
   
   
   struct Assembler::FunctionCallBuilder: builder::BuilderBase {
@@ -634,12 +616,11 @@ namespace acus {
     FunctionCallBuilder && arg(auto&& arg) &&;
   
     void done();
-    FunctionCallBuilder(Assembler &a, auto const &function, std::string const &nextBlockName, api::impl::Context const &ctx);  
+    FunctionCallBuilder(Assembler &a, auto const &function, api::impl::Context const &ctx);  
   
   private:
     Assembler& _assembler;
     std::variant<std::string, Expression> _function;
-    std::string _nextBlockName;
     std::optional<Expression> _result;
     std::vector<Expression> _args;
 

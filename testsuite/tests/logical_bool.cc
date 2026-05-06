@@ -15,48 +15,46 @@ c.function("main").begin(); {
   c.declareLocal("x", i16);
   c.declareLocal("y", i16);
 
-  c.block("entry").begin(); {
-    // 1. i8 variable: bool(false) -> false
-    c.assign("a", literal::i8(0));
-    c.writeOut(c.add(c.lbool("a"), literal::i8('A')));
+  // 1. i8 variable: bool(false) -> false
+  c.assign("a", literal::i8(0));
+  c.writeOut(c.add(c.lbool("a"), literal::i8('A')));
 
-    // 2. i8 variable: bool(true) -> true
-    c.assign("a", literal::i8(100));
-    c.writeOut(c.add(c.lbool("a"), literal::i8('A')));
+  // 2. i8 variable: bool(true) -> true
+  c.assign("a", literal::i8(100));
+  c.writeOut(c.add(c.lbool("a"), literal::i8('A')));
 
-    // 3. i16 variable: bool(false) -> false
-    c.assign("x", literal::i16(0));
-    c.writeOut(c.add(c.lbool("x"), literal::i8('A')));
+  // 3. i16 variable: bool(false) -> false
+  c.assign("x", literal::i16(0));
+  c.writeOut(c.add(c.lbool("x"), literal::i8('A')));
 
-    // 4. i16 variable: bool(true) -> true
-    c.assign("x", literal::i16(0x1234));
-    c.writeOut(c.add(c.lbool("x"), literal::i8('A')));
+  // 4. i16 variable: bool(true) -> true
+  c.assign("x", literal::i16(0x1234));
+  c.writeOut(c.add(c.lbool("x"), literal::i8('A')));
 
-    // 5. i8 literal: bool(false) -> false
-    c.writeOut(c.add(c.lbool(literal::i8(0)), literal::i8('A')));
+  // 5. i8 literal: bool(false) -> false
+  c.writeOut(c.add(c.lbool(literal::i8(0)), literal::i8('A')));
 
-    // 6. i8 literal: bool(true) -> true
-    c.writeOut(c.add(c.lbool(literal::i8(77)), literal::i8('A')));
+  // 6. i8 literal: bool(true) -> true
+  c.writeOut(c.add(c.lbool(literal::i8(77)), literal::i8('A')));
 
-    // 7. i16 literal: bool(false) -> false
-    c.writeOut(c.add(c.lbool(literal::i16(0)), literal::i8('A')));
+  // 7. i16 literal: bool(false) -> false
+  c.writeOut(c.add(c.lbool(literal::i16(0)), literal::i8('A')));
 
-    // 8. i16 literal: bool(true) -> true
-    c.writeOut(c.add(c.lbool(literal::i16(0xBEEF)), literal::i8('A')));
+  // 8. i16 literal: bool(true) -> true
+  c.writeOut(c.add(c.lbool(literal::i16(0xBEEF)), literal::i8('A')));
 
-    // 9. i8 assign variant: true becomes canonical 1
-    c.assign("b", literal::i8(200));
-    c.lboolAssign("b");
-    c.writeOut(c.add("b", literal::i8('A')));
+  // 9. i8 assign variant: true becomes canonical 1
+  c.assign("b", literal::i8(200));
+  c.lboolAssign("b");
+  c.writeOut(c.add("b", literal::i8('A')));
 
-    // 10. i16 assign variant: false remains canonical 0
-    // Verify with eq(...) so the printed value is a single byte boolean.
-    c.assign("y", literal::i16(0));
-    c.lboolAssign("y");
-    c.writeOut(c.add(c.eq("y", literal::i16(1)), literal::i8('A')));
+  // 10. i16 assign variant: false remains canonical 0
+  // Verify with eq(...) so the printed value is a single byte boolean.
+  c.assign("y", literal::i16(0));
+  c.lboolAssign("y");
+  c.writeOut(c.add(c.eq("y", literal::i16(1)), literal::i8('A')));
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

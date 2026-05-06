@@ -17,10 +17,9 @@ Assembler::FunctionCallBuilder & Assembler::FunctionCallBuilder::arg(auto&& arg)
 Assembler::FunctionCallBuilder &&  Assembler::FunctionCallBuilder::arg(auto&& arg) && {
   return std::move(this->arg(std::forward<decltype(arg)>(arg)));
 }
-Assembler::FunctionCallBuilder::FunctionCallBuilder(Assembler &a, auto const &function, std::string const &nextBlockName, api::impl::Context const &ctx):
+Assembler::FunctionCallBuilder::FunctionCallBuilder(Assembler &a, auto const &function, api::impl::Context const &ctx):
   BuilderBase("FunctionCallBuilder", "done", ctx),
   _assembler(a),
-  _function(function),
-  _nextBlockName(nextBlockName)
+  _function(function)
 {}
 

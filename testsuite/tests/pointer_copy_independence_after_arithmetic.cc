@@ -12,20 +12,18 @@ c.function("main").begin(); {
   c.declareLocal("q", i8p);
   c.declareLocal("arr", arrT);
 
-  c.block("entry").begin(); {
-    c.assign(c.arrayElement("arr", 0), literal::i8('A'));
-    c.assign(c.arrayElement("arr", 1), literal::i8('B'));
+  c.assign(c.arrayElement("arr", 0), literal::i8('A'));
+  c.assign(c.arrayElement("arr", 1), literal::i8('B'));
 
-    c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
-    c.assign("q", "p");
+  c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
+  c.assign("q", "p");
 
-    c.addAssign("p", literal::i16(1));
+  c.addAssign("p", literal::i16(1));
 
-    c.writeOut(c.dereferencePointer("q")); // A
-    c.writeOut(c.dereferencePointer("p")); // B
+  c.writeOut(c.dereferencePointer("q")); // A
+  c.writeOut(c.dereferencePointer("p")); // B
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

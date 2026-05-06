@@ -10,16 +10,12 @@ int main() try {
 
     c.function("main").begin(); {
       c.declareLocal("x", ts::i8());
-
-      c.block("entry").begin(); {
-	for (int i = 0; i != 256; ++i) {
-	  c.assign("x", literal::i8(i));
-	  c.writeOut("x");
-	}
-
-	c.returnFromFunction();
-      } c.endBlock();
-      
+      c.label("a");
+      for (int i = 0; i != 256; ++i) {
+	c.assign("x", literal::i8(i));
+	c.writeOut("x");
+      }
+      c.returnFromFunction();
     } c.endFunction();
 
   } c.endProgram();

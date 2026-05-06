@@ -11,20 +11,18 @@ c.function("main").begin(); {
   c.declareLocal("idx", ts::i8());
   c.declareLocal("out", ts::i8());
 
-  c.block("entry").begin(); {
-    auto p0 = literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done();
-    auto p1 = literal::struct_t(point).init("x", literal::i8('C')).init("y", literal::i8('D')).done();
-    auto p2 = literal::struct_t(point).init("x", literal::i8('E')).init("y", literal::i8('F')).done();
-    c.assign("pts", literal::array(ts::array(point, 3)).push(p0).push(p1).push(p2).done());
-    c.assign("idx", literal::i8(1));
+  auto p0 = literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done();
+  auto p1 = literal::struct_t(point).init("x", literal::i8('C')).init("y", literal::i8('D')).done();
+  auto p2 = literal::struct_t(point).init("x", literal::i8('E')).init("y", literal::i8('F')).done();
+  c.assign("pts", literal::array(ts::array(point, 3)).push(p0).push(p1).push(p2).done());
+  c.assign("idx", literal::i8(1));
 
-    auto selected = c.arrayElement("pts", "idx");
-    auto x = c.structField(selected, "x");
-    c.assign("out", x);
+  auto selected = c.arrayElement("pts", "idx");
+  auto x = c.structField(selected, "x");
+  c.assign("out", x);
 
-    c.writeOut("out");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut("out");
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

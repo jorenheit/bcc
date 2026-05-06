@@ -11,33 +11,21 @@ auto fnPtr = ts::function_pointer(fnType);
 c.function("main").begin(); {
   c.declareLocal("fptr", fnPtr);
 
-  c.block("entry").begin(); {
-    c.assign("fptr", literal::function_pointer(fnType, "printA"));
-    c.callFunctionPointer("fptr", "second").done();
-  } c.endBlock();
-
-  c.block("second").begin(); {
-    c.assign("fptr", literal::function_pointer(fnType, "printB"));
-    c.callFunctionPointer("fptr", "end").done();
-  } c.endBlock();
-
-  c.block("end").begin(); {
-    c.returnFromFunction();
-  } c.endBlock();
+  c.assign("fptr", literal::function_pointer(fnType, "printA"));
+  c.callFunctionPointer("fptr").done();
+  c.assign("fptr", literal::function_pointer(fnType, "printB"));
+  c.callFunctionPointer("fptr").done();
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printA").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('A'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('A'));
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("printB").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::i8('B'));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::i8('B'));
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

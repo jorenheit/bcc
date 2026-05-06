@@ -10,19 +10,17 @@ c.function("main").begin(); {
   c.declareLocal("h", holder);
   c.declareLocal("idx", ts::i8());
 
-  c.block("entry").begin(); {
-    auto data = literal::array(ts::array(ts::i8(), 3)).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done();
-    
-    c.assign("h", literal::struct_t(holder).init("tag", literal::i8('A')).init("data", data).done());
-    c.assign("idx", literal::i8(0));
+  auto data = literal::array(ts::array(ts::i8(), 3)).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done();
 
-    auto dataField = c.structField("h", "data");
-    auto elem = c.arrayElement(dataField, "idx");
-    c.assign(elem, literal::i8('Q'));
+  c.assign("h", literal::struct_t(holder).init("tag", literal::i8('A')).init("data", data).done());
+  c.assign("idx", literal::i8(0));
 
-    c.writeOut("h");
-    c.returnFromFunction();
-  } c.endBlock();
+  auto dataField = c.structField("h", "data");
+  auto elem = c.arrayElement(dataField, "idx");
+  c.assign(elem, literal::i8('Q'));
+
+  c.writeOut("h");
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

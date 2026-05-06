@@ -12,33 +12,21 @@ c.function("main").begin(); {
   c.declareLocal("fptr", fnPtr);
   c.declareLocal("r", i8);
 
-  c.block("entry").begin(); {
-    c.assign("fptr", literal::function_pointer(fnType, "inc"));
-    c.callFunctionPointer("fptr", "second").into("r").arg(literal::i8('A')).done();
-  } c.endBlock();
-
-  c.block("second").begin(); {
-    c.writeOut("r");
-    c.assign("fptr", literal::function_pointer(fnType, "dec"));
-    c.callFunctionPointer("fptr", "end").into("r").arg(literal::i8('B')).done();
-  } c.endBlock();
-
-  c.block("end").begin(); {
-    c.writeOut("r");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.assign("fptr", literal::function_pointer(fnType, "inc"));
+  c.callFunctionPointer("fptr").into("r").arg(literal::i8('A')).done();
+  c.writeOut("r");
+  c.assign("fptr", literal::function_pointer(fnType, "dec"));
+  c.callFunctionPointer("fptr").into("r").arg(literal::i8('B')).done();
+  c.writeOut("r");
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("inc").param("x", i8).ret(i8).begin(); {
-  c.block("entry").begin(); {
-    c.returnFromFunction(c.add("x", literal::i8(1)));
-  } c.endBlock();
+  c.returnFromFunction(c.add("x", literal::i8(1)));
 } c.endFunction();
 
 c.function("dec").param("x", i8).ret(i8).begin(); {
-  c.block("entry").begin(); {
-    c.returnFromFunction(c.sub("x", literal::i8(1)));
-  } c.endBlock();
+  c.returnFromFunction(c.sub("x", literal::i8(1)));
 } c.endFunction();
 
 TEST_END

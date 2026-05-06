@@ -9,10 +9,8 @@ int main() try {
   c.program("hello", "main").begin(); {
 
     c.function("main").begin(); {
-      c.block("entry").begin(); {
-	c.writeOut(literal::string("Hello, World!"));
-	c.returnFromFunction();
-      } c.endBlock();
+      c.writeOut(literal::string("Hello, World!"));
+      c.returnFromFunction();
     } c.endFunction();
 
   } c.endProgram();

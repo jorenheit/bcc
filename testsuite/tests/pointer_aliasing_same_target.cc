@@ -11,18 +11,16 @@ c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("q", i8p);
 
-  c.block("entry").begin(); {
-    c.assign("x", literal::i8('A'));
-    c.assign("p", c.addressOf("x"));
-    c.assign("q", c.addressOf("x"));
+  c.assign("x", literal::i8('A'));
+  c.assign("p", c.addressOf("x"));
+  c.assign("q", c.addressOf("x"));
 
-    c.assign(c.dereferencePointer("p"), literal::i8('X'));
+  c.assign(c.dereferencePointer("p"), literal::i8('X'));
 
-    c.writeOut(c.dereferencePointer("p")); // X
-    c.writeOut(c.dereferencePointer("q")); // X
+  c.writeOut(c.dereferencePointer("p")); // X
+  c.writeOut(c.dereferencePointer("q")); // X
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

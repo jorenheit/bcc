@@ -9,21 +9,19 @@ c.function("main").begin(); {
   c.declareLocal("p", pairT);
   c.declareLocal("z", ts::i16());
 
-  c.block("entry").begin(); {
-    auto x = c.structField("p", "x");
-    auto y = c.structField("p", "y");
+  auto x = c.structField("p", "x");
+  auto y = c.structField("p", "y");
 
-    c.assign(x, literal::i16(CAT('G', 'A')));
-    c.assign(y, literal::i16(3));
+  c.assign(x, literal::i16(CAT('G', 'A')));
+  c.assign(y, literal::i16(3));
 
-    c.writeOut(x);              // GA
-    c.subAssign(x, y);          // p.x -= p.y
-    c.writeOut(x);              // DA
-    c.assign("z", c.sub(x, y)); // z = p.x - p.y
-    c.writeOut("z");            // AA
+  c.writeOut(x);              // GA
+  c.subAssign(x, y);          // p.x -= p.y
+  c.writeOut(x);              // DA
+  c.assign("z", c.sub(x, y)); // z = p.x - p.y
+  c.writeOut("z");            // AA
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

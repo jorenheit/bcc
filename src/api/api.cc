@@ -60,11 +60,6 @@ std::string acus::api::impl::Context::currentFunction() const {
   return _assembler->currentFunction();
 }
 
-std::string acus::api::impl::Context::currentBlock() const {
-  assert(_assembler);
-  return _assembler->currentBlock();
-}
-
 int acus::api::impl::Context::currentScopeDepth() const {
   assert(_assembler);
   return _assembler->currentScopeDepth();

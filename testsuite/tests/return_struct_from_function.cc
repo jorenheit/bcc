@@ -7,26 +7,19 @@ auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8())
 c.function("main").begin(); {
   c.declareLocal("s", point);
 
-  c.block("entry").begin(); {
-    c.callFunction("makePoint", "after_makePoint").into("s").done();
-  } c.endBlock();
-
-  c.block("after_makePoint").begin(); {
-    c.writeOut("s");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("makePoint").into("s").done();
+  c.writeOut("s");
+  c.returnFromFunction();
 } c.endFunction();
-			    
+
 c.function("makePoint").ret(point).begin(); {
   c.declareLocal("p", point);
-  c.block("entry").begin(); {
-    auto x = c.structField("p", "x");
-    auto y = c.structField("p", "y");
+  auto x = c.structField("p", "x");
+  auto y = c.structField("p", "y");
 
-    c.assign(x, literal::i8('Q'));
-    c.assign(y, literal::i8('R'));
-    c.returnFromFunction("p");
-  } c.endBlock();
+  c.assign(x, literal::i8('Q'));
+  c.assign(y, literal::i8('R'));
+  c.returnFromFunction("p");
 } c.endFunction();
 
 TEST_END

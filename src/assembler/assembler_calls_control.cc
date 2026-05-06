@@ -1,19 +1,20 @@
 #include "assembler.ih"
 #include <iostream>
 
-Assembler::FunctionCallBuilder Assembler::callFunction(std::string const &functionName, std::string const &nextBlockName, API_FUNC) {
+Assembler::FunctionCallBuilder Assembler::callFunction(std::string const &functionName, API_FUNC) {
   API_FUNC_BEGIN();
-  return FunctionCallBuilder { *this, functionName, nextBlockName, API_FWD };
+  return FunctionCallBuilder { *this, functionName, API_FWD };
 }
 
-void Assembler::callFunctionImpl(std::string const &functionName, std::string const& nextBlockName,
-				std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
+void Assembler::callFunctionImpl(std::string const &functionName, std::optional<Expression> const &returnSlot,
+				 std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
   deferFunctionCallTypeCheck(functionName, args, API_FWD);
-  deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
 
+  std::string const nextBlockName = generateUniqueBlockName();
+  
   // Sync globals
   syncLocalToGlobal();
 
@@ -30,25 +31,29 @@ void Assembler::callFunctionImpl(std::string const &functionName, std::string co
       .nextBlockName = nextBlockName,
     });
 
-  setNextBlockImpl(_currentFunction->name, metaBlockName);
+  setNextBlock(_currentFunction->name, metaBlockName);
 
   // Prepare frame (set target, copy args) and push next frame onto the stack  
   prepareNextFrame(functionName, args, API_FWD);
   pushFrame();
 
-  API_EXPECT_NEXT("endBlock");
+  // Start the next block
+  assert(_currentBlock != nullptr);
+  endBlock();
+  beginBlock(nextBlockName);
 }
 
-void Assembler::callFunctionImpl(Expression const &fPtr, std::string const& nextBlockName,
-			       std::optional<Expression> const &returnSlot, std::vector<Expression> const &args, API_CTX) {
+void Assembler::callFunctionImpl(Expression const &fPtr, std::optional<Expression> const &returnSlot,
+				 std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_FUNCTION_POINTER(fPtr);
 
   auto functionType = types::cast<types::FunctionPointerType>(fPtr.type())->functionType();  
   functionCallTypeCheck(functionType, args, API_FWD);
-  deferBlockNameCheck(_currentFunction->name, nextBlockName, API_FWD);    
 
+  std::string const nextBlockName = generateUniqueBlockName();
+  
   // Sync Globals
   syncLocalToGlobal();
 
@@ -56,7 +61,7 @@ void Assembler::callFunctionImpl(Expression const &fPtr, std::string const& next
   std::string const metaBlockName = std::string("__ret_meta_")
     + _currentFunction->name + "_"
     + std::to_string(_metaBlocks.size());
-  setNextBlockImpl(_currentFunction->name, metaBlockName);
+  setNextBlock(_currentFunction->name, metaBlockName);
 
   // Build MetaBlock
   _metaBlocks.push_back(MetaBlock{
@@ -71,7 +76,10 @@ void Assembler::callFunctionImpl(Expression const &fPtr, std::string const& next
   prepareNextFrame(fPtr, args, API_FWD);
   pushFrame();
 
-  API_EXPECT_NEXT("endBlock");
+  // Start next block
+  assert(_currentBlock != nullptr);
+  endBlock();
+  beginBlock(nextBlockName);
 }
 
 void Assembler::functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX) {
@@ -103,34 +111,34 @@ void Assembler::deferredFunctionCallTypeChecks() {
   _deferredFunctionCallTypeChecks.clear();
 }
 
-void Assembler::blockNameCheck(std::string const &functionName, std::string const &blockName, API_CTX) {
+void Assembler::labelCheck(std::string const &functionName, std::string const &labelName, API_CTX) {
   API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");
-  API_REQUIRE(_program.function(functionName).isBlockDefined(blockName),
-	      "block '", blockName, "' not defined inside function '", functionName, "'.");
+  API_REQUIRE(_program.function(functionName).isBlockDefined(labelName),
+	      "label '", labelName, "' not defined inside function '", functionName, "'.");
 }
 
-void Assembler::deferBlockNameCheck(std::string const &f, std::string const &b, API_CTX) {
-  _deferredBlockNameChecks.emplace_back( BlockNameCheck {
+void Assembler::deferLabelCheck(std::string const &functionName, std::string const &labelName, API_CTX) {
+  _deferredLabelChecks.emplace_back( LabelCheck {
       .API_CTX_NAME = API_FWD,
-      .functionName = f,
-      .blockName = b
+      .functionName = functionName,
+      .labelName = labelName
     });
 }
 
-void Assembler::deferredBlockNameChecks() {
+void Assembler::deferredLabelChecks() {
   assert(_currentFunction == nullptr);
 
-  for (auto const &[API_CTX_NAME, functionName, blockName]: _deferredBlockNameChecks) {
-    blockNameCheck(functionName, blockName, API_FWD);
+  for (auto const &[API_CTX_NAME, functionName, labelName]: _deferredLabelChecks) {
+    labelCheck(functionName, labelName, API_FWD);
   }
 
-  _deferredBlockNameChecks.clear();
+  _deferredLabelChecks.clear();
 }
 
 void Assembler::abortProgram(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
   moveTo(FrameLayout::RunState, MacroCell::Value0);
   zeroCell();
@@ -138,7 +146,10 @@ void Assembler::abortProgram(API_FUNC) {
   // Sync and pop
   popFrame();
 
-  API_EXPECT_NEXT("endBlock");
+  // Block boundary
+  assert(_currentBlock != nullptr);
+  endBlock();
+  beginBlock(generateUniqueBlockName());
 }
 
 void Assembler::returnFromFunction(API_FUNC) {
@@ -148,7 +159,7 @@ void Assembler::returnFromFunction(API_FUNC) {
 
 void Assembler::returnFromFunctionImpl(std::optional<Expression> const &ret, API_CTX) {
   API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   
   if (ret) {
     API_REQUIRE_ASSIGNABLE(ret->type(), _currentFunction->type->returnType());
@@ -168,7 +179,9 @@ void Assembler::returnFromFunctionImpl(std::optional<Expression> const &ret, API
   syncLocalToGlobal();
   popFrame();
 
-  API_EXPECT_NEXT("endBlock");
+  assert(_currentBlock != nullptr);
+  endBlock();
+  beginBlock(generateUniqueBlockName());
 }
 
 void Assembler::initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramStart,
@@ -333,7 +346,7 @@ void Assembler::prepareNextFrame(std::string const &functionName, std::vector<Ex
 
   // Set target block in next frame
   emit<primitive::MovePointerRelative>(currentFrameSize); 
-  setNextBlockImpl(functionName, "");
+  setNextBlock(functionName, "");
   emit<primitive::MovePointerRelative>(-currentFrameSize);
 }
 
@@ -423,24 +436,6 @@ void Assembler::fetchReturnData(Slot const &returnSlot) {
   popPtr();
 }
 
-void Assembler::branchIfImpl(Expression const &obj, std::string const &trueLabel,
-			    std::string const &falseLabel, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_CODE_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
-
-  if (obj.hasSlot()) {
-    branchIfSlot(obj.slot()->materialize(*this), trueLabel, falseLabel);
-  } else {  
-    bool const value = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
-    setNextBlockImpl(_currentFunction->name, value ? trueLabel : falseLabel);
-  }
-
-  deferBlockNameCheck(_currentFunction->name, trueLabel, API_FWD);
-  deferBlockNameCheck(_currentFunction->name, falseLabel, API_FWD);
-  
-  API_EXPECT_NEXT("endBlock");
-}
 
 void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel) {
 
@@ -466,7 +461,7 @@ void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std
   switchField(MacroCell::Value0);
   loopOpen(); {
     zeroCell();
-    setNextBlockImpl(_currentFunction->name, trueLabel);
+    setNextBlock(_currentFunction->name, trueLabel);
     switchField(MacroCell::Flag);
     setToValue(0);
     switchField(MacroCell::Value0);	
@@ -475,7 +470,7 @@ void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std
   switchField(MacroCell::Flag);
   loopOpen(); {
     zeroCell();
-    setNextBlockImpl(_currentFunction->name, falseLabel);
+    setNextBlock(_currentFunction->name, falseLabel);
   } loopClose();
 
   popPtr();

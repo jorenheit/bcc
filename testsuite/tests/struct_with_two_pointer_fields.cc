@@ -14,39 +14,32 @@ c.function("main").begin(); {
   c.declareLocal("a", i8);
   c.declareLocal("b", i8);
 
-  c.block("entry").begin(); {
-    c.assign("a", literal::i8('A'));
-    c.assign("b", literal::i8('B'));
+  c.assign("a", literal::i8('A'));
+  c.assign("b", literal::i8('B'));
 
-    c.assign(c.structField("s", "pa"), c.addressOf("a"));
-    c.assign(c.structField("s", "pb"), c.addressOf("b"));
+  c.assign(c.structField("s", "pa"), c.addressOf("a"));
+  c.assign(c.structField("s", "pb"), c.addressOf("b"));
 
-    c.callFunction("foo", "after").arg("s").done();
-  } c.endBlock();
-
-  c.block("after").begin(); {
-    c.writeOut("a");
-    c.writeOut("b");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("foo").arg("s").done();
+  c.writeOut("a");
+  c.writeOut("b");
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("s", pair).ret(ts::void_t()).begin(); {
-  c.block("entry").begin(); {
-    auto pa = c.structField("s", "pa");
-    auto pb = c.structField("s", "pb");
+  auto pa = c.structField("s", "pa");
+  auto pb = c.structField("s", "pb");
 
-    auto aDeref = c.dereferencePointer(pa);
-    auto bDeref = c.dereferencePointer(pb);
+  auto aDeref = c.dereferencePointer(pa);
+  auto bDeref = c.dereferencePointer(pb);
 
-    c.writeOut(aDeref);
-    c.writeOut(bDeref);
+  c.writeOut(aDeref);
+  c.writeOut(bDeref);
 
-    c.assign(aDeref, literal::i8('X'));
-    c.assign(bDeref, literal::i8('Y'));
+  c.assign(aDeref, literal::i8('X'));
+  c.assign(bDeref, literal::i8('Y'));
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

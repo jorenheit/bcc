@@ -13,17 +13,15 @@ c.function("main").begin(); {
   c.referGlobals({"g"});
   c.declareLocal("p", i8p);
 
-  c.block("entry").begin(); {
-    c.assign("g", literal::i8('G'));
-    c.assign("p", c.addressOf("g"));
+  c.assign("g", literal::i8('G'));
+  c.assign("p", c.addressOf("g"));
 
-    auto pDeref = c.dereferencePointer("p");
-    c.writeOut("g");
-    c.assign(pDeref, literal::i8('H'));
-    c.writeOut("g");
+  auto pDeref = c.dereferencePointer("p");
+  c.writeOut("g");
+  c.assign(pDeref, literal::i8('H'));
+  c.writeOut("g");
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

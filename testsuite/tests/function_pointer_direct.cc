@@ -12,54 +12,30 @@ auto fooPtr = ts::function_pointer(fooType);
 c.function("main").begin(); {
   c.declareLocal("fptr", fooPtr);
 
-  c.block("entry").begin(); {
-    c.callFunction("getPtr", "call_false").into("fptr").arg(literal::i8(0)).done();
-  } c.endBlock();
-
-  c.block("call_false").begin(); {
-    c.callFunctionPointer("fptr", "get_true").done();
-  } c.endBlock();
-
-  c.block("get_true").begin(); {
-    c.callFunction("getPtr", "call_true").into("fptr").arg(literal::i8(1)).done();
-  } c.endBlock();
-
-  c.block("call_true").begin(); {
-    c.callFunctionPointer("fptr", "end").done();
-  } c.endBlock();
-
-  c.block("end").begin(); {
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("getPtr").into("fptr").arg(literal::i8(0)).done();
+  c.callFunctionPointer("fptr").done();
+  c.callFunction("getPtr").into("fptr").arg(literal::i8(1)).done();
+  c.callFunctionPointer("fptr").done();
+  c.returnFromFunction();
 } c.endFunction();
 
 
 c.function("getPtr").param("x", i8).ret(fooPtr).begin(); {
-  c.block("entry").begin(); {
-    c.branchIf("x", "true", "false");
-  } c.endBlock();
-
-  c.block("true").begin(); {
-    c.returnFromFunction(literal::function_pointer(fooType, "foo1"));
-  } c.endBlock();
-
-  c.block("false").begin(); {
-    c.returnFromFunction(literal::function_pointer(fooType, "foo2"));
-  } c.endBlock();
+  c.jumpIf("x", "true", "false");
+  c.label("true");
+  c.returnFromFunction(literal::function_pointer(fooType, "foo1"));
+  c.label("false");
+  c.returnFromFunction(literal::function_pointer(fooType, "foo2"));
 } c.endFunction();
 
 c.function("foo1").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::string("foo1"));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::string("foo1"));
+  c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo2").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::string("foo2"));
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::string("foo2"));
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

@@ -6,15 +6,13 @@ TEST_BEGIN
 c.function("main").begin(); {
   c.declareLocal("x", ts::i16());
 
-  c.block("entry").begin(); {
-    c.assign("x", literal::i16(CAT('A', 'C')));
+  c.assign("x", literal::i16(CAT('A', 'C')));
 
-    c.writeOut("x");                  // AC
-    c.addAssign("x", literal::i16(1)); // should become BC
-    c.writeOut("x");                  // BC
+  c.writeOut("x");                  // AC
+  c.addAssign("x", literal::i16(1)); // should become BC
+  c.writeOut("x");                  // BC
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

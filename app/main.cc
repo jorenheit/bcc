@@ -9,34 +9,27 @@ int main() try {
   Assembler c;
 
   c.program("test", "main").begin(); {
+
+
+    c.declareGlobal("g", ts::i8());
+  
     c.function("main").begin(); {
-      c.declareLocal("x", ts::s16());
-      c.declareLocal("y", ts::s16());
-      c.declareLocal("f", ts::s16());
-      
-      c.block("entry").begin(); {
-
-	// ORRU
-    
-	// signBit(-1) = 1; 1 + 'P' = 'Q'
-	c.assign("x", literal::s16(-1));
-	c.assign("f", c.signBit("x"));
-	c.writeOut(c.add("f", literal::s16(CAT('P', 'Q')))); // Q
-
-	// signBit(0) = 0; 0 + 'R' = 'R'
-	c.assign("x", literal::s16(0));
-	c.assign("f", c.signBit("x"));
-	c.writeOut(c.add("f", literal::s16(CAT('R', 'R')))); // R
-
-	// signBitAssign(-32768): x becomes 1; CAT('R', 'T') + 1 = CAT('S', 'T') -> ST
-	c.assign("x", literal::s16(-32768));
-	c.signBitAssign("x");
-	c.addAssign("x", literal::s16(CAT('R', 'S')));
-	c.writeOut("x"); // ST
-
-	c.returnFromFunction();
-      } c.endBlock();
+      c.declareLocal("x", ts::i8());
+      c.assign("x", literal::i8('x'));
+      c.referGlobals({"g"});
+      c.assign("g", literal::i8('A'));
+      c.callFunction("foo").done();
+      c.writeOut("g");          // should print 'F'
+      c.returnFromFunction();
     } c.endFunction();
+
+    c.function("foo").begin(); {
+      c.referGlobals({"g"});
+      c.writeOut("g");          // should print 'A'
+      c.assign("g", literal::i8('F'));  // modify global shadow
+      c.returnFromFunction();
+    } c.endFunction();
+  
 
 
   } c.endProgram();

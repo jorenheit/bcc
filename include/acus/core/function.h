@@ -42,13 +42,13 @@ struct Function {
   
   size_t entryBlockIndex = 0;
 
-  inline Block &createBlock(std::string blockName, size_t globalBlockIndex) {
+  inline Block &createBlock(std::string blockName) {
     assert(!blockByName.contains(blockName));
     blockByName[blockName] = blocks.size();
     blocks.push_back(std::make_unique<Block>());
 
     Block &b = *blocks.back();
-    b.globalBlockIndex = globalBlockIndex;
+    b.globalBlockIndex = -1; 
     b.parentFunctionIndex = functionIndex;
     b.name = std::move(blockName);
     b.id = name + "." + b.name;

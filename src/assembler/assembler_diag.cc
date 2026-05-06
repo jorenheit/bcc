@@ -4,10 +4,6 @@ std::string Assembler::currentFunction() const {
   return _currentFunction ? (*_currentFunction).name : "";
 }
 
-std::string Assembler::currentBlock() const {
-  return _currentBlock ? (*_currentBlock).name : "";
-}
-
 bool Assembler::programStarted() const {
   return _state.begun;
 }

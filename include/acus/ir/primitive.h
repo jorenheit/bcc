@@ -55,7 +55,9 @@ namespace acus::primitive {
 	nodes.push_back(n);
       }
     }
-
+    
+    inline size_t size() const { return nodes.size(); }
+    
     std::string dumpText(Context const &ctx);
     std::string dumpCode(Context const &ctx);
   };

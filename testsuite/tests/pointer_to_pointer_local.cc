@@ -12,23 +12,21 @@ c.function("main").begin(); {
   c.declareLocal("p", i8p);
   c.declareLocal("pp", i8pp);
 
-  c.block("entry").begin(); {
-    c.assign("x", literal::i8('A'));
-    c.assign("p", c.addressOf("x"));
-    c.assign("pp", c.addressOf("p"));
+  c.assign("x", literal::i8('A'));
+  c.assign("p", c.addressOf("x"));
+  c.assign("pp", c.addressOf("p"));
 
-    auto pFromPp = c.dereferencePointer("pp");
-    auto xFromPp = c.dereferencePointer(pFromPp);
+  auto pFromPp = c.dereferencePointer("pp");
+  auto xFromPp = c.dereferencePointer(pFromPp);
 
-    c.writeOut(xFromPp);                 // A
+  c.writeOut(xFromPp);                 // A
 
-    c.assign(xFromPp, literal::i8('Z'));
+  c.assign(xFromPp, literal::i8('Z'));
 
-    c.writeOut("x");                     // Z
-    c.writeOut(c.dereferencePointer("p"));// Z
+  c.writeOut("x");                     // Z
+  c.writeOut(c.dereferencePointer("p"));// Z
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

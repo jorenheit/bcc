@@ -15,40 +15,33 @@ c.function("main").begin(); {
   c.declareLocal("a", i8);
   c.declareLocal("b", i8);
 
-  c.block("entry").begin(); {
-    c.assign("a", literal::i8('A'));
-    c.assign("b", literal::i8('B'));
+  c.assign("a", literal::i8('A'));
+  c.assign("b", literal::i8('B'));
 
-    c.assign(c.structField(c.arrayElement("arr", 0), "p"), c.addressOf("a"));
-    c.assign(c.structField(c.arrayElement("arr", 1), "p"), c.addressOf("b"));
+  c.assign(c.structField(c.arrayElement("arr", 0), "p"), c.addressOf("a"));
+  c.assign(c.structField(c.arrayElement("arr", 1), "p"), c.addressOf("b"));
 
-    c.callFunction("foo", "after").arg("arr").done();
-  } c.endBlock();
-
-  c.block("after").begin(); {
-    c.writeOut("a");
-    c.writeOut("b");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.callFunction("foo").arg("arr").done();
+  c.writeOut("a");
+  c.writeOut("b");
+  c.returnFromFunction();
 } c.endFunction();
 
 
 c.function("foo").param("arr", holders).ret(ts::void_t()).begin(); {
-  c.block("entry").begin(); {
-    auto p0 = c.structField(c.arrayElement("arr", 0), "p");
-    auto p1 = c.structField(c.arrayElement("arr", 1), "p");
+  auto p0 = c.structField(c.arrayElement("arr", 0), "p");
+  auto p1 = c.structField(c.arrayElement("arr", 1), "p");
 
-    auto d0 = c.dereferencePointer(p0);
-    auto d1 = c.dereferencePointer(p1);
+  auto d0 = c.dereferencePointer(p0);
+  auto d1 = c.dereferencePointer(p1);
 
-    c.writeOut(d0);
-    c.writeOut(d1);
+  c.writeOut(d0);
+  c.writeOut(d1);
 
-    c.assign(d0, literal::i8('X'));
-    c.assign(d1, literal::i8('Y'));
+  c.assign(d0, literal::i8('X'));
+  c.assign(d1, literal::i8('Y'));
 
-    c.returnFromFunction();
-  } c.endBlock();
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

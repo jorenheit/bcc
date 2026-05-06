@@ -7,11 +7,9 @@ auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8())
 c.function("main").begin(); {
   c.declareLocal("s", point);
 
-  c.block("entry").begin(); {
-    c.assign("s", literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done());
-    c.writeOut("s");
-    c.returnFromFunction();
-  } c.endBlock();
+  c.assign("s", literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done());
+  c.writeOut("s");
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END

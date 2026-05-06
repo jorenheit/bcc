@@ -3,10 +3,8 @@
 
 TEST_BEGIN
 c.function("main").begin(); {
-  c.block("entry").begin(); {
-    c.writeOut(literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
-    c.returnFromFunction();
-  } c.endBlock();
+  c.writeOut(literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
+  c.returnFromFunction();
 } c.endFunction();
 
 TEST_END
