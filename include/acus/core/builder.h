@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <exception>
 
 #define API_HEADER
 #include "acus/api/api.h"
@@ -25,7 +26,7 @@ namespace acus::builder {
     }
 
     ~FinalizeGuard() {
-      assert(finalized);
+      if (std::uncaught_exceptions() == 0) assert(finalized);
     }
 
     void done() { finalized = true; }

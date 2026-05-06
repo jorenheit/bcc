@@ -66,11 +66,6 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
     callFunctionImpl(builtinFunctionName(func), {}, { val }, API_FWD);
     return;
   }
-  else {
-    // TODO: strings here; code already in writeOut
-    assert(false && "non integer print not implemented yet");
-  }
-
   API_REQUIRE(false, error::ErrorCode::NotPrintable, "print is not supported for values of type '", val.type()->str(), "'.");
 }
 

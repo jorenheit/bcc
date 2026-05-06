@@ -6,6 +6,7 @@ LDLIBS   :=
 
 TARGET      := bcc
 TEST_TARGET := bcc_tests
+COMPILETIME_TEST_TARGET := bcc_compiletime_tests
 OBJDIR      := obj
 
 # Shared library/application sources, without app/main.cc.
@@ -47,6 +48,7 @@ COMMON_SRCS := \
 
 MAIN_SRC := app/main.cc
 TEST_SRC := testsuite/testsuite.cc
+COMPILETIME_TEST_SRC := testsuite/compiletime_testsuite.cc
 
 EXAMPLE_SRCS    := $(filter-out %~,$(wildcard examples/*.cc))
 EXAMPLE_TARGETS := $(patsubst examples/%.cc,examples/%,$(EXAMPLE_SRCS))
@@ -55,12 +57,14 @@ EXAMPLE_OBJS    := $(patsubst %.cc,$(OBJDIR)/%.o,$(EXAMPLE_SRCS))
 COMMON_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(COMMON_SRCS))
 MAIN_OBJ    := $(patsubst %.cc,$(OBJDIR)/%.o,$(MAIN_SRC))
 TEST_OBJ    := $(patsubst %.cc,$(OBJDIR)/%.o,$(TEST_SRC))
+COMPILETIME_TEST_OBJ := $(patsubst %.cc,$(OBJDIR)/%.o,$(COMPILETIME_TEST_SRC))
 
 $(TEST_OBJ): CXXFLAGS += -O3
 
 DEPS := $(COMMON_OBJS:.o=.d) \
 	$(MAIN_OBJ:.o=.d) \
 	$(TEST_OBJ:.o=.d) \
+	$(COMPILETIME_TEST_OBJ:.o=.d) \
 	$(EXAMPLE_OBJS:.o=.d)
 
 .PHONY: all
@@ -70,9 +74,18 @@ $(TARGET): $(COMMON_OBJS) $(MAIN_OBJ)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 .PHONY: tests
-tests: $(TEST_TARGET)
+tests: $(TEST_TARGET) $(COMPILETIME_TEST_TARGET)
+
+.PHONY: runtime-tests
+runtime-tests: $(TEST_TARGET)
+
+.PHONY: compiletime-tests
+compiletime-tests: $(COMPILETIME_TEST_TARGET)
 
 $(TEST_TARGET): $(COMMON_OBJS) $(TEST_OBJ)
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(COMPILETIME_TEST_TARGET): $(COMMON_OBJS) $(COMPILETIME_TEST_OBJ)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 .PHONY: examples
@@ -89,4 +102,4 @@ $(OBJDIR)/%.o: %.cc
 
 .PHONY: clean
 clean:
-	$(RM) -r $(OBJDIR) $(TARGET) $(TEST_TARGET) $(EXAMPLE_TARGETS)
+	$(RM) -r $(OBJDIR) $(TARGET) $(TEST_TARGET) $(COMPILETIME_TEST_TARGET) $(EXAMPLE_TARGETS)

@@ -13,6 +13,8 @@ namespace acus::error {
     ReadOnlyExpression,
     IncompatibleOperands,
     NotPrintable,
+    EntryFunctionNotDefined,
+    WrongEntryFunctionType,
     
     ExpectedOutsideProgramBlock,
     ExpectedInsideProgramBlock,

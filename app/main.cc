@@ -13,7 +13,7 @@ int main() try {
 
     c.declareGlobal("g", ts::i8());
   
-    c.function("main").begin(); {
+    c.function("main").param("z", ts::i8()).begin(); {
       c.declareLocal("x", ts::i8());
       c.assign("x", literal::i8('x'));
       c.referGlobals({"g"});

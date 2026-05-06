@@ -15,8 +15,6 @@ void Assembler::beginProgramImpl(std::string const &name, std::string const &ent
   _state.begun = true;
   _state.allowGlobalDeclarations = true;
 
-  // TODO: defer entryfunction check
-  
   // Globals should start at same frame offset as locals for consistency -> pad with raw
   declareGlobal("__pad__", ts::raw(FrameLayout::ReturnValueStart));
 }
@@ -31,11 +29,24 @@ void Assembler::endProgram(API_FUNC) {
 	      error::ErrorCode::EmptyProgram,
 	      "a program should contain at least one function.");
 
-  // Done compiling the program. Generate the metablocks, builtin functions,  bootstrap and hatstrap sequences.
-  constructBuiltinFunctions();
-  constructMetaBlocks();
+  API_REQUIRE(_program.isFunctionDefined(_program.entryFunctionName),
+	      error::ErrorCode::EntryFunctionNotDefined,
+	      "entry function '", _program.entryFunctionName, "' was never defined.");
+
+  auto const entryFunctionType = _program.function(_program.entryFunctionName).type;
+  API_REQUIRE(entryFunctionType == ts::void_function(),
+	      error::ErrorCode::WrongEntryFunctionType,
+	      "entry function must be of type 'void()', but is of type '", entryFunctionType->str(), "'."); 
+	      
+  
+  // Done compiling the program. Check deferred diagnostics before generating
+  // structures that assume their referenced functions and labels exist.
   deferredFunctionCallTypeChecks();
   deferredLabelChecks();
+
+  // Generate the metablocks, builtin functions, bootstrap and hatstrap sequences.
+  constructBuiltinFunctions();
+  constructMetaBlocks();
   
   // To bootstrap the system, we need to do the following:
   // 1. Mark cell 0 using the SeekMarker field to indicate that this is where

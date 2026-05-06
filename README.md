@@ -15,22 +15,13 @@ acus::Assembler a;
 a.program("hello", "main").begin(); {
 
   a.function("main").begin(); {
-   
-    a.block("entry").begin(); {
-       a.callFunction("say", "after_say")();
-    } a.endBlock();
-   
-    a.block("after_say").begin(); {
-       a.returnFromFunction();
-    } a.endBlock();
-  
+    a.callFunction("say", "after_say")();
+    a.returnFromFunction();
   } a.endFunction();
   
   a.function("say"); {
-    a.beginBlock("entry"); {
-      a.writeOut(values::string("Hello, World!"));
-      a.returnFromFunction();
-    a.endBlock();
+    a.writeOut(values::string("Hello, World!"));
+    a.returnFromFunction();
   } a.endFunction();
 
 } a.end();

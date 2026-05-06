@@ -149,71 +149,61 @@ namespace acus::api::impl {
   error::throw_if(not types::isInteger(type),				\
 		  error::ErrorCode::ExpectedInteger,			\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected an integer in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected an integer but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_SIGNED_INTEGER(type)				\
   error::throw_if(not types::isSignedInteger(type),			\
 		  error::ErrorCode::ExpectedSignedInteger,		\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected an signed integer in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected an signed integer but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_UNSIGNED_INTEGER(type)				\
   error::throw_if(types::isSignedInteger(type),				\
 		  error::ErrorCode::ExpectedUnsignedInteger,		\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected an unsigned integer in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected an unsigned integer but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_ARRAY(type)					\
   error::throw_if(not types::isArray(type),				\
 		  error::ErrorCode::ExpectedArray,			\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected an array in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected an array but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_STRING(type)					\
   error::throw_if(not types::isString(type),				\
 		  error::ErrorCode::ExpectedString,			\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected a string in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected a string but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_ARRAY_OR_STRING(type)				\
   error::throw_if(not (types::isArray(type) || types::isString(type)),	\
 		  error::ErrorCode::ExpectedArrayOrString,		\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected an array or string in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected an array or string but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_STRUCT(type)					\
   error::throw_if(not types::isStruct(type),				\
 		  error::ErrorCode::ExpectedStruct,			\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected a struct in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected a struct but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_POINTER(type)					\
   error::throw_if(not types::isPointer(type),				\
 		  error::ErrorCode::ExpectedPointer,			\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected a pointer in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected a pointer but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_FUNCTION(type)					\
   error::throw_if(not types::isFunction(type),				\
 		  error::ErrorCode::ExpectedFunctionType,		\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected a function-type in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected a function-type but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_IS_FUNCTION_POINTER(type)				\
   error::throw_if(not types::isFunctionPointer(type),			\
 		  error::ErrorCode::ExpectedFunctionPointer,		\
 		  (API_CTX_NAME).file_name(), (API_CTX_NAME).line(), (API_CTX_NAME).column(), \
-		  "expected a function-pointer in call to '", (API_CTX_NAME).apiName(), \
-		  "', but got '", (type)->str(), "'.")
+		  "expected a function-pointer but got '", (type)->str(), "'.")
 
 #define API_REQUIRE_FIELD_INDEX_IN_BOUNDS(obj, fieldIndex)		\
   error::throw_if((fieldIndex) < 0 ||					\
