@@ -177,7 +177,9 @@ void Assembler::referGlobals(std::vector<std::string> const &names, API_FUNC) {
     API_REQUIRE_IS_GLOBAL(name);
 
     auto [_, unique] = declared.insert(name);
-    API_REQUIRE(unique, "multiple references to ", name, ".");
+    API_REQUIRE(unique,
+		error::ErrorCode::DuplicateGlobalReferences,
+		"multiple references to ", name, ".");
     declareGlobalReference(_program.globalSlot(name));      
   }
 

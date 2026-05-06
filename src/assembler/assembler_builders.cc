@@ -22,7 +22,9 @@ namespace acus {
 namespace acus {
 
   Assembler::FunctionBuilder & Assembler::FunctionBuilder::ret(types::TypeHandle returnType) & {
-    API_REQUIRE(_returnType == types::null, "return-type was already specified.");
+    API_REQUIRE(_returnType == types::null,
+		error::ErrorCode::ReturnTypeSpecifiedMultipleTimes,
+		"return-type was already specified.");
     _returnType = returnType;
     return *this;
   }

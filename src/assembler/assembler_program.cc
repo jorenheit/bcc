@@ -27,7 +27,9 @@ void Assembler::endProgram(API_FUNC) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_PROGRAM_BLOCK();
   API_REQUIRE_OUTSIDE_FUNCTION_BLOCK();
-  API_REQUIRE(_program.functions.size() > 0, "a program should contain at least one function.");
+  API_REQUIRE(_program.functions.size() > 0,
+	      error::ErrorCode::EmptyProgram,
+	      "a program should contain at least one function.");
 
   // Done compiling the program. Generate the metablocks, builtin functions,  bootstrap and hatstrap sequences.
   constructBuiltinFunctions();
@@ -101,7 +103,9 @@ void Assembler::beginFunctionImpl(std::string const &name, types::TypeHandle typ
   for (size_t i = 0; i != params.size(); ++i) {
     std::string const &name = params[i];
     auto [_, unique] = paramSet.insert(name);
-    API_REQUIRE(unique, "parameter name '", name, "' used more than once.");
+    API_REQUIRE(unique,
+		error::ErrorCode::DuplicateFunctionParameters,
+		"parameter name '", name, "' used more than once.");
     declareLocal(name, fType->paramTypes()[i]);
   }
 
@@ -113,7 +117,6 @@ void Assembler::endFunction(API_FUNC) {
   API_CHECK_EXPECTED();  
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_NO_SCOPE();
-  API_REQUIRE(_currentFunction->blocks.size() > 0, "a function should contain at least 1 code-block.");
 
   endBlock();
   _currentFunction = nullptr;

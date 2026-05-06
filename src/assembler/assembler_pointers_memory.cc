@@ -7,7 +7,9 @@ Expression Assembler::addressOfImpl(Expression const &obj, API_CTX) {
   
   if (obj.slot()->direct()) {
     Slot const slot = obj.slot()->materialize(*this);
-    API_REQUIRE(slot.kind != Slot::Temp, "Cannot take the address of a temporary value.");
+    API_REQUIRE(slot.kind != Slot::Temp,
+		error::ErrorCode::TakingAddressOfTemporary,
+		"Cannot take the address of a temporary value.");
   }
   
   return Expression(obj.slot()->addressOf(*this));

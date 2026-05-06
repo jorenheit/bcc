@@ -47,7 +47,7 @@ void Assembler::callFunctionImpl(Expression const &fPtr, std::optional<Expressio
 				 std::vector<Expression> const &args, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_FUNCTION_POINTER(fPtr);
+  API_REQUIRE_IS_FUNCTION_POINTER(fPtr.type());
 
   auto functionType = types::cast<types::FunctionPointerType>(fPtr.type())->functionType();  
   functionCallTypeCheck(functionType, args, API_FWD);
@@ -85,6 +85,7 @@ void Assembler::callFunctionImpl(Expression const &fPtr, std::optional<Expressio
 void Assembler::functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX) {
   auto const &paramTypes = functionType->paramTypes();
   API_REQUIRE(paramTypes.size() == args.size(),
+	      error::ErrorCode::InvalidFunctionPointerCall,
 	      "invalid number of arguments in function-call through function-pointer: " 
 	      "expected ", paramTypes.size(), ", got ", args.size(), ".");
   for (size_t i = 0; i != args.size(); ++i) {
@@ -104,7 +105,7 @@ void Assembler::deferredFunctionCallTypeChecks() {
   assert(_currentFunction == nullptr);
 
   for (auto const &[API_CTX_NAME, callee, args]: _deferredFunctionCallTypeChecks) {
-    API_REQUIRE(_program.isFunctionDefined(callee), "function '", callee, "' not defined.");
+    API_REQUIRE_FUNCTION_DEFINED(callee);
     functionCallTypeCheck(_program.function(callee).type, args, API_FWD);
   }
 
@@ -112,9 +113,8 @@ void Assembler::deferredFunctionCallTypeChecks() {
 }
 
 void Assembler::labelCheck(std::string const &functionName, std::string const &labelName, API_CTX) {
-  API_REQUIRE(_program.isFunctionDefined(functionName), "function '", functionName, "' not defined.");
-  API_REQUIRE(_program.function(functionName).isBlockDefined(labelName),
-	      "label '", labelName, "' not defined inside function '", functionName, "'.");
+  API_REQUIRE_FUNCTION_DEFINED(functionName);
+  API_REQUIRE_LABEL_DEFINED(functionName, labelName);
 }
 
 void Assembler::deferLabelCheck(std::string const &functionName, std::string const &labelName, API_CTX) {

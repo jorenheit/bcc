@@ -71,7 +71,7 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
     assert(false && "non integer print not implemented yet");
   }
 
-  API_REQUIRE(false, "print is not supported for values of type '", val.type()->str(), "'.");
+  API_REQUIRE(false, error::ErrorCode::NotPrintable, "print is not supported for values of type '", val.type()->str(), "'.");
 }
 
 

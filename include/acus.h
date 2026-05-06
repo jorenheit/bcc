@@ -8,4 +8,5 @@ namespace acus::api {
   using namespace acus;
   using literal::Literal;
   using types::TypeHandle;
+  using error::ErrorCode;
 }

@@ -20,7 +20,9 @@ Expression Assembler::rValue(literal::Literal const &val, API_CTX) const {
 }
 
 Expression Assembler::lValue(Expression const &val, API_CTX) const {
-  API_REQUIRE(val.hasSlot(), "cannot convert expression '", val.str(), "' to L-value.");
+  API_REQUIRE(val.hasSlot(),
+	      error::ErrorCode::ReadOnlyExpression,
+	      "cannot convert expression '", val.str(), "' to L-value.");
   return Expression{val};
 }
 

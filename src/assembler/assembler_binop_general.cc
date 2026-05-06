@@ -7,7 +7,7 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
-  API_REQUIRE(opResult, opResult.errorMsg);
+  API_REQUIRE(opResult, error::ErrorCode::IncompatibleOperands, opResult.errorMsg);
 
     
   pushPtr();
@@ -54,7 +54,7 @@ Expression Assembler::binOpImpl(Expression const &lhs, Expression const &rhs, Sp
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
   auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
-  API_REQUIRE(opResult, opResult.errorMsg);
+  API_REQUIRE(opResult, error::ErrorCode::IncompatibleOperands, opResult.errorMsg);
 
   if (lhs.isLiteral() && rhs.isLiteral()) {
     assert(types::isInteger(lhs.type()) && types::isInteger(rhs.type()));

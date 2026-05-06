@@ -131,7 +131,7 @@ void Assembler::jumpIfImpl(Expression const &obj, std::string const &trueLabel,
 		       std::string const &falseLabel, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
 
   if (obj.hasSlot()) {
     branchIfSlot(obj.slot()->materialize(*this), trueLabel, falseLabel);

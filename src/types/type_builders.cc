@@ -20,7 +20,9 @@ namespace acus::ts::impl {
 namespace acus::ts {
 
   FunctionTypeBuilder & FunctionTypeBuilder::ret(types::TypeHandle returnType) & {
-    API_REQUIRE(_ret == types::null, "return-type was already specified.");
+    API_REQUIRE(_ret == types::null,
+		error::ErrorCode::ReturnTypeSpecifiedMultipleTimes,
+		"return-type was already specified.");
     _ret = returnType;
     return *this;
   }

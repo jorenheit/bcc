@@ -139,18 +139,21 @@ namespace acus::literal::impl {
   structT::structT(types::TypeHandle type, std::unordered_map<std::string, Literal> const &fields, API_CTX):
     Base(type)
   {
-    API_REQUIRE(types::isStruct(type), "expected struct-type, got ", type->str());
+    API_REQUIRE_IS_STRUCT(type);
       
     // Check if fields match and add to vector
     auto structType = types::cast<types::StructType>(type);
     API_REQUIRE(structType->fieldCount() == (int)fields.size(),
+		error::ErrorCode::FieldCountMismatch,
 		"field-count mismatch; expected ", structType->fieldCount(), ", but got ", fields.size());
       
     for (int i = 0; i != structType->fieldCount(); ++i) {
       std::string const &name = structType->fieldName(i);
       types::TypeHandle type = structType->fieldType(i);
 
-      API_REQUIRE(fields.contains(name), "missing field '", name, "' in instantiation of struct literal.");
+      API_REQUIRE(fields.contains(name),
+		  error::ErrorCode::MissingField,
+		  "missing field '", name, "' in instantiation of struct literal.");
       API_EXPECT_TYPE(fields.at(name)->type(), type);
 
       _fields.emplace_back(name, fields.at(name));

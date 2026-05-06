@@ -5,7 +5,7 @@
 Expression Assembler::lnotImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
 
   if (obj.isLiteral()) {
     int const val = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
@@ -23,7 +23,7 @@ Expression Assembler::lnotImpl(Expression const &obj, API_CTX) {
 Expression Assembler::lnotAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
   assert(not obj.isLiteral());
 
   Slot const objSlot = obj.slot()->materialize(*this);
@@ -37,7 +37,7 @@ Expression Assembler::lnotAssignImpl(Expression const &obj, API_CTX) {
 Expression Assembler::lboolImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
 
   if (obj.isLiteral()) {
     int const val = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
@@ -55,7 +55,7 @@ Expression Assembler::lboolImpl(Expression const &obj, API_CTX) {
 Expression Assembler::lboolAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
   assert(not obj.isLiteral());
 
   Slot const objSlot = obj.slot()->materialize(*this);
@@ -69,7 +69,7 @@ Expression Assembler::lboolAssignImpl(Expression const &obj, API_CTX) {
 Expression Assembler::negateImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
 
   if (obj.isLiteral()) {
     int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
@@ -89,7 +89,7 @@ Expression Assembler::negateImpl(Expression const &obj, API_CTX) {
 Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
   assert(not obj.isLiteral());
 
   Slot const objSlot = obj.slot()->materialize(*this);
@@ -104,7 +104,7 @@ Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
 Expression Assembler::absImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
 
   if (obj.isLiteral()) {
     if (types::isUnsignedInteger(obj.type())) return obj;
@@ -125,7 +125,7 @@ Expression Assembler::absImpl(Expression const &obj, API_CTX) {
 Expression Assembler::absAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj);
+  API_REQUIRE_IS_INTEGER(obj.type());
   assert(not obj.isLiteral());
 
   Slot const objSlot = obj.slot()->materialize(*this);
@@ -140,7 +140,7 @@ Expression Assembler::absAssignImpl(Expression const &obj, API_CTX) {
 Expression Assembler::signBitImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
 
   if (obj.isLiteral()) {
     int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
@@ -160,7 +160,7 @@ Expression Assembler::signBitImpl(Expression const &obj, API_CTX) {
 Expression Assembler::signBitAssignImpl(Expression const &obj, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj);
+  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
   assert(not obj.isLiteral());
 
   Slot const objSlot = obj.slot()->materialize(*this);

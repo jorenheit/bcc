@@ -3,7 +3,7 @@
 Expression Assembler::structFieldImpl(Expression const &obj, int fieldIndex, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_STRUCT(obj);
+  API_REQUIRE_IS_STRUCT(obj.type());
   API_REQUIRE_FIELD_INDEX_IN_BOUNDS(obj, fieldIndex);
   
   auto structType = types::cast<types::StructType>(obj.type());  
@@ -13,7 +13,7 @@ Expression Assembler::structFieldImpl(Expression const &obj, int fieldIndex, API
 Expression Assembler::structFieldImpl(Expression const &obj, std::string const &fieldName, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_STRUCT(obj);
+  API_REQUIRE_IS_STRUCT(obj.type());
   API_REQUIRE_IS_FIELD(obj, fieldName);
 
   if (obj.isLiteral()) {
@@ -27,7 +27,7 @@ Expression Assembler::structFieldImpl(Expression const &obj, std::string const &
 Expression Assembler::arrayElementImpl(Expression const &arr, int index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_ARRAY_OR_STRING(arr);
+  API_REQUIRE_IS_ARRAY_OR_STRING(arr.type());
   API_REQUIRE_INDEX_IN_BOUNDS(arr, index);
 
   if (arr.isLiteral()) {
@@ -41,12 +41,14 @@ Expression Assembler::arrayElementImpl(Expression const &arr, int index, API_CTX
 Expression Assembler::arrayElementImpl(Expression const &arr, Expression const &index, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_ARRAY_OR_STRING(arr);
-  API_REQUIRE_IS_INTEGER(index);
+  API_REQUIRE_IS_ARRAY_OR_STRING(arr.type());
+  API_REQUIRE_IS_INTEGER(index.type());
   
   if (index.isLiteral()) {
     int const i = literal::cast<types::IntegerType>(index.literal())->semanticValue();
-    API_REQUIRE(i >= 0, "index may not be negative.");
+    API_REQUIRE(i >= 0,
+		error::ErrorCode::NegativeIndex,
+		"index may not be negative.");
     return arrayElementImpl(arr, i, API_FWD);
   }
 
@@ -62,7 +64,7 @@ Expression Assembler::arrayElementImpl(Expression const &arr, Expression const &
 Expression Assembler::dereferencePointerImpl(Expression const &ptr, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_POINTER(ptr);
+  API_REQUIRE_IS_POINTER(ptr.type());
   assert(not ptr.isLiteral());
   
   return Expression{proxy::dereferencedPointer(ptr.slot())};

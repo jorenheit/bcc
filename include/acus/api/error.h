@@ -3,13 +3,23 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include "acus/api/error_codes.h"
 
 namespace acus::error {
 
+
   struct Error: std::exception {
 
+    ErrorCode errorCode;
     std::string msg;
-    Error(std::string const &msgHead = ""): msg(msgHead) {}
+
+    Error(ErrorCode errorCode = ErrorCode::GenericApiRequirement,
+          std::string const &msgHead = ""):
+      errorCode(errorCode), msg(msgHead) {}
+
+    ErrorCode code() const noexcept {
+      return errorCode;
+    }
     
     template <typename T>
     Error &operator<<(T const &val) {
@@ -25,12 +35,22 @@ namespace acus::error {
   };
 
   template <typename ... Args>
-  void throw_if(bool condition, std::string const &filename, int line, int column, Args ... args) {
+  void throw_if(bool condition, ErrorCode errorCode,
+                std::string const &filename, int line, int column,
+                Args ... args) {
     if (not condition) return;
-    Error err;
+    Error err(errorCode);
     (err << filename << ":" << line << ":" << column << ": " << ... << args);
     throw err;
     std::unreachable();
   }
 
-} // namespace error
+  template <typename ... Args>
+  void throw_if(bool condition,
+                std::string const &filename, int line, int column,
+                Args ... args) {
+    throw_if(condition, ErrorCode::GenericApiRequirement,
+             filename, line, column, args...);
+  }
+
+} // namespace acus::error
