@@ -35,7 +35,6 @@ struct TestOutcome {
 
 std::string codeName(ErrorCode code) {
   switch (code) {
-  case ErrorCode::GenericApiRequirement: return "GenericApiRequirement";
   case ErrorCode::UnexpectedApiCall: return "UnexpectedApiCall";
   case ErrorCode::EmptyProgram: return "EmptyProgram";
   case ErrorCode::DuplicateFunctionParameters: return "DuplicateFunctionParameters";
@@ -84,7 +83,9 @@ std::string codeName(ErrorCode code) {
   case ErrorCode::ReturnTypeSpecifiedMultipleTimes: return "ReturnTypeSpecifiedMultipleTimes";
   case ErrorCode::EntryFunctionNotDefined: return "EntryFunctionNotDefined";
   case ErrorCode::WrongEntryFunctionType: return "WrongEntryFunctionType";
-    
+  case ErrorCode::ExecutionPathWithoutReturn: return "ExecutionPathWithoutReturn";
+  case ErrorCode::UnreachableCodeSection: return "UnreachableCodeSection";
+
   }
   return "<unknown>";
 }
@@ -203,8 +204,9 @@ std::vector<TestCase> buildTests() {
     Assembler c;
     beginProgram(c);
     beginMain(c);
+    c.declareGlobal("g", ts::i8());    
+    c.returnFromFunction();
     c.endFunction();
-    c.declareGlobal("g", ts::i8());
   });
 
   add("duplicate global name", GlobalNameUnavailable, [] {
@@ -258,7 +260,8 @@ std::vector<TestCase> buildTests() {
   add("jump target must exist", LabelDoesNotExist, [] {
     Assembler c;
     beginBasicMain(c);
-    c.jump("missing");
+    c.declareLocal("x", ts::i8());
+    c.jumpIf("x", "missing", "after_jump");
     c.label("after_jump");
     c.returnFromFunction();
     c.endFunction();
@@ -492,6 +495,31 @@ std::vector<TestCase> buildTests() {
     c.program("test", "main").begin();
     c.function("main").param("x", ts::i8()).begin();
     c.returnFromFunction();
+    c.endFunction();
+    c.endProgram();
+  });
+
+  add("execution path without return", ExecutionPathWithoutReturn, [] {
+    Assembler c;
+    c.program("test", "main").begin();
+    c.function("main").begin();
+    c.declareLocal("x", ts::i8());
+    c.jumpIf("x", "true", "false");
+    c.label("true");
+    c.returnFromFunction();
+    c.label("false");
+    c.endFunction();
+    c.endProgram();
+  });
+
+  add("unreachable block", UnreachableCodeSection, [] { 
+    Assembler c;
+    c.program("test", "main").begin();
+    c.function("main").begin();
+    c.declareLocal("x", ts::i8());
+    c.returnFromFunction();
+    c.label("unreachable");
+    c.assign("x", literal::i8(0));
     c.endFunction();
     c.endProgram();
   });

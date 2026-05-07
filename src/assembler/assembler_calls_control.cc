@@ -182,6 +182,8 @@ void Assembler::returnFromFunctionImpl(std::optional<Expression> const &ret, API
   popFrame();
 
   assert(_currentBlock != nullptr);
+  endBlock();
+  beginBlock(generateUniqueBlockName());  
 }
 
 void Assembler::initializeArguments(primitive::DInt const currentFrameSize, primitive::DInt const paramStart,
@@ -474,50 +476,4 @@ void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std
   } loopClose();
 
   popPtr();
-}
-
-void Assembler::checkFunctionFlowValidity(API_CTX) {
-  // TODO: assert that all labels and function calls have been verified before
-  // this function was called, so we can assume that all labels and function names exist.
-  
-  // Check if all blocks of the function can be reached and if all paths
-  // end up at a return
-
-  for (auto &currentFunction: _program.functions) {
-    auto markReachabilityAndCheckReturnPaths = [&](Function::Block &current) -> void {
-      auto recurse = [&](auto&& self, Function::Block &current) -> void {
-	if (current.reached) return;
-	current.reached = true;
-  
-	if (current.children.size() == 0) {
-	  API_REQUIRE(current.returns,
-		      error::ErrorCode::ExecutionPathWithoutReturn,
-		      "function '", currentFunction.name, "' terminates in block labeled '", current.name, "' without a return-statement.");
-	  return;
-	}
-
-	auto getBlock = [&](std::string const &name) -> Function::Block& {
-	  for (auto &b: currentFunction.blocks) {
-	    if (b->name == name) return *b;
-	  }
-	  assert(false && "unknown block name");
-	};
-    
-	for (auto const &child: current.children) {
-	  self(self, getBlock(child.blockName));
-	}
-      };
-
-      recurse(recurse, current);
-    };
-
-    auto &firstBlock = *currentFunction.blocks[0];
-    markReachabilityAndCheckReturnPaths(firstBlock);
-
-    for (auto const &b: currentFunction.blocks) {
-      API_REQUIRE(b->reached || not b->reachable, error::ErrorCode::UnreachableCodeSection,
-		  "function '", currentFunction.name, "' contains an unreachable code section labeled '", b->name, "'.");
-    }
-
-  }
 }

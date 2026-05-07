@@ -535,7 +535,7 @@ namespace acus {
     void constructBuiltinFunctions();    
     void setTargetSequence(primitive::Sequence *seq);
     primitive::Context constructContext() const;    
-    primitive::Sequence compilePrimitives() const;
+    primitive::Sequence compilePrimitives(API_CTX);
     static std::string simplifyBrainfuck(std::string const &bf);
     static primitive::Sequence simplifySequence(primitive::Sequence const &seq);
 
@@ -543,7 +543,7 @@ namespace acus {
     void functionCallTypeCheck(types::FunctionType const *functionType, std::vector<Expression> const &args, API_CTX);
     void deferFunctionCallTypeCheck(std::string const &callee, std::vector<Expression> const &args, API_CTX);
     void deferredFunctionCallTypeChecks();
-    void checkFunctionFlowValidity(API_CTX);
+    void checkFunctionFlowValidity(Function &fn, API_CTX);
 
     
     void labelCheck(std::string const &functionName, std::string const &blockName, API_CTX);

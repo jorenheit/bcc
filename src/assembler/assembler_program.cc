@@ -39,18 +39,16 @@ void Assembler::endProgram(API_FUNC) {
 	      "entry function must be of type 'void()', but is of type '", entryFunctionType->str(), "'."); 
 	      
   
-  // Done compiling the program. Check deferred diagnostics before generating
-  // structures that assume their referenced functions and labels exist.
-  deferredFunctionCallTypeChecks();
-  deferredLabelChecks();
 
   // Generate the metablocks, builtin functions, bootstrap and hatstrap sequences.
   constructBuiltinFunctions();
   constructMetaBlocks();
 
-  // Check all functions for flow validity: each path should terminate in a return statement
-  // and all code-blocks should be reachable.
-  checkFunctionFlowValidity(API_FWD);
+  // Done compiling the program. Check deferred diagnostics before generating
+  // structures that assume their referenced functions and labels exist.
+  deferredFunctionCallTypeChecks();
+  deferredLabelChecks();
+
   
   // To bootstrap the system, we need to do the following:
   // 1. Mark cell 0 using the SeekMarker field to indicate that this is where
@@ -91,11 +89,13 @@ void Assembler::endProgram(API_FUNC) {
   _state.begun = false;
 
   // Store resulting code
-  auto prog = simplifySequence(compilePrimitives());
+  auto prog = simplifySequence(compilePrimitives(API_FWD));
   primitive::Context ctx = constructContext();  
   _txt[_program.name] = prog.dumpText(ctx);
   _bf[_program.name] = simplifyBrainfuck(prog.dumpCode(ctx));
 }
+
+
 
 Assembler::FunctionBuilder Assembler::function(std::string const &name, API_FUNC) {
   API_FUNC_BEGIN();
@@ -127,8 +127,6 @@ void Assembler::beginFunctionImpl(std::string const &name, types::TypeHandle typ
   beginBlock(generateUniqueBlockName());
 }
 
-
-
 void Assembler::endFunction(API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();  
@@ -136,6 +134,7 @@ void Assembler::endFunction(API_FUNC) {
   API_REQUIRE_NO_SCOPE();
 
   endBlock();
+
   _currentFunction = nullptr;
 }
 

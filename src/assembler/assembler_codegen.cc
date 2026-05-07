@@ -87,12 +87,13 @@ primitive::Context Assembler::constructContext() const {
   };
 }
 
-primitive::Sequence Assembler::compilePrimitives() const {
 
+primitive::Sequence Assembler::compilePrimitives(API_CTX) {
   primitive::Sequence result = _program.bootstrap;
-  for (auto const &fn: _program.functions) {
+  for (auto &fn: _program.functions) {
+    checkFunctionFlowValidity(fn, API_FWD);  
     for (auto const &block:  fn.blocks) {
-      result.append(block->code);
+      if (block->reachable) result.append(block->code);
     }
   }
   result.append(_program.hatstrap);
@@ -160,3 +161,48 @@ std::string Assembler::simplifyBrainfuck(std::string const &bf) {
 }
 
 
+void Assembler::checkFunctionFlowValidity(Function &fn, API_CTX) {
+  
+  // Check if all blocks of the function can be reached and if all paths
+  // end up at a return
+
+  auto getBlock = [&fn](std::string const &name) -> Function::Block* {
+    for (auto &b: fn.blocks) {
+      if (b->name == name) return b.get();
+    }
+    return nullptr;
+  };
+  
+  auto markReachabilityAndCheckReturnPaths = [&](Function::Block &b) -> void {
+    auto recurse = [&](auto&& self, Function::Block* b) -> void {
+      if (b == nullptr) return;
+      if (b->reached) return;
+      b->reached = true;
+  
+      if (b->children.size() == 0) {
+	API_REQUIRE(b->returns,
+		    error::ErrorCode::ExecutionPathWithoutReturn,
+		    "function '", fn.name, "' terminates in block labeled '", b->name, "' without a return-statement.");
+	return;
+      }
+
+      for (auto const &child: b->children) {
+	self(self, getBlock(child.blockName));
+      }
+    };
+
+    recurse(recurse, &b);
+  };
+
+  assert(fn.blocks.size() > 0);
+  assert(fn.blocks[0].get() != nullptr);
+  markReachabilityAndCheckReturnPaths(*fn.blocks[0]);
+
+  for (auto const &b: fn.blocks) {
+    if (not b->name.starts_with("__")) { // Skip auto-generated blocks that may be empty
+      // TODO: only error when option is active
+      API_REQUIRE(b->reached || not b->reachable, error::ErrorCode::UnreachableCodeSection,
+		  "function '", fn.name, "' contains an unreachable code section labeled '", b->name, "'.");
+    }
+  }
+}
