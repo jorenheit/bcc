@@ -43,7 +43,7 @@ Assembler::Cop const Assembler::geSpec {
 };
 
 void Assembler::setSlotToBool(Slot const &slot, bool value) {
-  moveTo(slot, MacroCell::Value0); setToValue(1);
+  moveTo(slot, MacroCell::Value0); setToValue(value);
   moveTo(slot, MacroCell::Value1); setToValue(0);
 }
 
@@ -199,8 +199,8 @@ void Assembler::slotLessSlotUnsigned(Slot const &lhs, Slot const &rhs, bool cons
 }
 
 void Assembler::slotLessSlotSigned(Slot const &lhs, Slot const &rhs) {
-  assert(types::isUnsignedInteger(lhs.type));
-  assert(types::isUnsignedInteger(rhs.type));
+  assert(types::isSignedInteger(lhs.type));
+  assert(types::isSignedInteger(rhs.type));
 
   // Both positive -> use unsigned algorithm
   // lhs negative, rhs positive -> return 1

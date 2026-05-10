@@ -991,6 +991,42 @@ tests.push_back(expectOutput("Signed Div/Mod Literal Folding",
                              [] {
 #include "tests/signed_div_mod_literal_folding.cc"
                              }));
+
+tests.push_back(expectOutput("Signed s8 Comparison Slots",
+                             "BABAABABBBAB",
+                             [] {
+#include "tests/signed_s8_comparison_slots.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed s16 Comparison Slots",
+                             "BABAABABBBAB",
+                             [] {
+#include "tests/signed_s16_comparison_slots.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Comparison Consts",
+                             "BABABABABABA",
+                             [] {
+#include "tests/signed_comparison_consts.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Comparison Widening",
+                             "BABAABBABBAB",
+                             [] {
+#include "tests/signed_comparison_widening.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Comparison Assign",
+                             "BABABBABBABB",
+                             [] {
+#include "tests/signed_comparison_assign.cc"
+                             }));
+
+tests.push_back(expectOutput("Signed Comparison Literal Folding",
+                             "BABABABABBAB",
+                             [] {
+#include "tests/signed_comparison_literal_folding.cc"
+                             }));
  
  tests.push_back(expectOutput("Integer Addition: 8 bit",
 			      "ADG", []() {
