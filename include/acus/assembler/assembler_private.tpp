@@ -1,54 +1,4 @@
-#pragma once
-
-template <auto FetchOrPut>
-void Assembler::syncGlobal(Slot const &localSlot, bool onlyAliasedGlobals) {
-  assert(localSlot.kind == Slot::GlobalReference);
-  
-  std::string globalName = localSlot.name.substr(std::string("__g_").size());
-  assert(_program.isGlobal(globalName));
-  if (onlyAliasedGlobals && not _aliasedGlobals.contains(globalName)) return;
-  
-  Slot const &globalSlot = _program.globalSlot(globalName);
-  assert(globalSlot.size() == localSlot.size());
-
-  (this->*FetchOrPut)(globalSlot, localSlot);
-}
-
-template <auto FetchOrPut>
-void Assembler::syncGlobals(bool onlyAliasedGlobals) {
-  auto const &locals = _currentFunction->frame.locals;
-  for (auto const &localSlot: locals) {
-    if (localSlot.kind != Slot::GlobalReference) continue;
-    syncGlobal<FetchOrPut>(localSlot, onlyAliasedGlobals);
-  }  
-}
-
-inline void Assembler::syncGlobalToLocal(bool onlyAliasedGlobals) {
-  syncGlobals<&Assembler::fetchGlobal>(onlyAliasedGlobals);
-}
-
-inline void Assembler::syncLocalToGlobal(bool onlyAliasedGlobals) {
-  syncGlobals<&Assembler::putGlobal>(onlyAliasedGlobals);
-}
-
-
-inline std::string Assembler::defaultOpenTag() {
-  static int count = 0;
-  return std::string("open_loop_") + std::to_string(count++);
-} 
-
-inline std::string Assembler::defaultCloseTag() {
-  static int count = 0;
-  return std::string("close_loop_") + std::to_string(count++);
-}
-
-inline int Assembler::getFieldIndex(int offset, int field) {
-  return offset * MacroCell::FieldCount + field;
-}
-
-inline int Assembler::getFieldIndex(Cell cell) {
-  return getFieldIndex(cell.offset, cell.field);
-}
+namespace acus {
 
 template <typename Primitive, typename ... Args>
 void Assembler::emit(Args&& ... args) {
@@ -60,3 +10,34 @@ template <typename... Args> requires ((std::convertible_to<Args, Cell>) && ...)
 auto Assembler::getFieldIndices(Args... args) {
   return std::make_tuple(getFieldIndex(static_cast<Cell>(args))...);
 }
+
+template <typename TrueBranch, typename FalseBranch>
+void Assembler::branchOnSignBit(Slot const &slot, Cell const &flagCell, TrueBranch&& trueBranch, FalseBranch&& falseBranch) {
+
+  pushPtr();
+  moveTo(slot, slot.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);    
+  signBitConstructive(flagCell,
+		      Temps<4>::select(slot, MacroCell::Scratch0,
+				       slot, MacroCell::Scratch1,
+				       slot, MacroCell::Payload0,
+				       slot, MacroCell::Payload1));
+  moveTo(slot, MacroCell::Scratch0);
+  setToValue(1);
+  moveTo(flagCell);
+  loopOpen(); {
+    moveTo(slot, MacroCell::Scratch0); zeroCell();
+    moveTo(flagCell); zeroCell();
+    trueBranch();
+    moveTo(flagCell);
+  } loopClose();
+
+  moveTo(slot, MacroCell::Scratch0);
+  loopOpen(); {
+    moveTo(slot, MacroCell::Scratch0);  zeroCell();
+    falseBranch();
+    moveTo(slot, MacroCell::Scratch0);
+  } loopClose();
+  popPtr();
+}
+
+} // namespace acus

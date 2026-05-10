@@ -12,9 +12,11 @@
 #include <vector>
 
 #include "acus/assembler/assembler.h"
+#include "acus/assembler/assembler_private.tpp"
 #include "acus/ir/primitive.h"
 
 #define API_SOURCE
 #include "acus/api/api.h"
+
 
 using namespace acus;

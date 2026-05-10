@@ -11,7 +11,7 @@ namespace acus {
   };
 
   enum class UnOp {
-    Not, Bool, Neg, Abs, Sign
+    Not, Bool, Neg, Abs, SignBit
   };
   
   std::string binOpStr(BinOp op);

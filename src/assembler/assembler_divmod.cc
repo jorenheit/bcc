@@ -97,7 +97,7 @@ void Assembler::divSlotByConstSigned(Slot const &lhs, int denom) {
   } loopClose();
 
   
-  divSlotByConstUnsigned(unsignedSlotView(lhs), std::abs(denom));
+  divSlotByConstUnsigned(lhs.unsignedView(), std::abs(denom));
 
   moveTo(lhsNegative);
   if (denom < 0) {
@@ -224,7 +224,7 @@ void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
   } loopClose();
 
   // Both operands are now positive and the resultNegative cell holds the sign bit for the result.  
-  divSlotBySlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+  divSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
 
   
   // Correct the sign
@@ -310,7 +310,7 @@ void Assembler::modSlotByConstSigned(Slot const &lhs, int denom) {
   } loopClose();
   
   // lhs is now positive and the resulting sign has been stored -> use unsigned version
-  modSlotByConstUnsigned(unsignedSlotView(lhs), std::abs(denom));
+  modSlotByConstUnsigned(lhs.unsignedView(), std::abs(denom));
 
   // Restore sign
   moveTo(resultNegative);
@@ -416,7 +416,7 @@ void Assembler::modSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
     absSlot(rhsCopy);
   }
 
-  modSlotBySlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+  modSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
   
   moveTo(resultNegative);
   loopOpen(); {

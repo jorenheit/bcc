@@ -42,6 +42,11 @@ Assembler::Cop const Assembler::geSpec {
   .applyWithConst = &Assembler::slotGreaterEqualConst
 };
 
+void Assembler::setSlotToBool(Slot const &slot, bool value) {
+  moveTo(slot, MacroCell::Value0); setToValue(1);
+  moveTo(slot, MacroCell::Value1); setToValue(0);
+}
+
 void Assembler::slotEqualConst(Slot const &lhs, int val) {
 
   pushPtr();
@@ -103,46 +108,6 @@ void Assembler::slotLessConst(Slot const &lhs, int val) {
   std::unreachable();
 }
 
-template <typename TrueBranch, typename FalseBranch>
-void Assembler::branchOnSignBit(Slot const &slot, Cell const &flagCell, TrueBranch&& trueBranch, FalseBranch&& falseBranch) {
-
-  pushPtr();
-  moveTo(slot, slot.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);    
-  signBitConstructive(flagCell,
-		      Temps<4>::select(slot, MacroCell::Scratch0,
-				       slot, MacroCell::Scratch1,
-				       slot, MacroCell::Payload0,
-				       slot, MacroCell::Payload1));
-  moveTo(slot, MacroCell::Scratch0);
-  setToValue(1);
-  moveTo(flagCell);
-  loopOpen(); {
-    moveTo(slot, MacroCell::Scratch0); zeroCell();
-    moveTo(flagCell); zeroCell();
-    trueBranch();
-    moveTo(flagCell);
-  } loopClose();
-
-  moveTo(slot, MacroCell::Scratch0);
-  loopOpen(); {
-    moveTo(slot, MacroCell::Scratch0);  zeroCell();
-    falseBranch();
-    moveTo(slot, MacroCell::Scratch0);
-  } loopClose();
-  popPtr();
-}
-
-void Assembler::setSlotToBool(Slot const &slot, bool value) {
-  moveTo(slot, MacroCell::Value0); setToValue(1);
-  moveTo(slot, MacroCell::Value1); setToValue(0);
-}
-
-Slot Assembler::unsignedSlotView(Slot const &slot) {
-  Slot view = slot;
-  view.type = slot.type->usesValue1() ? ts::i16() : ts::i8();
-  return view;
-}
-
 void Assembler::slotLessConstUnsigned(Slot const &lhs, int val) {
   assert(types::isUnsignedInteger(lhs.type));
 
@@ -173,7 +138,7 @@ void Assembler::slotLessConstSigned(Slot const &lhs, int val) {
     // If no sign bit, do normal unsigned comparison
     branchOnSignBit(lhs, Cell{lhs, MacroCell::Flag},
 		    [&] /* lhs  < 0 */ { setSlotToBool(lhs, true); },
-		    [&] /* lhs >= 0 */ { slotLessConstUnsigned(unsignedSlotView(lhs), val); });
+		    [&] /* lhs >= 0 */ { slotLessConstUnsigned(lhs.unsignedView(), val); });
 		    
   }
   else if (val < 0) {
@@ -183,7 +148,7 @@ void Assembler::slotLessConstSigned(Slot const &lhs, int val) {
     branchOnSignBit(lhs, Cell{lhs, MacroCell::Flag},
 		    [&] /* lhs < 0 */ {
 		      negateSlot(lhs);
-		      slotGreaterConstUnsigned(unsignedSlotView(lhs), std::abs(val));
+		      slotGreaterConstUnsigned(lhs.unsignedView(), std::abs(val));
 		    },
 		    [&] /* lhs >= 0 */ {
 		      setSlotToBool(lhs, false);
@@ -251,7 +216,7 @@ void Assembler::slotLessSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      Slot const rhsCopy = getTemp(rhs.type);
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
-				      slotGreaterSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+				      slotGreaterSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      // lhs negative but rhs is not, so lhs is always less
@@ -266,7 +231,7 @@ void Assembler::slotLessSlotSigned(Slot const &lhs, Slot const &rhs) {
 				    },
 				    [&] /* rhs >= 0 */ {
 				      // Both are positive, so we can use the unsigned version
-				      slotLessSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhs));
+				      slotLessSlotUnsigned(lhs.unsignedView(), rhs.unsignedView());
 				    });
 		  }); 
 }
@@ -315,7 +280,7 @@ void Assembler::slotLessEqualConstSigned(Slot const &lhs, int val) {
     
     branchOnSignBit(lhs, Cell{lhs, MacroCell::Flag},
 		    [&] /* lhs  < 0 */ { setSlotToBool(lhs, true); },
-		    [&] /* lhs >= 0 */ { slotLessEqualConstUnsigned(unsignedSlotView(lhs), val); });
+		    [&] /* lhs >= 0 */ { slotLessEqualConstUnsigned(lhs.unsignedView(), val); });
   }
 
   if (val < 0) {
@@ -324,7 +289,7 @@ void Assembler::slotLessEqualConstSigned(Slot const &lhs, int val) {
     branchOnSignBit(lhs, Cell{lhs, MacroCell::Flag},
 		    [&] /* lhs < 0 */ {
 		      negateSlot(lhs);
-		      slotGreaterEqualConstUnsigned(unsignedSlotView(lhs), std::abs(val));
+		      slotGreaterEqualConstUnsigned(lhs.unsignedView(), std::abs(val));
 		    },
 		    [&] /* lhs >= 0 */ {
 		      setSlotToBool(lhs, false);
@@ -392,7 +357,7 @@ void Assembler::slotLessEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      Slot const rhsCopy = getTemp(rhs.type);
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
-				      slotGreaterEqualSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+				      slotGreaterEqualSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      setSlotToBool(lhs, true);
@@ -405,7 +370,7 @@ void Assembler::slotLessEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
 				    },
 				    [&] /* rhs >= 0 */ {
 				      // Both are positive, so we can use the unsigned version
-				      slotLessEqualSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhs));
+				      slotLessEqualSlotUnsigned(lhs.unsignedView(), rhs.unsignedView());
 				    });
 		  }); 
 }
@@ -512,7 +477,7 @@ void Assembler::slotGreaterSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      Slot const rhsCopy = getTemp(rhs.type);
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
-				      slotLessSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+				      slotLessSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      setSlotToBool(lhs, false);
@@ -525,7 +490,7 @@ void Assembler::slotGreaterSlotSigned(Slot const &lhs, Slot const &rhs) {
 				    },
 				    [&] /* rhs >= 0 */ {
 				      // Both are positive, so we can use the unsigned version
-				      slotGreaterSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhs));
+				      slotGreaterSlotUnsigned(lhs.unsignedView(), rhs.unsignedView());
 				    });
 		  }); 
 }
@@ -631,7 +596,7 @@ void Assembler::slotGreaterEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      Slot const rhsCopy = getTemp(rhs.type);
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
-				      slotLessEqualSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+				      slotLessEqualSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      setSlotToBool(lhs, false);
@@ -644,7 +609,7 @@ void Assembler::slotGreaterEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
 				    },
 				    [&] /* rhs >= 0 */ {
 				      // Both are positive, so we can use the unsigned version
-				      slotGreaterEqualSlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhs));
+				      slotGreaterEqualSlotUnsigned(lhs.unsignedView(), rhs.unsignedView());
 				    });
 		  });   
 }

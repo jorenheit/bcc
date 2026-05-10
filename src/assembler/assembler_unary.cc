@@ -1,177 +1,112 @@
 #include "assembler.ih"
 
-// TODO: factor common structure
+Assembler::Bop const Assembler::lnotSpec {
+  .op = UnOp::Not,
+  .fold = [](int x) -> bool { return !x; },
+  .apply = &Assembler::notSlot
+};
 
-Expression Assembler::lnotImpl(Expression const &obj, API_CTX) {
+Assembler::Bop const Assembler::lboolSpec {
+  .op = UnOp::Bool,
+  .fold = [](int x) -> bool { return !!x; },
+  .apply = &Assembler::boolSlot
+};
+
+Assembler::Bop const Assembler::signBitSpec {
+  .op = UnOp::SignBit,
+  .fold = [](int x) -> bool { return x < 0; },
+  .apply = &Assembler::signBitSlot
+};
+
+Assembler::Iop const Assembler::negateSpec {
+  .op = UnOp::Neg,
+  .fold = [](int x) -> int { return -x; },
+  .apply = &Assembler::negateSlot
+};
+
+Assembler::Iop const Assembler::absSpec {
+  .op = UnOp::Abs,
+  .fold = [](int x) -> int { return std::abs(x); },
+  .apply = &Assembler::absSlot
+};
+
+template <typename SpecType>
+Expression Assembler::unOpAssignImpl(Expression const &obj, SpecType const &spec, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE_IS_INTEGER(obj.type());
+  assert(not obj.isLiteral());
+
+  Slot const objSlot = obj.slot()->materialize(*this);
+  (this->*spec.apply)(objSlot);
+  if (not obj.slot()->direct()) {
+    obj.slot()->write(*this, objSlot);
+  }
+  return obj;
+}
+
+
+namespace {
+  auto returnType(types::TypeHandle slotType, bool(*)(int)) { return ts::i8(); }
+  auto returnType(types::TypeHandle slotType, int(*)(int))  { return slotType; }
+
+  auto folded(int val, types::TypeHandle, bool(*f)(int))  {
+    return literal::i8(f(val));
+  }
+  
+  auto folded(int val, types::TypeHandle type, int(*f)(int))  {
+    if (types::isI8(type)) return literal::i8(f(val));
+    if (types::isS8(type)) return literal::s8(f(val));
+    if (types::isI16(type)) return literal::i16(f(val));
+    if (types::isS16(type)) return literal::s16(f(val));
+    std::unreachable();
+  }
+}
+
+
+template <typename SpecType>
+Expression Assembler::unOpImpl(Expression const &obj, SpecType const &spec, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_IS_INTEGER(obj.type());
 
   if (obj.isLiteral()) {
     int const val = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
-    return Expression { literal::i8(!val) };
+    return Expression { folded(val, obj.type(), spec.fold) };
   }
 
   // Apply to temp copy
   Slot result = getTemp(obj.type());
   assignSlot(result, obj.slot()->materialize(*this));
-  notSlot(result);
-  result.type = ts::i8();
-  return Expression { result };
+  unOpAssignImpl(Expression{result}, spec, API_FWD);
+  result.type = returnType(result.type, spec.fold);
+  return Expression { result };  
 }
 
-Expression Assembler::lnotAssignImpl(Expression const &obj, API_CTX) {
+// Explicit instantiations for Mop, Cop and Lop
+template Expression Assembler::unOpImpl<Assembler::Bop>(Expression const&, Assembler::Bop const&, API_CTX);
+template Expression Assembler::unOpImpl<Assembler::Iop>(Expression const&, Assembler::Iop const&, API_CTX);
+
+template Expression Assembler::unOpAssignImpl<Assembler::Bop>(Expression const&, Assembler::Bop const&, API_CTX);
+template Expression Assembler::unOpAssignImpl<Assembler::Iop>(Expression const&, Assembler::Iop const&, API_CTX);
+
+
+Expression Assembler::castImpl(Expression const &obj, types::TypeHandle toType, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj.type());
+  auto opResult = types::rules::castResult(obj.type(), toType);
+  API_REQUIRE(opResult, error::ErrorCode::IncompatibleOperands, opResult.errorMsg);
   assert(not obj.isLiteral());
 
-  Slot const objSlot = obj.slot()->materialize(*this);
-  notSlot(objSlot);
-  if (not obj.slot()->direct()) {
-    obj.slot()->write(*this, objSlot);
-  }
-  return obj;
-}
-
-Expression Assembler::lboolImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj.type());
-
-  if (obj.isLiteral()) {
-    int const val = literal::cast<types::IntegerType>(obj.literal())->encodedValue();
-    return Expression { literal::i8(!!val) };
-  }
-
-  // Apply to temp copy
-  Slot result = getTemp(obj.type());
-  assignSlot(result, obj.slot()->materialize(*this));
-  boolSlot(result);
-  result.type = ts::i8();
-  return Expression { result };
-}
-
-Expression Assembler::lboolAssignImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj.type());
-  assert(not obj.isLiteral());
-
-  Slot const objSlot = obj.slot()->materialize(*this);
-  boolSlot(objSlot);
-  if (not obj.slot()->direct()) {
-    obj.slot()->write(*this, objSlot);
-  }
-  return obj;
-}
-
-Expression Assembler::negateImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
-
-  if (obj.isLiteral()) {
-    int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
-    return obj.type()->usesValue1()
-      ? Expression { literal::s16(-val) }
-      : Expression { literal::s8(-val) };
-  }
-
-  // Apply to temp copy
-  Slot result = getTemp(obj.type());
-  assignSlot(result, obj.slot()->materialize(*this));
-  negateSlot(result);
-  return Expression { result };
+  
+  Slot objSlot = obj.slot()->materialize(*this);
+  objSlot.type = toType;
+  return Expression{objSlot};
 }
 
 
-Expression Assembler::negateAssignImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
-  assert(not obj.isLiteral());
 
-  Slot const objSlot = obj.slot()->materialize(*this);
-  negateSlot(objSlot);
-  if (not obj.slot()->direct()) {
-    obj.slot()->write(*this, objSlot);
-  }
-  return obj;
-}
-
-
-Expression Assembler::absImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj.type());
-
-  if (obj.isLiteral()) {
-    if (types::isUnsignedInteger(obj.type())) return obj;
-    int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
-    return obj.type()->usesValue1()
-      ? Expression { literal::s16(val < 0 ? -val : val) }
-      : Expression { literal::s8(val < 0 ? -val : val) };
-  } 
-
-  // Apply to temp copy
-  Slot result = getTemp(obj.type());
-  assignSlot(result, obj.slot()->materialize(*this));
-  absSlot(result);
-  return Expression { result };
-}
-
-
-Expression Assembler::absAssignImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_INTEGER(obj.type());
-  assert(not obj.isLiteral());
-
-  Slot const objSlot = obj.slot()->materialize(*this);
-  absSlot(objSlot);
-  if (not obj.slot()->direct()) {
-    obj.slot()->write(*this, objSlot);
-  }
-  return obj;
-}
-
-
-Expression Assembler::signBitImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
-
-  if (obj.isLiteral()) {
-    int const val = literal::cast<types::IntegerType>(obj.literal())->semanticValue();
-    return obj.type()->usesValue1()
-      ? Expression { literal::s16(val < 0) }
-      : Expression { literal::s8(val < 0) };
-  } 
-
-  // Apply to temp copy
-  Slot result = getTemp(obj.type());
-  assignSlot(result, obj.slot()->materialize(*this));
-  signBitSlot(result);
-  return Expression { result };
-}
-
-
-Expression Assembler::signBitAssignImpl(Expression const &obj, API_CTX) {
-  API_CHECK_EXPECTED();
-  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
-  API_REQUIRE_IS_SIGNED_INTEGER(obj.type());
-  assert(not obj.isLiteral());
-
-  Slot const objSlot = obj.slot()->materialize(*this);
-  signBitSlot(objSlot);
-  if (not obj.slot()->direct()) {
-    obj.slot()->write(*this, objSlot);
-  }
-  return obj;
-}
-
-
+// Unary algorithm implementations
 
 void Assembler::notSlot(Slot const &rhs) {
   assert(rhs.size() == 1);
@@ -286,4 +221,114 @@ void Assembler::signBitConstructive(Cell result, Temps<4> tmp) {
   popPtr();
 }
 
-// TODO: move other unary algorithms here
+
+void Assembler::boolDestructive(Temps<1> tmp) {
+  auto [current, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
+  emit<primitive::Boolean>(current, tmp0);
+}
+
+void Assembler::bool16Destructive(Cell high, Temps<1> tmp) {
+  orDestructive(high, tmp.select<0>());
+}
+
+void Assembler::boolConstructive(Cell result, Temps<1> tmp) {
+  pushPtr();
+  copyField(result, tmp);
+  moveTo(result);
+  boolDestructive(tmp);
+  popPtr();
+}
+
+void Assembler::bool16Constructive(Cell high, Cell result, Temps<2> tmp) {
+  Cell const resultHigh = tmp.get<0>();
+  
+  pushPtr();
+  copyField(result, tmp.select<1>());
+  moveTo(high);
+  copyField(resultHigh, tmp.select<1>());
+  moveTo(result);
+  bool16Destructive(resultHigh, tmp.select<1>());
+  popPtr();  
+}
+
+
+void Assembler::notDestructive(Temps<1> tmp) {
+  auto [cur, tmp0] = getFieldIndices(_dp.current(), tmp.get<0>());
+  emit<primitive::Not>(cur, tmp0);
+}
+
+void Assembler::not16Destructive(Cell high, Temps<1> tmp) {
+  orDestructive(high, tmp.select<0>());
+  notDestructive(tmp.select<0>());
+}
+
+void Assembler::notConstructive(Cell result, Temps<1> tmp) {
+  pushPtr();
+  copyField(result, tmp);
+  moveTo(result);
+  notDestructive(tmp);
+  popPtr();
+}
+
+void Assembler::not16Constructive(Cell high, Cell result, Temps<2> tmp) {
+  Cell const resultHigh = tmp.get<0>();
+  
+  pushPtr();
+  copyField(result, tmp.select<1>());
+  moveTo(high);
+  copyField(resultHigh, tmp.select<1>());
+  moveTo(result);
+  not16Destructive(resultHigh, tmp.select<1>());
+  popPtr();  
+}
+
+void Assembler::negateDestructive(Temps<2> tmp) {
+  Cell const copy = tmp.get<0>();
+
+  pushPtr();
+  copyField(copy, tmp.select<1>());
+  zeroCell();
+  subDestructive(copy);
+  popPtr();
+}
+
+
+void Assembler::negateConstructive(Cell result, Temps<2> tmp) {
+  pushPtr();
+  copyField(result, tmp.select<0>());
+  moveTo(result);
+  negateDestructive(tmp);
+  popPtr();
+}
+
+void Assembler::negate16Destructive(Cell high, Temps<6> tmp) {
+  Cell const currentLow = _dp.current();
+  Cell const currentHigh = high;
+  Cell const copyLow = tmp.get<0>();
+  Cell const copyHigh = tmp.get<1>();
+
+  pushPtr();
+  moveTo(currentLow);
+  copyField(copyLow, tmp.select<2>());
+  zeroCell();
+  moveTo(currentHigh);
+  copyField(copyHigh, tmp.select<2>());
+  zeroCell();
+
+  moveTo(currentLow);
+  sub16Destructive(currentHigh, copyLow, copyHigh, tmp.select<2, 3, 4, 5>());
+  popPtr();
+}
+
+void Assembler::negate16Constructive(Cell high, Cell result, Temps<7> tmp) {
+  Cell const resultHigh = tmp.get<0>();
+  
+  pushPtr();
+  copyField(result, tmp.select<1>());
+  moveTo(high);
+  copyField(resultHigh, tmp.select<1>());
+  moveTo(result);
+  negate16Destructive(resultHigh, tmp.select<1, 2, 3, 4, 5, 6>());
+  popPtr();  
+}
+

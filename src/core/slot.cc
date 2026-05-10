@@ -1,5 +1,5 @@
 #include "acus/core/slot.h"
-#include "acus/types/types.h"
+#include "acus/types/typesystem.h"
 
 using namespace acus;
 
@@ -25,4 +25,11 @@ Slot Slot::invalid() {
     .offset = 0,
     .scope = nullptr
   };
+}
+
+Slot Slot::unsignedView() const {
+  assert(types::isInteger(type));
+  Slot view = *this;
+  view.type = type->usesValue1() ? ts::i16() : ts::i8();
+  return view;
 }

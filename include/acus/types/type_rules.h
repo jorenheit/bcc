@@ -14,6 +14,6 @@ namespace acus::types::rules {
 
   OpResult binOpResult(BinOp op, TypeHandle lhs, TypeHandle rhs);
   OpResult assignResult(TypeHandle dst, TypeHandle src);
-
+  OpResult castResult(TypeHandle from, TypeHandle to);
   
 } // namespace acus::types::rules

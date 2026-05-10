@@ -61,12 +61,12 @@ c.function("main").begin(); {
 
   // signBit(-1) = 1; 1 + 'P' = 'Q'
   c.assign("x", literal::s16(-1));
-  c.assign("f", c.signBit("x"));
+  c.assign("f", c.cast(c.signBit("x"), ts::s16()));
   c.writeOut(c.add("f", literal::s16(CAT('P', 'Q')))); // QQ
 
   // signBit(0) = 0; 0 + 'R' = 'R'
   c.assign("x", literal::s16(0));
-  c.assign("f", c.signBit("x"));
+  c.assign("f", c.cast(c.signBit("x"), ts::s16()));
   c.writeOut(c.add("f", literal::s16(CAT('R', 'R')))); // RR
 
   // signBitAssign(-32768): x becomes 1; CAT('R', 'T') + 1 = CAT('S', 'T') -> SS

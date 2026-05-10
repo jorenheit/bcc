@@ -288,3 +288,9 @@ OpResult types::rules::assignResult(TypeHandle dest, TypeHandle src) {
   default: std::unreachable();
   }
 }
+
+OpResult types::rules::castResult(TypeHandle from, TypeHandle to) {
+  if (!types::isInteger(from)) return reject("source type must be an integer type, but got '" + from->str() + "'.");
+  if (!types::isInteger(to)) return reject("target type must be an integer type, but got '" + to->str() + "'.");
+  return accept(to);
+}

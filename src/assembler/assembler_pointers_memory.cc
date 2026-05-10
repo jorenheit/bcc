@@ -57,7 +57,7 @@ Slot Assembler::addressOfSlot(Slot const &slot) {
 void Assembler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
   assert(types::isArray(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
-  assert(elementSlot.type == cast<types::ArrayLike>(arrSlot.type)->elementType());
+  assert(elementSlot.type == types::cast<types::ArrayLike>(arrSlot.type)->elementType());
   types::TypeHandle elementType = elementSlot.type;
   
   pushPtr();
@@ -301,14 +301,10 @@ Expression Assembler::assignImpl(Expression const &lhs, Expression const &rhs, A
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_ASSIGNABLE(lhs.type(), rhs.type());
-
-  if (rhs.hasSlot()) {
-    lhs.slot()->write(*this, rhs.slot());
-  }
-  else {
-    lhs.slot()->write(*this, rhs.literal());
-  }
-
+  assert(not lhs.isLiteral());
+  
+  if (rhs.hasSlot()) lhs.slot()->write(*this, rhs.slot());
+  else               lhs.slot()->write(*this, rhs.literal());
   return lhs;
 }
 

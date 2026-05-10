@@ -30,6 +30,7 @@ struct Slot {
   operator int() const { return offset; }
 
   Slot sub(types::TypeHandle subType, int subOffset) const;
+  Slot unsignedView() const;
 
   bool valid() const;
   static Slot invalid();

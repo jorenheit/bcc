@@ -47,7 +47,6 @@ namespace acus {
     void endFunction(API_FUNC);
     void endScope(API_FUNC);
 
-
     void referGlobals(std::vector<std::string> const &names, API_FUNC);
     // TODO: these should return Expression
     Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
@@ -63,6 +62,9 @@ namespace acus {
     Expression expr(auto const &obj, API_FUNC);
     Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
 
+    Expression cast(auto const &lhs, types::TypeHandle toType, API_FUNC);
+    Expression castAssign(auto const &lhs, types::TypeHandle toType, API_FUNC);
+    
     Expression structField(auto const &obj, std::string const &field, API_FUNC);
     Expression structField(auto const &obj, int fieldIndex, API_FUNC);
     Expression dereferencePointer(auto const &ptr, API_FUNC);
@@ -230,8 +232,6 @@ namespace acus {
     void beginFunctionImpl(std::string const &name, types::TypeHandle type, std::vector<std::string> const &params, API_CTX);
     void beginScopeImpl(API_CTX);
 
-
-
     types::TypeHandle defineStructImpl(std::string const& name, std::vector<types::NameTypePair> const &fields, API_CTX);
 
     void callFunctionImpl(std::string const &functionName, std::optional<Expression> const &returnSlot,
@@ -247,7 +247,8 @@ namespace acus {
 
     Expression addressOfImpl(Expression const &obj, API_CTX);
     Expression assignImpl(Expression const &lhs, Expression const &rhs, API_CTX);
-  
+    Expression castImpl(Expression const &obj, types::TypeHandle toType, API_CTX);
+    
     void jumpIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX); 
@@ -255,18 +256,27 @@ namespace acus {
     void printSignedImpl(Expression const &val);
   
     // Unrary operators implementation
-    Expression lnotImpl(Expression const &obj, API_CTX);
-    Expression lnotAssignImpl(Expression const &obj, API_CTX);
-    Expression lboolImpl(Expression const &obj, API_CTX);
-    Expression lboolAssignImpl(Expression const &obj, API_CTX);
-    Expression negateImpl(Expression const &obj, API_CTX);
-    Expression negateAssignImpl(Expression const &obj, API_CTX);
-    Expression absImpl(Expression const &obj, API_CTX);
-    Expression absAssignImpl(Expression const &obj, API_CTX);
-    Expression signBitImpl(Expression const &obj, API_CTX);
-    Expression signBitAssignImpl(Expression const &obj, API_CTX);
+    template <typename Fold>
+    struct UnOpSpec {
+      using Apply = void(Assembler::*)(Slot const &);
+      UnOp op;
+      Fold *fold;
+      Apply apply;
+    };
+
+    using Bop = UnOpSpec<bool(int)>;
+    using Iop = UnOpSpec<int(int)>;
+
+    static const Bop lnotSpec, lboolSpec, signBitSpec;
+    static const Iop negateSpec, absSpec;
+
+    template <typename SpecType>
+    Expression unOpAssignImpl(Expression const &obj, SpecType const &spec, API_CTX);
+
+    template <typename SpecType>  
+    Expression unOpImpl(Expression const &obj, SpecType const &spec, API_CTX);
     
-    // Binary operators implementation
+    // binary operators implementation
     template <typename Fold>
     struct BinOpSpec {
       using ApplyWithSlot   = void(Assembler::*)(Slot const &, Slot const &);
@@ -296,7 +306,6 @@ namespace acus {
     template <typename TrueBranch, typename FalseBranch>
     void branchOnSignBit(Slot const &slot, Cell const &flagCell, TrueBranch&& trueBranch, FalseBranch&& falseBranch);
     void setSlotToBool(Slot const &slot, bool val);
-    Slot unsignedSlotView(Slot const &slot);
     
     Slot local(std::string const& name, bool globalReference = false) const;
     void assignSlot(Slot const &dest, Slot const &src);
@@ -596,14 +605,14 @@ namespace acus {
     template <typename Primitive, typename ... Args>
     void emit(Args&& ... args);
 
-    inline int getFieldIndex(int offset, int field);
-    inline int getFieldIndex(Cell cell);
+    int getFieldIndex(int offset, int field);
+    int getFieldIndex(Cell cell);
   
     template <typename... Args> requires ((std::convertible_to<Args, Cell>) && ...)
     auto getFieldIndices(Args... args);
 
-    static inline std::string defaultOpenTag();
-    static inline std::string defaultCloseTag();  
+    static std::string defaultOpenTag();
+    static std::string defaultCloseTag();  
   };
 
 
@@ -672,7 +681,6 @@ namespace acus {
   }; // FunctionCallBuilder
 
 #include "acus/assembler/assembler_builders.tpp"
-#include "acus/assembler/assembler_private.tpp"
 #include "acus/assembler/assembler_public.tpp"
 
 } // namespace acus

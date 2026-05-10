@@ -27,11 +27,11 @@ std::string acus::binOpStr(BinOp op) {
 
 std::string acus::unOpStr(UnOp op) {
   switch (op) {
-  case UnOp::Not:  return "!";
-  case UnOp::Bool: return "!!";
-  case UnOp::Neg:  return "-";
-  case UnOp::Abs:  return "abs ";
-  case UnOp::Sign: return "sgn ";
+  case UnOp::Not:     return "!";
+  case UnOp::Bool:    return "!!";
+  case UnOp::Neg:     return "-";
+  case UnOp::Abs:     return "abs ";
+  case UnOp::SignBit: return "sgn ";
   }
   std::unreachable();
 }

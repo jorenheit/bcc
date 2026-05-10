@@ -1,5 +1,23 @@
 #include "assembler.ih"
 
+std::string Assembler::defaultOpenTag() {
+  static int count = 0;
+  return std::string("open_loop_") + std::to_string(count++);
+} 
+
+std::string Assembler::defaultCloseTag() {
+  static int count = 0;
+  return std::string("close_loop_") + std::to_string(count++);
+}
+
+int Assembler::getFieldIndex(int offset, int field) {
+  return offset * MacroCell::FieldCount + field;
+}
+
+int Assembler::getFieldIndex(Cell cell) {
+  return getFieldIndex(cell.offset, cell.field);
+}
+
 void Assembler::setTargetSequence(primitive::Sequence *seq) {
   _currentSeq = seq;
 }

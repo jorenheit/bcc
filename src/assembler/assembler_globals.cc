@@ -1,5 +1,36 @@
 #include "assembler.ih"
 
+template <auto FetchOrPut>
+void Assembler::syncGlobal(Slot const &localSlot, bool onlyAliasedGlobals) {
+  assert(localSlot.kind == Slot::GlobalReference);
+  
+  std::string globalName = localSlot.name.substr(std::string("__g_").size());
+  assert(_program.isGlobal(globalName));
+  if (onlyAliasedGlobals && not _aliasedGlobals.contains(globalName)) return;
+  
+  Slot const &globalSlot = _program.globalSlot(globalName);
+  assert(globalSlot.size() == localSlot.size());
+
+  (this->*FetchOrPut)(globalSlot, localSlot);
+}
+
+template <auto FetchOrPut>
+void Assembler::syncGlobals(bool onlyAliasedGlobals) {
+  auto const &locals = _currentFunction->frame.locals;
+  for (auto const &localSlot: locals) {
+    if (localSlot.kind != Slot::GlobalReference) continue;
+    syncGlobal<FetchOrPut>(localSlot, onlyAliasedGlobals);
+  }  
+}
+
+void Assembler::syncGlobalToLocal(bool onlyAliasedGlobals) {
+  syncGlobals<&Assembler::fetchGlobal>(onlyAliasedGlobals);
+}
+
+void Assembler::syncLocalToGlobal(bool onlyAliasedGlobals) {
+  syncGlobals<&Assembler::putGlobal>(onlyAliasedGlobals);
+}
+
 void Assembler::fetchGlobal(Slot const &globalSlot, Slot const &localSlot) {
   assert(globalSlot.type == localSlot.type);
   assert(globalSlot.size() == localSlot.size());

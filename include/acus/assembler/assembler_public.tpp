@@ -64,78 +64,60 @@ Expression Assembler::expr(auto const &obj, API_FUNC_SOURCE) {
   return rValue(obj, API_FWD);
 }
 
+Expression Assembler::cast(auto const &obj, types::TypeHandle toType, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  return castImpl(lValue(obj, API_FWD), toType, API_FWD);
+}
+
 // Unary operations
-Expression Assembler::unOp(UnOp op, auto const &rhs, API_FUNC_SOURCE) {
+Expression Assembler::unOp(UnOp op, auto const &obj, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   switch (op) {
-  case UnOp::Not:  return lnot(rhs, API_FWD);
-  case UnOp::Bool: return lbool(rhs, API_FWD);
+  case UnOp::Not:	return lnot(obj, API_FWD);
+  case UnOp::Bool:	return lbool(obj, API_FWD);
+  case UnOp::Neg:	return negate(obj, API_FWD);
+  case UnOp::Abs:	return abs(obj, API_FWD);
+  case UnOp::SignBit:   return signBit(obj, API_FWD);
   default: std::unreachable();
-  }
+  };
   std::unreachable();
 }
 
-Expression Assembler::unOpAssign(UnOp op, auto const &rhs, API_FUNC_SOURCE) {
+Expression Assembler::unOpAssign(UnOp op, auto const &obj, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   switch (op) {
-  case UnOp::Not:  return lnotAssign(rhs, API_FWD);
-  case UnOp::Bool: return lboolAssign(rhs, API_FWD);
-  case UnOp::Neg:  return negate(rhs, API_FWD);
-  case UnOp::Abs:  return abs(rhs, API_FWD);
+  case UnOp::Not:	return lnotAssign(obj, API_FWD);
+  case UnOp::Bool:	return lboolAssign(obj, API_FWD);
+  case UnOp::Neg:	return negateAssign(obj, API_FWD);
+  case UnOp::Abs:	return absAssign(obj, API_FWD);
+  case UnOp::SignBit:   return signBitAssign(obj, API_FWD);
   default: std::unreachable();
-  }
+  };
   std::unreachable();
 }
 
-Expression Assembler::lnot(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return lnotImpl(rValue(rhs, API_FWD), API_FWD);
-}
+// The implementation for unOpImpl and unOpAssignImpl is in assembler_unop_general.cc
+#define UNOP(OP)							\
+  Expression Assembler::OP##Assign(auto const &obj, API_FUNC_SOURCE) {	\
+    API_FUNC_BEGIN();							\
+    return unOpAssignImpl(lValue(obj, API_FWD), OP##Spec, API_FWD);	\
+  }									\
+									\
+  Expression Assembler::OP(auto const &obj, API_FUNC_SOURCE) {		\
+    API_FUNC_BEGIN();							\
+    return unOpImpl(rValue(obj, API_FWD), OP##Spec, API_FWD);		\
+  }
 
-Expression Assembler::lnotAssign(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return lnotAssignImpl(lValue(rhs, API_FWD), API_FWD);
-}
+// Boolean operations (Bop)
+UNOP(lnot);
+UNOP(lbool);
+UNOP(signBit);
 
-Expression Assembler::lbool(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return lboolImpl(rValue(rhs, API_FWD), API_FWD);
-}
+// Integer operations (Iop)
+UNOP(negate);
+UNOP(abs);
 
-Expression Assembler::lboolAssign(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return lboolAssignImpl(lValue(rhs, API_FWD), API_FWD);
-}
-
-Expression Assembler::negate(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return negateImpl(rValue(rhs, API_FWD), API_FWD);
-}
-
-Expression Assembler::negateAssign(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return negateAssignImpl(lValue(rhs, API_FWD), API_FWD);
-}
-
-Expression Assembler::abs(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return absImpl(rValue(rhs, API_FWD), API_FWD);
-}
-
-Expression Assembler::absAssign(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return absAssignImpl(lValue(rhs, API_FWD), API_FWD);
-}
-
-Expression Assembler::signBit(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return signBitImpl(rValue(rhs, API_FWD), API_FWD);
-}
-
-Expression Assembler::signBitAssign(auto const &rhs, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return signBitAssignImpl(lValue(rhs, API_FWD), API_FWD);
-}
+#undef UNOP
 
 // Binary operations
 Expression Assembler::binOp(BinOp op, auto const &lhs, auto const &rhs, API_FUNC_SOURCE) {

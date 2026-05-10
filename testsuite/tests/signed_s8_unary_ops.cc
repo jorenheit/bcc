@@ -50,12 +50,12 @@ c.function("main").begin(); {
 
   // signBit(-1) = 1; 1 + 'H' = 'I'
   c.assign("x", literal::s8(-1));
-  c.assign("f", c.signBit("x"));
+  c.assign("f", c.cast(c.signBit("x"), ts::s8()));
   c.writeOut(c.add("f", literal::s8('H'))); // I
 
   // signBit(0) = 0; 0 + 'J' = 'J'
   c.assign("x", literal::s8(0));
-  c.assign("f", c.signBit("x"));
+  c.assign("f", c.cast(c.signBit("x"), ts::s8()));
   c.writeOut(c.add("f", literal::s8('J'))); // J
 
   // signBitAssign(-128): x becomes 1; 1 + 'J' = 'K'

@@ -71,7 +71,7 @@ Expression Assembler::binOpImpl(Expression const &lhs, Expression const &rhs, Sp
   }
 
   Slot result = getTemp(opResult.workType);
-  assignImpl(Expression{result}, lhs, API_FWD);
+  assignImpl(Expression{result}, lhs, API_FWD); // TODO: this should be assignSlot
   binOpAssignImpl(Expression{result}, rhs, spec, API_FWD);
 
   result.type = opResult.type;
