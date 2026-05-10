@@ -9,7 +9,6 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
   auto opResult = types::rules::binOpResult(spec.op, lhs.type(), rhs.type());
   API_REQUIRE(opResult, error::ErrorCode::IncompatibleOperands, opResult.errorMsg);
 
-    
   pushPtr();
 
   int stride = 1;
@@ -38,13 +37,13 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
     int const delta = literal::cast<types::IntegerType>(rhs.literal())->semanticValue();
     (this->*spec.applyWithConst)(targetSlot, stride * delta);
   }
+
   
   if (not lhs.slot()->direct()) {
     lhs.slot()->write(*this, lhsBase);
   }
-  
-  popPtr();
 
+  popPtr();
   return lhs;
 }
 

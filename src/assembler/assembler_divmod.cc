@@ -18,39 +18,25 @@ Assembler::Mop const Assembler::modSpec {
   .applyWithConst = &Assembler::modSlotByConst
 };
 
+
 void Assembler::divSlotByConst(Slot const &lhs, int denom) {
+  assert(types::isInteger(lhs.type));
+  
+  if (types::isUnsignedInteger(lhs.type)) return divSlotByConstUnsigned(lhs, denom);
+  if (types::isSignedInteger(lhs.type)) return divSlotByConstSigned(lhs, denom);
+  std::unreachable();
+}
 
-  auto lhsWasNegative = [&] -> std::optional<Slot> {
-    if (not types::isSignedInteger(lhs.type)) return {};
-
-    // For signed integers, check if the value is negative. If so, take the
-    // absolute value but remember the sign.
-    moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
-    signBitConstructive(Cell{lhs, MacroCell::Flag},
-			Temps<4>::select(lhs, MacroCell::Scratch0,
-					 lhs, MacroCell::Scratch1,
-					 lhs, MacroCell::Payload0,
-					 lhs, MacroCell::Payload1));
-
-    Slot const tmp = getTemp(ts::raw(1));
-    moveTo(lhs, MacroCell::Flag);
-    loopOpen(); {
-      moveTo(tmp, MacroCell::Flag);
-      setToValue(1);
-      negateSlot(lhs);
-      moveTo(lhs, MacroCell::Flag);
-      zeroCell();      
-    } loopClose();
-    
-    return tmp;
-  }();
-
+void Assembler::divSlotByConstUnsigned(Slot const &lhs, int denom) {
+  assert(types::isUnsignedInteger(lhs.type));
+  assert(denom >= 0);
+  
   pushPtr();
   if (lhs.type->usesValue1()) {
     // TODO: less temps: negateFlag can share slot with this one
     Slot const tmp = getTemp(ts::raw(2));
     moveTo(lhs, MacroCell::Value0);    
-    divMod16Const(std::abs(denom), Cell{lhs, MacroCell::Value1},
+    divMod16Const(denom, Cell{lhs, MacroCell::Value1},
 		  Cell{lhs, MacroCell::Payload0},
 		  Cell{lhs, MacroCell::Payload1},
 		  Temps<8>::select(lhs, MacroCell::Scratch0,
@@ -71,7 +57,7 @@ void Assembler::divSlotByConst(Slot const &lhs, int denom) {
   } else {
     Slot const tmp = getTemp(ts::raw(1));
     moveTo(lhs, MacroCell::Value0);    
-    divModConst(std::abs(denom), Cell{lhs, MacroCell::Scratch0},
+    divModConst(denom, Cell{lhs, MacroCell::Scratch0},
 		Temps<5>::select(lhs, MacroCell::Scratch1,
 				 lhs, MacroCell::Payload0,
 				 lhs, MacroCell::Payload1,
@@ -82,75 +68,76 @@ void Assembler::divSlotByConst(Slot const &lhs, int denom) {
     moveTo(lhs, MacroCell::Scratch0);
     zeroCell();
   }
-
-  if (lhsWasNegative.has_value()) {
-    moveTo(*lhsWasNegative, MacroCell::Flag);
-    if (denom < 0) {
-      notDestructive(Cell{*lhsWasNegative, MacroCell::Scratch0});
-    }
-    loopOpen(); {
-      zeroCell();
-      moveTo(lhs);
-      negateSlot(lhs);
-      moveTo(*lhsWasNegative, MacroCell::Flag);
-    } loopClose();
-  }
-
   
   popPtr();
 }
 
-void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
+void Assembler::divSlotByConstSigned(Slot const &lhs, int denom) {
+  assert(types::isSignedInteger(lhs.type));
+  
+  // For signed integers, check if the value is negative. If so, take the
+  // absolute value but remember the sign.
+  pushPtr();
+  moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{lhs, MacroCell::Flag},
+		      Temps<4>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1));
 
-  Slot const rhsCopy = getTemp(rhs.type);
-  assignSlot(rhsCopy, rhs);
-
-  auto resultIsNegative = [&] -> std::optional<Slot> {
-    if (!types::isSignedInteger(lhs.type) && !types::isSignedInteger(rhs.type)) return {};
-
-    Slot const tmp = getTemp(ts::raw(1));
-
-    moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
-    signBitConstructive(Cell{lhs, MacroCell::Flag},
-			Temps<4>::select(lhs, MacroCell::Scratch0,
-					 lhs, MacroCell::Scratch1,
-					 lhs, MacroCell::Payload0,
-					 lhs, MacroCell::Payload1));
-
+  Slot const tmp = getTemp(ts::raw(1));
+  Cell const lhsNegative { tmp, MacroCell::Flag };
+  moveTo(lhs, MacroCell::Flag);
+  loopOpen(); {
+    moveTo(lhsNegative);
+    setToValue(1);
+    negateSlot(lhs);
     moveTo(lhs, MacroCell::Flag);
-    loopOpen(); {
-      // lhs < 0  ==>  negate LHS and set tmp flag
-      zeroCell();      
-      negateSlot(lhs);
-      moveTo(tmp, MacroCell::Flag);
-      setToValue(1);
-      moveTo(lhs, MacroCell::Flag);
-    } loopClose();
+    zeroCell();      
+  } loopClose();
 
+  
+  divSlotByConstUnsigned(unsignedSlotView(lhs), std::abs(denom));
+
+  moveTo(lhsNegative);
+  if (denom < 0) {
+    notDestructive(Cell{tmp, MacroCell::Scratch0});
+  }
+  loopOpen(); {
+    negateSlot(lhs);
+    moveTo(lhsNegative); zeroCell();
+  } loopClose();
+
+  popPtr();
+}
+
+
+void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
+  assert(types::isInteger(lhs.type));
+  assert(types::isInteger(rhs.type));
+  assert(types::cast<types::IntegerType>(lhs.type)->signedness() ==
+	 types::cast<types::IntegerType>(rhs.type)->signedness());
     
-    moveTo(rhsCopy, rhsCopy.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
-    signBitConstructive(Cell{rhsCopy, MacroCell::Flag},
-			Temps<4>::select(rhsCopy, MacroCell::Scratch0,
-					 rhsCopy, MacroCell::Scratch1,
-					 rhsCopy, MacroCell::Payload0,
-					 rhsCopy, MacroCell::Payload1));
+  if (types::isUnsignedInteger(lhs.type)) return divSlotBySlotUnsigned(lhs, rhs);
+  if (types::isSignedInteger(lhs.type))   return divSlotBySlotSigned(lhs, rhs);
+  std::unreachable();
+}
 
-    moveTo(rhsCopy, MacroCell::Flag);
-    loopOpen(); {
-      zeroCell();      
-      negateSlot(rhsCopy);
-      // rhs < 0  ==> set tmp flag only if it was not already set and negate rhs
-      moveTo(tmp, MacroCell::Flag);
-      notDestructive(Cell{tmp, MacroCell::Scratch0});
-      moveTo(rhsCopy, MacroCell::Flag);
-    } loopClose();
+void Assembler::divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs) {
+  assert(types::isUnsignedInteger(lhs.type));
+  assert(types::isUnsignedInteger(rhs.type));
 
-    return tmp;
+  Slot const rhsCopy = destroyRhs ? rhs : [&] {
+    Slot const tmp = getTemp(rhs.type);
+    assignSlot(tmp, rhs);
+    return tmp;    
   }();
-
+  
+  Slot const tmp = destroyRhs ? getTemp(ts::raw(1)) : rhs;
 
   pushPtr();
   if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
+
     moveTo(lhs, MacroCell::Value0);    
     divMod16Destructive(Cell{lhs, MacroCell::Value1},
 			Cell{rhsCopy, MacroCell::Value0},
@@ -159,12 +146,13 @@ void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
 			Cell{lhs, MacroCell::Payload1},
 			Temps<8>::select(lhs, MacroCell::Scratch0,
 					 lhs, MacroCell::Scratch1,
-					 rhs, MacroCell::Scratch0,
-					 rhs, MacroCell::Scratch1,
+					 tmp, MacroCell::Scratch0,
+					 tmp, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Scratch0,
 					 rhsCopy, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Payload0,
 					 rhsCopy, MacroCell::Payload1));
+
     moveTo(lhs, MacroCell::Payload0);
     zeroCell();
     moveTo(lhs, MacroCell::Payload1);
@@ -173,60 +161,98 @@ void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
   } else {
     moveTo(lhs, MacroCell::Value0);    
     divModDestructive(Cell{rhsCopy, MacroCell::Value0},
-		      Cell{lhs, MacroCell::Scratch0},
-		      Temps<5>::select(lhs, MacroCell::Scratch1,
-				       lhs, MacroCell::Payload0,
+		      Cell{lhs, MacroCell::Payload0},
+		      Temps<5>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
 				       lhs, MacroCell::Payload1,
 				       rhsCopy, MacroCell::Scratch0,
 				       rhsCopy, MacroCell::Scratch1));
 
-    moveTo(lhs, MacroCell::Scratch0);
+    moveTo(lhs, MacroCell::Payload0);
     zeroCell();
-  }
-
-  if (resultIsNegative.has_value()) {
-    moveTo(*resultIsNegative, MacroCell::Flag);
-    loopOpen(); {
-      zeroCell();
-      negateSlot(lhs);
-    } loopClose();
   }
   
   popPtr();
 }
 
-void Assembler::modSlotByConst(Slot const &lhs, int denom) {
+void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
+  assert(types::isSignedInteger(lhs.type));
+  assert(types::isSignedInteger(rhs.type));
 
-  auto resultIsNegative = [&] -> std::optional<Slot> {
-    if (not types::isSignedInteger(lhs.type)) return {};
+  pushPtr();
+  moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{lhs, MacroCell::Flag},
+		      Temps<4>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1));
 
-    // For signed integers, the sign of the result is equal to the sign of the LHS
-    moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
-    signBitConstructive(Cell{lhs, MacroCell::Flag},
-			Temps<4>::select(lhs, MacroCell::Scratch0,
-					 lhs, MacroCell::Scratch1,
-					 lhs, MacroCell::Payload0,
-					 lhs, MacroCell::Payload1));
+  Slot const tmp = getTemp(ts::raw(2));
 
-    Slot const tmp = getTemp(ts::raw(1));
+  
+  Cell const resultNegative { tmp, MacroCell::Flag };
+  moveTo(lhs, MacroCell::Flag);
+  loopOpen(); {    
+    // lhs < 0  ==>  negate LHS and set negative flag
+    zeroCell();      
+    negateSlot(lhs);
+    moveTo(resultNegative);
+    setToValue(1);
     moveTo(lhs, MacroCell::Flag);
-    loopOpen(); {
-      moveTo(tmp, MacroCell::Flag);
-      setToValue(1);
-      negateSlot(lhs);
-      moveTo(lhs, MacroCell::Flag);
-      zeroCell();      
-    } loopClose();
-    
-    return tmp;
-  }();
+  } loopClose();
 
+
+  Slot const rhsCopy = tmp.sub(rhs.type, 1);
+  assignSlot(rhsCopy, rhs);
+  
+  moveTo(rhsCopy, rhsCopy.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{rhsCopy, MacroCell::Flag},
+		      Temps<4>::select(rhsCopy, MacroCell::Scratch0,
+				       rhsCopy, MacroCell::Scratch1,
+				       rhsCopy, MacroCell::Payload0,
+				       rhsCopy, MacroCell::Payload1));
+
+  
+  moveTo(rhsCopy, MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();      
+    negateSlot(rhsCopy);
+    // rhs < 0  ==> set tmp flag only if it was not already set and negate rhs
+    moveTo(resultNegative);
+    notDestructive(Cell{tmp, MacroCell::Scratch0});
+    moveTo(rhsCopy, MacroCell::Flag);
+  } loopClose();
+
+  // Both operands are now positive and the resultNegative cell holds the sign bit for the result.  
+  divSlotBySlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+
+  
+  // Correct the sign
+  moveTo(resultNegative);
+  loopOpen(); {
+    zeroCell();
+    negateSlot(lhs);
+  } loopClose();
+
+  popPtr();
+}
+
+void Assembler::modSlotByConst(Slot const &lhs, int denom) {
+  assert(types::isInteger(lhs.type));
+  if (types::isUnsignedInteger(lhs.type))  return modSlotByConstUnsigned(lhs, denom);
+  if (types::isSignedInteger(lhs.type)) return modSlotByConstSigned(lhs, denom);
+  std::unreachable();
+}
+
+void Assembler::modSlotByConstUnsigned(Slot const &lhs, int denom) {
+  assert(types::isUnsignedInteger(lhs.type));
+  assert(denom >= 0);
   
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   if (lhs.type->usesValue1()) {
     Slot const tmp = getTemp(ts::raw(2));
-    divMod16Const(std::abs(denom), Cell{lhs, MacroCell::Value1},
+    divMod16Const(denom, Cell{lhs, MacroCell::Value1},
 		  Cell{lhs, MacroCell::Payload0},
 		  Cell{lhs, MacroCell::Payload1},
 		  Temps<8>::select(lhs, MacroCell::Scratch0,
@@ -244,7 +270,7 @@ void Assembler::modSlotByConst(Slot const &lhs, int denom) {
     moveField(Cell{lhs, MacroCell::Value1});
   } else {
     Slot const tmp = getTemp(ts::raw(1));
-    divModConst(std::abs(denom), Cell{lhs, MacroCell::Payload0},
+    divModConst(denom, Cell{lhs, MacroCell::Payload0},
 		Temps<5>::select(lhs, MacroCell::Scratch0,
 				 lhs, MacroCell::Scratch1,
 				 tmp, MacroCell::Scratch0,
@@ -255,49 +281,70 @@ void Assembler::modSlotByConst(Slot const &lhs, int denom) {
     moveField(Cell{lhs, MacroCell::Value0});
   }
 
-  if (resultIsNegative.has_value()) {
-    moveTo(*resultIsNegative, MacroCell::Flag);
-    loopOpen(); {
-      zeroCell();
-      negateSlot(lhs);
-    } loopClose();
-  }
 
   popPtr();
 }
 
-void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
 
-  auto resultIsNegative = [&] -> std::optional<Slot> {
-    if (not types::isSignedInteger(lhs.type)) return {};
+void Assembler::modSlotByConstSigned(Slot const &lhs, int denom) {
+  assert(types::isSignedInteger(lhs.type));
 
-    // For signed integers, the sign of the result is equal to the sign of the LHS
-    moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
-    signBitConstructive(Cell{lhs, MacroCell::Flag},
-			Temps<4>::select(lhs, MacroCell::Scratch0,
-					 lhs, MacroCell::Scratch1,
-					 lhs, MacroCell::Payload0,
-					 lhs, MacroCell::Payload1));
+  pushPtr();
+  // For signed integers, the sign of the result is equal to the sign of the LHS
+  moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{lhs, MacroCell::Flag},
+		      Temps<4>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1));
 
-    Slot const tmp = getTemp(ts::raw(1));
+  Slot const tmp = getTemp(ts::raw(1));
+  Cell const resultNegative { tmp, MacroCell::Flag };
+  moveTo(lhs, MacroCell::Flag);
+  loopOpen(); {
+    moveTo(resultNegative);
+    setToValue(1);
+    negateSlot(lhs);
     moveTo(lhs, MacroCell::Flag);
-    loopOpen(); {
-      moveTo(tmp, MacroCell::Flag);
-      setToValue(1);
-      negateSlot(lhs);
-      moveTo(lhs, MacroCell::Flag);
-      zeroCell();      
-    } loopClose();
+    zeroCell();      
+  } loopClose();
+  
+  // lhs is now positive and the resulting sign has been stored -> use unsigned version
+  modSlotByConstUnsigned(unsignedSlotView(lhs), std::abs(denom));
+
+  // Restore sign
+  moveTo(resultNegative);
+  loopOpen(); {
+    zeroCell();
+    negateSlot(lhs);
+  } loopClose();
+  
+  popPtr();
+}
+
+void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
+  assert(types::isInteger(lhs.type));
+  assert(types::isInteger(rhs.type));
+  assert(types::cast<types::IntegerType>(lhs.type)->signedness() ==
+	 types::cast<types::IntegerType>(rhs.type)->signedness());
     
-    return tmp;
+  if (types::isUnsignedInteger(lhs.type)) return modSlotBySlotUnsigned(lhs, rhs);
+  if (types::isSignedInteger(lhs.type))   return modSlotBySlotSigned(lhs, rhs);
+  std::unreachable();
+}
+
+void Assembler::modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs) {
+  assert(types::isUnsignedInteger(lhs.type));
+  assert(types::isUnsignedInteger(rhs.type));
+  
+
+  Slot const rhsCopy = destroyRhs ? rhs : [&] {
+    Slot const tmp = getTemp(rhs.type);
+    assignSlot(tmp, rhs);
+    return tmp;    
   }();
 
-
-  Slot const rhsCopy = getTemp(rhs.type);
-  assignSlot(rhsCopy, rhs);
-  if (types::isSignedInteger(rhs.type)) {
-    absSlot(rhsCopy);
-  }
+  Slot const tmp = destroyRhs ? getTemp(ts::raw(1)) : rhs;
   
   pushPtr();
   if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
@@ -309,8 +356,8 @@ void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
 			Cell{lhs, MacroCell::Payload1},
 			Temps<8>::select(lhs, MacroCell::Scratch0,
 					 lhs, MacroCell::Scratch1,
-					 rhs, MacroCell::Scratch0,
-					 rhs, MacroCell::Scratch1,
+					 tmp, MacroCell::Scratch0,
+					 tmp, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Scratch0,
 					 rhsCopy, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Payload0,
@@ -323,29 +370,64 @@ void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
   } else {
     moveTo(lhs, MacroCell::Value0);    
     divModDestructive(Cell{rhsCopy, MacroCell::Value0},
-		      Cell{lhs, MacroCell::Scratch0},
-		      Temps<5>::select(lhs, MacroCell::Scratch1,
-				       lhs, MacroCell::Payload0,
+		      Cell{lhs, MacroCell::Payload0},
+		      Temps<5>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
 				       lhs, MacroCell::Payload1,
 				       rhsCopy, MacroCell::Scratch0,
 				       rhsCopy, MacroCell::Scratch1));
 
-    moveTo(lhs, MacroCell::Scratch0);
+    moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
   }
 
-
-  if (resultIsNegative.has_value()) {
-    moveTo(*resultIsNegative, MacroCell::Flag);
-    loopOpen(); {
-      zeroCell();
-      negateSlot(lhs);
-    } loopClose();
-  }
-
-  
   popPtr();
 }
+
+void Assembler::modSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
+  assert(types::isSignedInteger(lhs.type));
+  assert(types::isSignedInteger(rhs.type));
+
+  pushPtr();
+
+  // For signed integers, the sign of the result is equal to the sign of the LHS
+  moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{lhs, MacroCell::Flag},
+		      Temps<4>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1));
+
+  Slot const tmp = getTemp(ts::raw(2));
+  Cell const resultNegative { tmp, MacroCell::Flag };
+  moveTo(lhs, MacroCell::Flag);
+  loopOpen(); {
+    moveTo(resultNegative);
+    setToValue(1);
+    negateSlot(lhs);
+    moveTo(lhs, MacroCell::Flag);
+    zeroCell();      
+  } loopClose();
+
+
+  Slot const rhsCopy = tmp.sub(rhs.type, 1);
+  assignSlot(rhsCopy, rhs);
+  if (types::isSignedInteger(rhs.type)) {
+    absSlot(rhsCopy);
+  }
+
+  modSlotBySlotUnsigned(unsignedSlotView(lhs), unsignedSlotView(rhsCopy), true);
+  
+  moveTo(resultNegative);
+  loopOpen(); {
+    zeroCell();
+    negateSlot(lhs);
+  } loopClose();
+  
+}
+
+
+// Implementations of the divmod algorithms
 
 void Assembler::divModConst(int denom, Cell modResult, Temps<5> tmp) {
   pushPtr();
@@ -636,7 +718,7 @@ void Assembler::divMod16Destructive(Cell high, Cell denomLow, Cell denomHigh, Ce
   // General case
   moveTo(loopFlag);
   loopOpen(); {    
-
+    // !!!!    
     moveTo(modResultLow); inc16(modResultHigh, tmp.select<6, 7>());
     moveTo(numCopyLow);   dec16(numCopyHigh, tmp.select<6, 7>());
     moveTo(denomCopyLow); dec16(denomCopyHigh, tmp.select<6, 7>());

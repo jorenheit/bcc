@@ -175,7 +175,8 @@ void Assembler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Sl
 }
 
 void Assembler::assignIntegerSlot(Slot const &dest, Slot const &src) {
-  assert(types::isInteger(dest.type) && types::isInteger(src.type));
+  assert(types::isInteger(dest.type));
+  assert(types::isInteger(src.type));
 
   auto destInt = types::cast<types::IntegerType>(dest.type);
   auto srcInt  = types::cast<types::IntegerType>(src.type);  

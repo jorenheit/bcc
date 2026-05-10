@@ -148,6 +148,7 @@ void Assembler::abortProgram(API_FUNC) {
 
   // Block boundary
   assert(_currentBlock != nullptr);
+  _currentBlock->returns = true;
   endBlock();
   beginBlock(generateUniqueBlockName());
 }

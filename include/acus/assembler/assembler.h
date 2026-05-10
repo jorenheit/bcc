@@ -293,6 +293,11 @@ namespace acus {
     Expression binOpImpl(Expression const &lhs, Expression const &rhs, SpecType const &spec, API_CTX);
   
     // Slot operations
+    template <typename TrueBranch, typename FalseBranch>
+    void branchOnSignBit(Slot const &slot, Cell const &flagCell, TrueBranch&& trueBranch, FalseBranch&& falseBranch);
+    void setSlotToBool(Slot const &slot, bool val);
+    Slot unsignedSlotView(Slot const &slot);
+    
     Slot local(std::string const& name, bool globalReference = false) const;
     void assignSlot(Slot const &dest, Slot const &src);
     void assignSlot(Slot const &slot, literal::Literal const &val);
@@ -312,10 +317,22 @@ namespace acus {
     void subConstFromSlot(Slot const &lhs, int delta);
     void mulSlotBySlot(Slot const &lhs, Slot const &rhs);
     void mulSlotByConst(Slot const &lhs, int factor);
+
     void divSlotByConst(Slot const &lhs, int denom);
-    void divSlotBySlot(Slot const &lhs, Slot const &rhs);
+    void divSlotByConstUnsigned(Slot const &lhs, int denom);
+    void divSlotByConstSigned(Slot const &lhs, int denom);
+
     void modSlotByConst(Slot const &lhs, int denom);
+    void modSlotByConstUnsigned(Slot const &lhs, int denom);
+    void modSlotByConstSigned(Slot const &lhs, int denom);
+
+    void divSlotBySlot(Slot const &lhs, Slot const &rhs);
+    void divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void divSlotBySlotSigned(Slot const &lhs, Slot const &rhs);
+
     void modSlotBySlot(Slot const &lhs, Slot const &rhs);
+    void modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void modSlotBySlotSigned(Slot const &lhs, Slot const &rhs);
 
     void andSlotWithConst(Slot const &lhs, int val);
     void andSlotWithSlot(Slot const &lhs, Slot const &rhs);
@@ -334,14 +351,39 @@ namespace acus {
     void slotEqualSlot(Slot const &lhs, Slot const &rhs);
     void slotNotEqualConst(Slot const &lhs, int val);
     void slotNotEqualSlot(Slot const &lhs, Slot const &rhs);
+
     void slotLessConst(Slot const &lhs, int val);
-    void slotLessSlot(Slot const &lhs, Slot const &rhs);
+    void slotLessConstSigned(Slot const &lhs, int val);
+    void slotLessConstUnsigned(Slot const &lhs, int val);
+
     void slotLessEqualConst(Slot const &lhs, int val);
-    void slotLessEqualSlot(Slot const &lhs, Slot const &rhs);
+    void slotLessEqualConstUnsigned(Slot const &lhs, int val);
+    void slotLessEqualConstSigned(Slot const &lhs, int val);
+
     void slotGreaterConst(Slot const &lhs, int val);
-    void slotGreaterSlot(Slot const &lhs, Slot const &rhs);
+    void slotGreaterConstUnsigned(Slot const &lhs, int val);
+    void slotGreaterConstSigned(Slot const &lhs, int val);
+
     void slotGreaterEqualConst(Slot const &lhs, int val);
+    void slotGreaterEqualConstSigned(Slot const &lhs, int val);
+    void slotGreaterEqualConstUnsigned(Slot const &lhs, int val);
+    
+
+    void slotLessSlot(Slot const &lhs, Slot const &rhs);
+    void slotLessSlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void slotLessSlotSigned(Slot const &lhs, Slot const &rhs);
+
+    void slotLessEqualSlot(Slot const &lhs, Slot const &rhs);
+    void slotLessEqualSlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void slotLessEqualSlotSigned(Slot const &lhs, Slot const &rhs);
+
+    void slotGreaterSlot(Slot const &lhs, Slot const &rhs);
+    void slotGreaterSlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void slotGreaterSlotSigned(Slot const &lhs, Slot const &rhs);
+
     void slotGreaterEqualSlot(Slot const &lhs, Slot const &rhs);
+    void slotGreaterEqualSlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void slotGreaterEqualSlotSigned(Slot const &lhs, Slot const &rhs);
   
     void branchIfSlot(Slot const &slot, std::string const &trueLabel, std::string const &falseLabel);
     void copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot);
