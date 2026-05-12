@@ -8,64 +8,66 @@ using namespace acus::api;
 int main() try {
   Assembler c;
 
+  auto i8 = ts::i8();
+
   c.program("test", "main").begin(); {
 
+    auto i16 = ts::i16();
+
     c.function("main").begin(); {
-      c.declareLocal("x", ts::s16());
-      c.declareLocal("y", ts::s16());
+      c.declareLocal("x", i16);
 
-      // -1 < 0 -> true
-      c.assign("x", literal::s16(-1));
-      c.assign("y", literal::s16(0));
-      c.writeOut(c.add(c.lt("x", "y"), literal::i8('A'))); // B
+      // // add with literal -> "AA"
+      // c.assign("x", literal::i16(0x4140));
+      // c.writeOut(c.add("x", literal::i16(1)));
 
-      // // 0 < -1 -> false
-      c.writeOut(c.add(c.lt("y", "x"), literal::i8('A'))); // A
+      // // sub with literal -> "BB"
+      // c.assign("x", literal::i16(0x4243));
+      // c.writeOut(c.sub("x", literal::i16(1)));
 
-      // -300 < -20 -> true
-      c.assign("x", literal::s16(-300));
-      c.assign("y", literal::s16(-20));
-      c.writeOut(c.add(c.lt("x", "y"), literal::i8('A'))); // B
+      // // mul with literal, mapped to "CC"
+      // c.assign("x", literal::i16(0x1111));
+      // c.writeOut(c.add(c.mul("x", literal::i16(3)), literal::i16(0x1010)));
 
-      // -20 < -300 -> false
-      c.writeOut(c.add(c.lt("y", "x"), literal::i8('A'))); // A
+      // // div with literal, mapped to "DD"
+      // c.assign("x", literal::i16(0x6363));
+      // c.writeOut(c.add(c.div("x", literal::i16(3)), literal::i16(0x2323)));
 
-      // 32767 < -32768 -> false
-      c.assign("x", literal::s16(32767));
-      c.assign("y", literal::s16(-32768));
-      c.writeOut(c.add(c.lt("x", "y"), literal::i8('A'))); // A
+      // // mod with literal, mapped to "EE"
+      // c.assign("x", literal::i16(0x7171));
+      // c.writeOut(c.add(c.mod("x", literal::i16(0x5050)), literal::i16(0x2424)));
 
-      // -32768 < 32767 -> true
-      c.writeOut(c.add(c.lt("y", "x"), literal::i8('A'))); // B
+      // // addAssign with literal -> "AA"
+      // c.assign("x", literal::i16(0x4140));
+      // c.addAssign("x", literal::i16(1));
+      // c.writeOut("x");
 
-      // // -1 > 0 -> false
-      // c.assign("x", literal::s16(-1));
-      // c.assign("y", literal::s16(0));
-      // c.writeOut(c.add(c.gt("x", "y"), literal::i8('A'))); // A
+      // // subAssign with literal -> "BB"
+      // c.assign("x", literal::i16(0x4243));
+      // c.subAssign("x", literal::i16(1));
+      // c.writeOut("x");
 
-      // // 0 > -1 -> true
-      // c.writeOut(c.add(c.gt("y", "x"), literal::i8('A'))); // B
+      // mulAssign with literal, mapped to "CC"
+      c.assign("x", literal::i16(0x1111));
+      c.mulAssign("x", literal::i16(3));
+      c.writeOut(c.add("x", literal::i16(0x1010)));
 
-      // // -300 <= -300 -> true
-      // c.assign("x", literal::s16(-300));
-      // c.assign("y", literal::s16(-300));
-      // c.writeOut(c.add(c.le("x", "y"), literal::i8('A'))); // B
+      // divAssign with literal, mapped to "DD"
+      c.assign("x", literal::i16(0x6363));
+      c.divAssign("x", literal::i16(3));
+      c.writeOut(c.add("x", literal::i16(0x2323)));
 
-      // // -300 >= -300 -> true
-      // c.writeOut(c.add(c.ge("x", "y"), literal::i8('A'))); // B
-
-      // // -300 >= -20 -> false
-      // c.assign("x", literal::s16(-300));
-      // c.assign("y", literal::s16(-20));
-      // c.writeOut(c.add(c.ge("x", "y"), literal::i8('A'))); // A
-
-      // // -20 >= -300 -> true
-      // c.writeOut(c.add(c.ge("y", "x"), literal::i8('A'))); // B
+      // modAssign with literal, mapped to "EE"
+      c.assign("x", literal::i16(0x7171));
+      c.modAssign("x", literal::i16(0x5050));
+      c.writeOut(c.add("x", literal::i16(0x2424)));
 
       c.returnFromFunction();
     } c.endFunction();
 
-  } c.endProgram();
+
+
+ } c.endProgram();
 
   std::cout << c.brainfuck("test") << '\n';
  } catch (std::exception const &e) {

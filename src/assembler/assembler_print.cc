@@ -11,33 +11,6 @@ void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
     ? rhs.slot()->materialize(*this)
     : getTemp(rhs.literal());
 
-  // Special case for Strings: look for NULL terminator
-  if (types::isString(slot.type)) {
-    moveTo(slot, MacroCell::Value0);
-    setSeekMarker();
-
-    emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
-    switchField(MacroCell::Flag);
-    loopOpen(); {
-      zeroCell();
-      switchField(MacroCell::Value0);
-      emit<primitive::Out>();
-      emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
-
-      // Check if end of string was reached by using the current value as a flag.
-      // If NULL terminator hit, we exit the loop and go back to start.
-      emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
-      switchField(MacroCell::Flag);
-    } loopClose();
-
-    // We hit the end of the string -> return to seek marker (no payload, check current as well)
-    seek(MacroCell::SeekMarker, primitive::Left, {}, true);
-    resetSeekMarker();
-    popPtr();
-    return;
-  }
-
-  // All other types: just output all Values sequentially
   for (int i = 0; i != slot.type->size(); ++i) {
     moveTo(slot + i, MacroCell::Value0);
     emit<primitive::Out>();
@@ -64,9 +37,13 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
     _usedBuiltinFunctions.insert(func);
 
     callFunctionImpl(builtinFunctionName(func), {}, { val }, API_FWD);
-    return;
   }
-  API_REQUIRE(false, error::ErrorCode::NotPrintable, "print is not supported for values of type '", val.type()->str(), "'.");
+  else if (types::isString(val.type())) {
+    printStringImpl(val, API_FWD);
+  }
+  else {
+    API_REQUIRE(false, error::ErrorCode::NotPrintable, "print is not supported for values of type '", val.type()->str(), "'.");
+  }
 }
 
 
@@ -75,6 +52,7 @@ void Assembler::printUnsignedImpl(Expression const &val) {
 
   if (val.isLiteral()) {
     int x = literal::cast<types::IntegerType>(val.literal())->semanticValue();
+    // TODO: just use to_string, wtf were you smoking?
     std::vector<int> digits;
     while (x > 0) {
       digits.push_back(x % 10);
@@ -84,7 +62,7 @@ void Assembler::printUnsignedImpl(Expression const &val) {
     Slot const tmp = getTemp(ts::i8());
     for (int i = digits.size() - 1; i >= 0; --i) {
       moveTo(tmp);
-      setToValue(digits[i] + '0');
+      setToValue(digits[i] + '0', Temps<1>::select(tmp, MacroCell::Scratch0));
       emit<primitive::Out>();
     }
   }
@@ -124,13 +102,13 @@ void Assembler::printSignedImpl(Expression const &val) {
     
     if (negative) {
       moveTo(tmp);
-      setToValue('-');
+      setToValue('-', Temps<1>::select(tmp, MacroCell::Scratch0));
       emit<primitive::Out>();
     }
     
     for (int i = digits.size() - 1; i >= 0; --i) {
       moveTo(tmp);
-      setToValue(digits[i] + '0');
+      setToValue(digits[i] + '0', Temps<1>::select(tmp, MacroCell::Scratch0));
       emit<primitive::Out>();
     }
   }
@@ -157,7 +135,7 @@ void Assembler::printSignedImpl(Expression const &val) {
     loopOpen(); {
       // Negate valSlot while we're here
       negateSlot(valSlot);
-      setToValue('-');
+      setToValue('-', Temps<1>::select(valSlot, MacroCell::Scratch0));
       emit<primitive::Out>();
       zeroCell();
     } loopClose();
@@ -224,5 +202,36 @@ void Assembler::printIntegerSlotDestructive(Slot const &valSlot) {
   _dp.set(Cell{digits, MacroCell::Value0});
 
 
+  popPtr();
+}
+
+void Assembler::printStringImpl(Expression const &str, API_CTX) {
+
+  // TODO: for literals, don't materialize
+  Slot const slot = str.hasSlot()
+    ? str.slot()->materialize(*this)
+    : getTemp(str.literal());
+
+  pushPtr();
+  moveTo(slot, MacroCell::Value0);
+  setSeekMarker();
+
+  emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
+  switchField(MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();
+    switchField(MacroCell::Value0);
+    emit<primitive::Out>();
+    emit<primitive::MovePointerRelative>(MacroCell::FieldCount);
+
+    // Check if end of string was reached by using the current value as a flag.
+    // If NULL terminator hit, we exit the loop and go back to start.
+    emit<primitive::CopyData>(MacroCell::Value0, MacroCell::Flag, MacroCell::Scratch0);
+    switchField(MacroCell::Flag);
+  } loopClose();
+
+  // We hit the end of the string -> return to seek marker (no payload, check current as well)
+  seek(MacroCell::SeekMarker, primitive::Left, {}, true);
+  resetSeekMarker();
   popPtr();
 }

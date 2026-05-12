@@ -7,8 +7,19 @@ Assembler::Mop const Assembler::mulSpec {
   .applyWithConst = &Assembler::mulSlotByConst
 };
 
-void Assembler::mulSlotByConst(Slot const &lhs, int factor) {
 
+void Assembler::mulSlotByConst(Slot const &lhs, int factor) {
+  assert(types::isInteger(lhs.type));
+  
+  if (types::isUnsignedInteger(lhs.type)) return mulSlotByConstUnsigned(lhs, factor);
+  if (types::isSignedInteger(lhs.type)) return mulSlotByConstSigned(lhs, factor);
+  std::unreachable();
+}
+
+void Assembler::mulSlotByConstUnsigned(Slot const &lhs, int factor) {
+  assert(types::isUnsignedInteger(lhs.type));
+  assert(factor >= 0);
+  
   pushPtr();
   moveTo(lhs, MacroCell::Value0);    
   if (lhs.type->usesValue1()) {
@@ -32,11 +43,63 @@ void Assembler::mulSlotByConst(Slot const &lhs, int factor) {
   popPtr();
 }
 
+void Assembler::mulSlotByConstSigned(Slot const &lhs, int factor) {
+  assert(types::isSignedInteger(lhs.type));
+
+  // For signed integers, check if the value is negative. If so, take the
+  // absolute value but remember the sign.
+  pushPtr();
+  moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{lhs, MacroCell::Flag},
+		      Temps<4>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1));
+
+  Slot const tmp = getTemp(ts::raw(1));
+  Cell const lhsNegative { tmp, MacroCell::Flag };
+  moveTo(lhs, MacroCell::Flag);
+  loopOpen(); {
+    moveTo(lhsNegative);
+    setToValue(1);
+    negateSlot(lhs);
+    moveTo(lhs, MacroCell::Flag);
+    zeroCell();      
+  } loopClose();
+
+  // operand is now positive -> pass it to the unsigned version
+  mulSlotByConstUnsigned(lhs.unsignedView(), std::abs(factor));
+
+  moveTo(lhsNegative);
+  if (factor < 0) {
+    notDestructive(Cell{tmp, MacroCell::Scratch0});
+  }
+  loopOpen(); {
+    negateSlot(lhs);
+    moveTo(lhsNegative); zeroCell();
+  } loopClose();
+
+  popPtr();
+}
+
 
 void Assembler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
+  assert(types::isInteger(lhs.type));
+  assert(types::isInteger(rhs.type));
+  assert(types::cast<types::IntegerType>(lhs.type)->signedness() ==
+	 types::cast<types::IntegerType>(rhs.type)->signedness());
+    
+  if (types::isUnsignedInteger(lhs.type)) return mulSlotBySlotUnsigned(lhs, rhs);
+  if (types::isSignedInteger(lhs.type))   return mulSlotBySlotSigned(lhs, rhs);
+  std::unreachable();
+}
+
+
+void Assembler::mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs) {
+  assert(types::isUnsignedInteger(lhs.type));
+  assert(types::isUnsignedInteger(rhs.type));
+
   pushPtr();
-
-
   if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
     
     /*
@@ -79,17 +142,16 @@ void Assembler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
       addDestructive(Cell{rhs, rhsField});
     };
 
-    // Copies of operands
-    auto encoded16TypeFor = [](Slot const &slot) {
-      auto intType = types::cast<types::IntegerType>(slot.type);
-      return intType->isSigned() ? ts::s16() : ts::i16();
-    };
-    
-    Slot const lhsCopy = getTemp(encoded16TypeFor(lhs));
-    Slot const rhsCopy = getTemp(encoded16TypeFor(rhs));    
+    // Copies of operands    
+    Slot const lhsCopy = getTemp(lhs.type);
     assignSlot(lhsCopy, lhs);
-    assignSlot(rhsCopy, rhs);
 
+    Slot const rhsCopy = destroyRhs ? rhs : [&] {
+      Slot const tmp = getTemp(rhs.type);
+      assignSlot(tmp, rhs);
+      return tmp;    
+    }();
+    
     // Result will be constructed in lhs; after a0*b0, lhs.low is already the final c0.
     // We zero its high byte and leave only a0.
     zeroByte(lhs, High);
@@ -154,10 +216,75 @@ void Assembler::mulSlotBySlot(Slot const &lhs, Slot const &rhs) {
   popPtr();
 }
 
+void Assembler::mulSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
+  assert(types::isSignedInteger(lhs.type));
+  assert(types::isSignedInteger(rhs.type));
+
+  pushPtr();
+  moveTo(lhs, lhs.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{lhs, MacroCell::Flag},
+		      Temps<4>::select(lhs, MacroCell::Scratch0,
+				       lhs, MacroCell::Scratch1,
+				       lhs, MacroCell::Payload0,
+				       lhs, MacroCell::Payload1));
+
+  Slot const tmp = getTemp(ts::raw(2));
+
+  
+  Cell const resultNegative { tmp, MacroCell::Flag };
+  moveTo(lhs, MacroCell::Flag);
+  loopOpen(); {    
+    // lhs < 0  ==>  negate LHS and set negative flag
+    zeroCell();      
+    negateSlot(lhs);
+    moveTo(resultNegative);
+    setToValue(1);
+    moveTo(lhs, MacroCell::Flag);
+  } loopClose();
+
+
+  Slot const rhsCopy = tmp.sub(rhs.type, 1);
+  assignSlot(rhsCopy, rhs);
+  
+  moveTo(rhsCopy, rhsCopy.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{rhsCopy, MacroCell::Flag},
+		      Temps<4>::select(rhsCopy, MacroCell::Scratch0,
+				       rhsCopy, MacroCell::Scratch1,
+				       rhsCopy, MacroCell::Payload0,
+				       rhsCopy, MacroCell::Payload1));
+
+  
+  moveTo(rhsCopy, MacroCell::Flag);
+  loopOpen(); {
+    zeroCell();      
+    negateSlot(rhsCopy);
+    // rhs < 0  ==> set tmp flag only if it was not already set and negate rhs
+    moveTo(resultNegative);
+    notDestructive(Cell{tmp, MacroCell::Scratch0});
+    moveTo(rhsCopy, MacroCell::Flag);
+  } loopClose();
+
+  // Both operands are now positive and the resultNegative cell holds the sign bit for the result.  
+  mulSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
+  
+  // Correct the sign
+  moveTo(resultNegative);
+  loopOpen(); {
+    zeroCell();
+    negateSlot(lhs);
+  } loopClose();
+
+  popPtr();
+}
+
+
+
+// Implementations of mul algorithms
+
 void Assembler::mulConst(int factor, Temps<3> tmp) {
   // TODO: optimize for powers of 2
   // TODO: big factors should have runtime implementation
-
+  
   if (factor == 0) {
     zeroCell();
     return;
@@ -171,6 +298,7 @@ void Assembler::mulConst(int factor, Temps<3> tmp) {
   
   copyField(copy1, tmp.select<2>());
   copyField(copy2, tmp.select<2>());
+
   
   for (int i = 0; i != std::abs(factor) - 1; ++i) {
     moveTo(current);    
@@ -179,6 +307,10 @@ void Assembler::mulConst(int factor, Temps<3> tmp) {
     copyField(copy1, tmp.select<2>());
   }
 
+  // Clear temporary copies
+  moveTo(copy1); zeroCell();
+  moveTo(copy2); zeroCell();
+  
   // All temps have been cleared by this point
   if (factor < 0) {
     moveTo(current);
@@ -224,6 +356,12 @@ void Assembler::mul16Const(int factor, Cell high, Temps<8> tmp) {
     copyField(copy1high, tmp.select<4>());      
   }
 
+  // Clear temporary copies
+  moveTo(copy1low); zeroCell();
+  moveTo(copy1high); zeroCell();
+  moveTo(copy2low); zeroCell();
+  moveTo(copy2high); zeroCell();
+  
   // All tmp cells have been cleared by this point and can be reused 
   if (factor < 0) {
     moveTo(current);

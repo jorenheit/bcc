@@ -10,6 +10,7 @@ namespace acus::ts {
   struct FunctionTypeBuilder;
   struct StructTypeBuilder;  
 
+  // TODO: remove init. Construct builtin types when they are requested
   void init();
 
   types::VoidType const *void_t(API_FUNC);

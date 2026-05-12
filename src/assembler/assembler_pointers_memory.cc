@@ -47,9 +47,9 @@ Slot Assembler::addressOfSlot(Slot const &slot) {
 
   // Construct offset in second cell
   moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value0);
-  setToValue(offset & 0xff);
+  setToValue(offset & 0xff, Temps<1>::select(ptrSlot + RuntimePointer::Offset, MacroCell::Scratch0));
   moveTo(ptrSlot + RuntimePointer::Offset, MacroCell::Value1);
-  setToValue((offset >> 8) & 0xff);
+  setToValue((offset >> 8) & 0xff, Temps<1>::select(ptrSlot + RuntimePointer::Offset, MacroCell::Scratch0));
 
   return ptrSlot;
 }
@@ -207,7 +207,7 @@ void Assembler::assignIntegerSlot(Slot const &dest, Slot const &src) {
 
   // TODO: replace by getSignBit
   moveTo(dest, MacroCell::Scratch0);
-  setToValue(128);
+  setToValue(128, Temps<1>::select(dest, MacroCell::Scratch1));
   moveTo(dest, MacroCell::Value1);
   lessDestructive(Cell{dest, MacroCell::Scratch0},
 		  Temps<2>::select(dest, MacroCell::Scratch1,
@@ -252,13 +252,13 @@ void Assembler::assignSlot(Slot const &slot, literal::Literal const &val) {
   if (types::isInteger(slot.type)) {
     int const x = literal::cast<types::IntegerType>(val)->encodedValue();
     moveTo(slot, MacroCell::Value0);
-    setToValue(x & 0xff);
+    setToValue(x & 0xff, Temps<1>::select(slot, MacroCell::Scratch0));
     moveTo(slot, MacroCell::Value1);    
     if (slot.type->usesValue1()) {
-      setToValue((x >> 8) & 0xff);
+      setToValue((x >> 8) & 0xff, Temps<1>::select(slot, MacroCell::Scratch0));
     }
     else {
-      setToValue(0);      
+      zeroCell();
     }
   }
   else if (types::isArray(slot.type) || types::isString(slot.type)) {

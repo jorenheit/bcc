@@ -450,7 +450,7 @@ void Assembler::divModConst(int denom, Cell modResult, Temps<5> tmp) {
   Cell const denomCopy = tmp.get<3>();
 
   moveTo(divResult);  moveField(numCopy);
-  moveTo(denomCopy);  setToValue(denom & 0xff);
+  moveTo(denomCopy);  setToValue(denom & 0xff, tmp.select<4>());
   moveTo(loopFlag);   setToValue(1);
 
   moveTo(numCopy);
@@ -483,7 +483,7 @@ void Assembler::divModConst(int denom, Cell modResult, Temps<5> tmp) {
       moveTo(divResult); inc();
       moveTo(modResult); zeroCell();
       moveTo(denomCopy);
-      setToValue(denom & 0xff);
+      setToValue(denom & 0xff, tmp.select<4>());
       
       moveTo(denominatorIsZero);
     } loopClose();
@@ -538,8 +538,8 @@ void Assembler::divMod16Const(int denom, Cell high, Cell modResultLow, Cell modR
 
   moveTo(divResultLow);  moveField(numCopyLow);
   moveTo(divResultHigh); moveField(numCopyHigh);
-  moveTo(denomCopyLow);  setToValue(denom & 0xff);
-  moveTo(denomCopyHigh); setToValue((denom >> 8) & 0xff);
+  moveTo(denomCopyLow);  setToValue(denom & 0xff, tmp.select<6>());
+  moveTo(denomCopyHigh); setToValue((denom >> 8) & 0xff, tmp.select<6>());
   moveTo(loopFlag);      setToValue(1);
 
   moveTo(numCopyLow);
@@ -572,8 +572,8 @@ void Assembler::divMod16Const(int denom, Cell high, Cell modResultLow, Cell modR
       moveTo(divResultLow);  inc16(divResultHigh, tmp.select<6, 7>());
       moveTo(modResultLow);  zeroCell();
       moveTo(modResultHigh); zeroCell();
-      moveTo(denomCopyLow);  setToValue(denom & 0xff);
-      moveTo(denomCopyHigh); setToValue((denom >> 8) & 0xff);
+      moveTo(denomCopyLow);  setToValue(denom & 0xff, tmp.select<6>());
+      moveTo(denomCopyHigh); setToValue((denom >> 8) & 0xff, tmp.select<6>());
       
       moveTo(denominatorIsZero);
     } loopClose();

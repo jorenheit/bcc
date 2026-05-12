@@ -207,7 +207,7 @@ void Assembler::signBitDestructive(Temps<3> tmp) {
 
   pushPtr();
   moveTo(oneTwentyEight);
-  setToValue(128);
+  setToValue(128, tmp.select<1>());
   moveTo(current);
   greaterOrEqualDestructive(oneTwentyEight, tmp.select<1, 2>());
   popPtr();

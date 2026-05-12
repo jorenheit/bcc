@@ -134,7 +134,30 @@ namespace acus::primitive {
     COMMON_INTERFACE;
   };
 
+  struct ConstructConstant: Node {
 
+    DInt value, current, scratch;
+    
+    /*
+      Sets the value of the current cell a constant using the most
+      optimal algorithm.
+      Assumed initial pointer position: current
+      Assumed empty: tmp
+      Invariants: ptr, tmp
+     */
+
+
+    explicit ConstructConstant(DInt val, DInt current, DInt scratch):
+      value(std::move(val)),
+      current(std::move(current)),
+      scratch(std::move(scratch))
+    {}
+
+    COMMON_INTERFACE;
+    // TODO: merge
+  };
+
+  
   struct ChangeBy: Node {
     DInt delta;
     /*

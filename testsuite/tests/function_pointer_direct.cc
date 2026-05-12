@@ -29,12 +29,12 @@ c.function("getPtr").param("x", i8).ret(fooPtr).begin(); {
 } c.endFunction();
 
 c.function("foo1").begin(); {
-  c.writeOut(literal::string("foo1"));
+  c.print(literal::string("foo1"));
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo2").begin(); {
-  c.writeOut(literal::string("foo2"));
+  c.print(literal::string("foo2"));
   c.returnFromFunction();
 } c.endFunction();
 

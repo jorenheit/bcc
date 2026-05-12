@@ -35,9 +35,15 @@ void Assembler::zeroCell() {
   emit<primitive::ZeroCell>();
 }
 
+
 void Assembler::setToValue(int value) {
   zeroCell();
   addConst(value & 0xff);
+}
+
+void Assembler::setToValue(int value, Temps<1> tmp) {
+  auto [cur, scratch] = getFieldIndices(_dp.current(), tmp.get<0>());
+  emit<primitive::ConstructConstant>(value, cur, scratch);
 }
 
 void Assembler::setToValue16(int value, Cell high) { 
@@ -45,6 +51,14 @@ void Assembler::setToValue16(int value, Cell high) {
   setToValue(value & 0xff);
   moveTo(high);
   setToValue((value >> 8) & 0xff);
+  popPtr();
+}
+
+void Assembler::setToValue16(int value, Cell high, Temps<1> tmp) { 
+  pushPtr();
+  setToValue(value & 0xff, tmp);
+  moveTo(high);
+  setToValue((value >> 8) & 0xff, tmp);
   popPtr();
 }
 

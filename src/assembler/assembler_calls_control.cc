@@ -165,7 +165,7 @@ void Assembler::returnFromFunctionImpl(std::optional<Expression> const &ret, API
   _currentBlock->returns = true;
   
   if (ret) {
-    API_REQUIRE_ASSIGNABLE(ret->type(), _currentFunction->type->returnType());
+    API_REQUIRE_ASSIGNABLE(_currentFunction->type->returnType(), ret->type());
 
     // Copy the variable into the return-slot. TODO: non-globals can be moved rather than copied
     Slot returnSlot = {
@@ -176,7 +176,7 @@ void Assembler::returnFromFunctionImpl(std::optional<Expression> const &ret, API
       .scope = nullptr
     };
     
-    assign(returnSlot, *ret);
+    assignImpl(Expression{returnSlot}, *ret, API_FWD);
   }
   
   syncLocalToGlobal();
@@ -283,9 +283,9 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
 	moveTo(0, MacroCell::Value0);
 	primitive::DInt const diff = currentFrameSize + paramStart + offset;
 	emit<primitive::MovePointerRelative>(diff);
-	setToValue(value & 0xff);
+	setToValue(value, Temps<1>::select(0, MacroCell::Scratch0));
 	switchField(MacroCell::Value1);
-	setToValue(argType->usesValue1() ? ((value >> 8) & 0xff) : 0);
+	setToValue(argType->usesValue1() ? ((value >> 8) & 0xff) : 0, Temps<1>::select(0, MacroCell::Scratch0));
 	switchField(MacroCell::Value0);
 	emit<primitive::MovePointerRelative>(-diff);
 	offset += MacroCell::FieldCount;

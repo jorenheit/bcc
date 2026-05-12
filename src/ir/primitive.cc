@@ -25,6 +25,12 @@ std::string primitive::Sequence::dumpCode(Context const &ctx) {
 }
 
 
+namespace acus::constants {
+  using FactorPair = std::pair<uint8_t, uint8_t>;
+  extern std::array<FactorPair, 129> table;
+};
+
+
 namespace acus::Algorithm {
 
   std::string movePtr(int amount) {
@@ -40,6 +46,7 @@ namespace acus::Algorithm {
   std::string increment(int n = 1) { assert(n >= 0); return std::string(n, '+'); }
 
   std::string modify(int n) {
+    if (n == 0) return "";
     return (n > 0) ? increment(std::abs(n)) : decrement(std::abs(n));
   }
   
@@ -105,18 +112,46 @@ namespace acus::Algorithm {
     oss << zero() << increment(val & 0xff);
     return oss.str();
   }
-
-  // Set current (low-byte) and high-byte to value
-  std::string setToValue(int val, int highByte) {
-    std::ostringstream oss;
-    oss << zero() << increment(val & 0xff)
-	<< movePtr(highByte, 0)
-	<< zero() << increment((val >> 8) & 0xff)
-	<< movePtr(0, highByte);
+  
+  std::string setToValue(unsigned int val, int current, int tmp) {
+    val &= 0xff;
+    bool const countBack = val > 128;
+    if (countBack) val = 256 - val;
     
-    return oss.str();
-  }
+    auto const naive = [&] -> std::string {
+      std::ostringstream oss;
+      oss << zero() << (countBack ? decrement(val) : increment(val));
+      return oss.str();
+    };
+    
+    auto const smart = [&] -> std::string {
+      auto const [a, b] = constants::table[val];
+      std::ostringstream oss;
+      oss << zero()
+	  << movePtr(tmp, current)
+	//	  << zero()
+	  << increment(a)
+	  << "["
+	  <<   decrement()
+	  <<   movePtr(current, tmp)
+	  <<   (countBack ? decrement(b) : increment(b))
+	  <<   movePtr(tmp, current)
+	  << "]"
+	  << movePtr(current, tmp)
+	  << modify((val - a * b) * (countBack ? -1 : 1));
 
+      return oss.str();
+    };
+
+    //    return naive();
+    
+    std::string const smartResult = smart();
+    std::string const naiveResult = naive();
+    return smartResult.length() < naiveResult.length()
+      ? smartResult
+      : naiveResult;
+  }
+  
   
   // Store !!current back intor current
   std::string boolean(int current, int tmp) {
@@ -490,6 +525,14 @@ MERGE(ZeroCellPlus) {
   if (dynamic_cast<ZeroCell const *>(other))     return std::make_shared<ZeroCellPlus>();
   return nullptr;
 }
+
+// ConstructConstant
+TXT(ConstructConstant) { return "CONSTANT: " + std::to_string(value.resolve(ctx)); }
+GEN(ConstructConstant) {
+  auto const [val, cur, tmp] = defer::resolve(ctx, value, current, scratch);
+  return Algorithm::setToValue(val, cur, tmp);
+}
+
 
 // ChangeBy
 TXT(ChangeBy) {

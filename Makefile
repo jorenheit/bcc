@@ -13,6 +13,7 @@ OBJDIR      := obj
 COMMON_SRCS := \
 	src/api/api.cc \
 	src/ir/primitive.cc \
+	src/ir/constants.cc \
 	src/types/typesystem.cc \
 	src/types/type_rules.cc \
 	src/types/operators.cc \

@@ -252,6 +252,7 @@ namespace acus {
     void jumpIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX); 
+    void printStringImpl(Expression const &str, API_CTX); 
     void printUnsignedImpl(Expression const &val);
     void printSignedImpl(Expression const &val);
   
@@ -324,8 +325,14 @@ namespace acus {
     void addConstToSlot(Slot const &lhs, int delta);
     void subSlotFromSlot(Slot const &lhs, Slot const &rhs);
     void subConstFromSlot(Slot const &lhs, int delta);
-    void mulSlotBySlot(Slot const &lhs, Slot const &rhs);
+
     void mulSlotByConst(Slot const &lhs, int factor);
+    void mulSlotByConstUnsigned(Slot const &lhs, int factor);
+    void mulSlotByConstSigned(Slot const &lhs, int factor);
+
+    void mulSlotBySlot(Slot const &lhs, Slot const &rhs);
+    void mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
+    void mulSlotBySlotSigned(Slot const &lhs, Slot const &rhs);
 
     void divSlotByConst(Slot const &lhs, int denom);
     void divSlotByConstUnsigned(Slot const &lhs, int denom);
@@ -417,9 +424,11 @@ namespace acus {
   
     void moveField(Cell dest);
     void copyField(Cell dest, Temps<1>);
-  
+
     void setToValue(int value);
-    void setToValue16(int value, Cell high);
+    void setToValue(int value, Temps<1>);
+    void setToValue16(int value, Cell high);    
+    void setToValue16(int value, Cell high, Temps<1>);
 
     void inc();
     void dec();

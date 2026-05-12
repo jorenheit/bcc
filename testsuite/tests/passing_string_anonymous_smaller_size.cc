@@ -17,7 +17,7 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("print").param("s", bigString).ret(ts::void_t()).begin(); {
-  c.writeOut("s");
+  c.print("s");
   c.returnFromFunction();
 } c.endFunction();
 
