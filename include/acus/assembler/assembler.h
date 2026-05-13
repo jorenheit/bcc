@@ -251,11 +251,19 @@ namespace acus {
     
     void jumpIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
-    void printImpl(Expression const &rhs, API_CTX); 
-    void printStringImpl(Expression const &str, API_CTX); 
-    void printUnsignedImpl(Expression const &val);
-    void printSignedImpl(Expression const &val);
-  
+    void printImpl(Expression const &rhs, API_CTX);
+
+
+    void printString(Expression const &rhs);
+    void printStringConst(std::string const &str);
+    void printStringSlot(Slot const &slot);
+
+    void printDecimal(Expression const &rhs);
+    void printDecimalConst(int value);
+    void printDecimalSlot(Slot const &slot);
+    void printDecimalSlotUnsigned(Slot const &slot, bool const destroySlot = false);
+    void printDecimalSlotSigned(Slot const &slot);
+
     // Unrary operators implementation
     template <typename Fold>
     struct UnOpSpec {

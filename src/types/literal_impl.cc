@@ -122,6 +122,10 @@ namespace acus::literal::impl {
     }
   }
 
+  std::string const &string::stdstr() const {
+    return _str;
+  }
+  
   std::string string::str() const {
     return std::string("\"") + _str + "\"";
   }

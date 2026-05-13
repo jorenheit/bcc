@@ -28,7 +28,6 @@ namespace acus::literal::impl {
     Integer(types::TypeHandle t, int v);
 
     virtual std::string str() const override;
-    //    int value() const;
     unsigned encodedValue() const;
     int semanticValue() const;
   };
@@ -72,6 +71,7 @@ namespace acus::literal::impl {
     virtual std::string str() const override;      
     virtual Literal clone() const override;
     Literal element(size_t idx) const;
+    std::string const &stdstr() const;
   }; // string
 
   struct structT: Base {

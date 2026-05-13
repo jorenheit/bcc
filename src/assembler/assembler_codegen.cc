@@ -51,11 +51,7 @@ void Assembler::constructBuiltinFunctions() {
     std::string const funcName = builtinFunctionName(func);
     
     function(funcName).param("x", paramType).begin(); {
-      if (types::isSignedInteger(paramType)) {
-	printSignedImpl(Expression{ local("x") });
-      } else {
-	printUnsignedImpl(Expression{ local("x") });
-      }
+      printDecimal(Expression{ local("x") });
       returnFromFunction();
     } endFunction();
     

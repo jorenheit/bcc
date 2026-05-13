@@ -9,58 +9,18 @@ int main() try {
   Assembler c;
 
   auto i8 = ts::i8();
+  auto s8 = ts::s8();
+  auto i16 = ts::i16();
+  auto s16 = ts::s16();
 
   c.program("test", "main").begin(); {
 
-    auto i16 = ts::i16();
-
     c.function("main").begin(); {
-      c.declareLocal("x", i16);
+      c.declareLocal("x", s16);
 
-      // // add with literal -> "AA"
-      // c.assign("x", literal::i16(0x4140));
-      // c.writeOut(c.add("x", literal::i16(1)));
-
-      // // sub with literal -> "BB"
-      // c.assign("x", literal::i16(0x4243));
-      // c.writeOut(c.sub("x", literal::i16(1)));
-
-      // // mul with literal, mapped to "CC"
-      // c.assign("x", literal::i16(0x1111));
-      // c.writeOut(c.add(c.mul("x", literal::i16(3)), literal::i16(0x1010)));
-
-      // // div with literal, mapped to "DD"
-      // c.assign("x", literal::i16(0x6363));
-      // c.writeOut(c.add(c.div("x", literal::i16(3)), literal::i16(0x2323)));
-
-      // // mod with literal, mapped to "EE"
-      // c.assign("x", literal::i16(0x7171));
-      // c.writeOut(c.add(c.mod("x", literal::i16(0x5050)), literal::i16(0x2424)));
-
-      // // addAssign with literal -> "AA"
-      // c.assign("x", literal::i16(0x4140));
-      // c.addAssign("x", literal::i16(1));
-      // c.writeOut("x");
-
-      // // subAssign with literal -> "BB"
-      // c.assign("x", literal::i16(0x4243));
-      // c.subAssign("x", literal::i16(1));
-      // c.writeOut("x");
-
-      // mulAssign with literal, mapped to "CC"
-      c.assign("x", literal::i16(0x1111));
-      c.mulAssign("x", literal::i16(3));
-      c.writeOut(c.add("x", literal::i16(0x1010)));
-
-      // divAssign with literal, mapped to "DD"
-      c.assign("x", literal::i16(0x6363));
-      c.divAssign("x", literal::i16(3));
-      c.writeOut(c.add("x", literal::i16(0x2323)));
-
-      // modAssign with literal, mapped to "EE"
-      c.assign("x", literal::i16(0x7171));
-      c.modAssign("x", literal::i16(0x5050));
-      c.writeOut(c.add("x", literal::i16(0x2424)));
+      c.assign("x", literal::s16(-300));
+      c.print("x");
+      
 
       c.returnFromFunction();
     } c.endFunction();

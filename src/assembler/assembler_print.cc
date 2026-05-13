@@ -28,125 +28,66 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   
   if (types::isInteger(val.type())) {
-    // TODO: option to force inlining of the builtin calls?
-    
-    BuiltinFunction const func = val.type()->usesValue1()
-      ? (types::isUnsignedInteger(val.type()) ? BuiltinFunction::PrintUnsigned16 : BuiltinFunction::PrintSigned16)
-      : (types::isUnsignedInteger(val.type()) ? BuiltinFunction::PrintUnsigned8 : BuiltinFunction::PrintSigned8);
-    
-    _usedBuiltinFunctions.insert(func);
+    // For literals, inline the printing code
+    if (val.isLiteral()) return printDecimal(val);
 
+    // For slots, call the builtin functions
+    BuiltinFunction const func = [&]{
+      switch (val.type()->tag()) {
+      case types::I8:  return BuiltinFunction::PrintUnsigned8;
+      case types::S8:  return BuiltinFunction::PrintSigned8;
+      case types::I16: return BuiltinFunction::PrintUnsigned16;
+      case types::S16: return BuiltinFunction::PrintSigned16;
+      default: std::unreachable();
+      }
+      std::unreachable();
+    }();
+
+    _usedBuiltinFunctions.insert(func);
     callFunctionImpl(builtinFunctionName(func), {}, { val }, API_FWD);
   }
   else if (types::isString(val.type())) {
-    printStringImpl(val, API_FWD);
+    // TODO: investigate if this should be a builtin function call as well
+    printString(val);
   }
   else {
     API_REQUIRE(false, error::ErrorCode::NotPrintable, "print is not supported for values of type '", val.type()->str(), "'.");
   }
 }
 
-
-void Assembler::printUnsignedImpl(Expression const &val) {
-  assert(types::isUnsignedInteger(val.type()));
-
-  if (val.isLiteral()) {
-    int x = literal::cast<types::IntegerType>(val.literal())->semanticValue();
-    // TODO: just use to_string, wtf were you smoking?
-    std::vector<int> digits;
-    while (x > 0) {
-      digits.push_back(x % 10);
-      x /= 10;
-    }
-
-    Slot const tmp = getTemp(ts::i8());
-    for (int i = digits.size() - 1; i >= 0; --i) {
-      moveTo(tmp);
-      setToValue(digits[i] + '0', Temps<1>::select(tmp, MacroCell::Scratch0));
-      emit<primitive::Out>();
-    }
-  }
-  else {
-    Slot const valSlot = [&] {
-      Slot const materialized = val.slot()->materialize(*this);
-      if (not val.slot()->direct()) {
-	return materialized; // already a disposable temp
-      }
-      Slot const copy = getTemp(val.type());
-      assignSlot(copy, materialized);
-      return copy;
-    }();
-
-    printIntegerSlotDestructive(valSlot);
-  }
-
-}
-
-
-void Assembler::printSignedImpl(Expression const &val) {
-  assert(types::isSignedInteger(val.type()));
+void Assembler::printDecimal(Expression const &expr) {
+  assert(types::isInteger(expr.type()));
   
-  if (val.isLiteral()) {
-    int x = literal::cast<types::IntegerType>(val.literal())->semanticValue();
-    bool const negative = x < 0;
-
-    std::vector<int> digits;
-    x = std::abs(x);
-    while (x > 0) {
-      digits.push_back(x % 10);
-      x /= 10;
-    }
-
-    // TMP to construct character values into
-    Slot const tmp = getTemp(ts::i8());
-    
-    if (negative) {
-      moveTo(tmp);
-      setToValue('-', Temps<1>::select(tmp, MacroCell::Scratch0));
-      emit<primitive::Out>();
-    }
-    
-    for (int i = digits.size() - 1; i >= 0; --i) {
-      moveTo(tmp);
-      setToValue(digits[i] + '0', Temps<1>::select(tmp, MacroCell::Scratch0));
-      emit<primitive::Out>();
-    }
+  if (expr.hasSlot()) {
+    Slot const slot = expr.slot()->materialize(*this);
+    return printDecimalSlot(slot);
   }
-  else {
-    Slot valSlot = [&] {
-      Slot const materialized = val.slot()->materialize(*this);
-      if (not val.slot()->direct()) {
-	return materialized; // already a disposable temp
-      }
-      Slot const copy = getTemp(val.type());
-      assignSlot(copy, materialized);
-      return copy;
-    }();
 
-    // Construct sign bit in the flag and use that to determine whether to print a - sign.
-    moveTo(valSlot, valSlot.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
-    signBitConstructive(Cell{valSlot, MacroCell::Flag},
-			Temps<4>::select(valSlot, MacroCell::Scratch0,
-					 valSlot, MacroCell::Scratch1,
-					 valSlot, MacroCell::Payload0,
-					 valSlot, MacroCell::Payload1));
-
-    moveTo(valSlot, MacroCell::Flag);
-    loopOpen(); {
-      // Negate valSlot while we're here
-      negateSlot(valSlot);
-      setToValue('-', Temps<1>::select(valSlot, MacroCell::Scratch0));
-      emit<primitive::Out>();
-      zeroCell();
-    } loopClose();
-    
-    valSlot.type = valSlot.type->usesValue1() ? ts::i16() : ts::i8();
-    printIntegerSlotDestructive(valSlot);    
-  }
+  int const x = literal::cast<types::IntegerType>(expr.literal())->semanticValue();
+  printDecimalConst(x);
 }
 
-void Assembler::printIntegerSlotDestructive(Slot const &valSlot) {
-  assert(types::isInteger(valSlot.type));
+void Assembler::printDecimalConst(int value) {
+  printStringConst(std::to_string(value));
+}
+
+void Assembler::printDecimalSlot(Slot const &slot) {
+  assert(types::isInteger(slot.type));
+
+  if (types::isUnsignedInteger(slot.type)) return printDecimalSlotUnsigned(slot);
+  if (types::isSignedInteger(slot.type)) return printDecimalSlotSigned(slot);
+  std::unreachable();
+}
+
+void Assembler::printDecimalSlotUnsigned(Slot const &slot, bool const destroySlot) {
+  assert(types::isUnsignedInteger(slot.type));
+
+  Slot const valSlot = [&] {
+    if (destroySlot) return slot;
+    Slot const copy = getTemp(slot.type);
+    assignSlot(copy, slot);
+    return copy;
+  }();
 
   pushPtr();
   
@@ -201,16 +142,70 @@ void Assembler::printIntegerSlotDestructive(Slot const &valSlot) {
   // Rebase datapointer to the start of the digits-array
   _dp.set(Cell{digits, MacroCell::Value0});
 
-
   popPtr();
 }
 
-void Assembler::printStringImpl(Expression const &str, API_CTX) {
+void Assembler::printDecimalSlotSigned(Slot const &slot) {
+  assert(types::isSignedInteger(slot.type));
 
-  // TODO: for literals, don't materialize
-  Slot const slot = str.hasSlot()
-    ? str.slot()->materialize(*this)
-    : getTemp(str.literal());
+  Slot const valSlot = getTemp(slot.type);
+  assignSlot(valSlot, slot);
+  
+  pushPtr();
+  // Construct sign bit in the flag and use that to determine whether to print a - sign.
+  moveTo(valSlot, valSlot.type->usesValue1() ? MacroCell::Value1 : MacroCell::Value0);
+  signBitConstructive(Cell{valSlot, MacroCell::Flag},
+		      Temps<4>::select(valSlot, MacroCell::Scratch0,
+				       valSlot, MacroCell::Scratch1,
+				       valSlot, MacroCell::Payload0,
+				       valSlot, MacroCell::Payload1));
+
+  moveTo(valSlot, MacroCell::Flag);
+  loopOpen(); {
+    // Negate valSlot while we're here
+    negateSlot(valSlot);
+    setToValue('-', Temps<1>::select(valSlot, MacroCell::Scratch0));
+    emit<primitive::Out>();
+    zeroCell();
+  } loopClose();
+  popPtr();
+
+  printDecimalSlotUnsigned(valSlot.unsignedView(), true);
+}
+
+void Assembler::printString(Expression const &expr) {
+  assert(types::isString(expr.type()));
+  
+  if (expr.hasSlot()) return printStringSlot(expr.slot()->materialize(*this));
+  assert(expr.isLiteral());
+  
+  std::string const &str = literal::cast<types::StringType>(expr.literal())->stdstr();
+  printStringConst(str);
+}
+
+void Assembler::printStringConst(std::string const &str) {
+
+  if (str.size() == 0) return;
+  
+  Slot const ch = getTemp(ts::i8());
+
+  pushPtr();
+  moveTo(ch);
+  setToValue(str[0], Temps<1>::select(ch, MacroCell::Scratch0));
+  emit<primitive::Out>();
+  for (size_t i = 1; i != str.size(); ++i) {
+    int const diff = str[i] - str[i - 1];
+    emit<primitive::ChangeBy>(diff);
+    emit<primitive::Out>();
+  }
+  zeroCell();
+  popPtr();
+
+  // TODO: free temp immediately
+}
+ 
+void Assembler::printStringSlot(Slot const &slot) {
+  assert(types::isString(slot.type));
 
   pushPtr();
   moveTo(slot, MacroCell::Value0);
