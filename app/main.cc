@@ -16,9 +16,9 @@ int main() try {
   c.program("test", "main").begin(); {
 
     c.function("main").begin(); {
-      c.declareLocal("x", s16);
+      c.declareLocal("x", i8);
 
-      c.assign("x", literal::s16(-300));
+      c.read("x");
       c.print("x");
       
 

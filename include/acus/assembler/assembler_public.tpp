@@ -14,6 +14,11 @@ void Assembler::writeOut(auto const &rhs, API_FUNC_SOURCE) {
   writeOutImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
+void Assembler::read(auto const &rhs, API_FUNC_SOURCE) {
+  API_FUNC_BEGIN();
+  readImpl(lValue(rhs, API_FWD), API_FWD);
+}
+
 void Assembler::print(auto const &val, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   printImpl(rValue(val, API_FWD), API_FWD);

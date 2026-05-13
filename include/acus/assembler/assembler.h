@@ -135,6 +135,7 @@ namespace acus {
     Expression addressOf(auto const &obj, API_FUNC);
 
     void writeOut(auto const &val, API_FUNC);
+    void read(auto const &rhs, API_FUNC);
     void print(auto const &val, API_FUNC);
 
     void label(std::string const &jumpLabel, API_FUNC);
@@ -251,6 +252,7 @@ namespace acus {
     
     void jumpIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
     void writeOutImpl(Expression const &rhs, API_CTX); 
+    void readImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX);
 
 

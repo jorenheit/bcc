@@ -1,14 +1,42 @@
 #include "assembler.ih"
 
+// TODO: rename this file to assembler_io.cc
+
+void Assembler::readImpl(Expression const &rhs, API_CTX) {
+  API_CHECK_EXPECTED();
+  API_REQUIRE_INSIDE_FUNCTION_BLOCK();
+  API_REQUIRE(rhs.type()->size() == 1,
+	      error::ErrorCode::InvalidReadType,
+	      "input must be read into variable-type of size 1.");
+  assert(not rhs.isLiteral());
+
+  pushPtr();
+  Slot const targetSlot = rhs.slot()->materialize(*this);
+  moveTo(targetSlot);
+  emit<primitive::In>();
+  popPtr();
+
+  if (not rhs.slot()->direct()) {
+    rhs.slot()->write(*this, targetSlot);
+    freeTemp(targetSlot);
+  }
+}
+
 void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
   pushPtr();
 
-  Slot const slot = rhs.hasSlot()
-    ? rhs.slot()->materialize(*this)
-    : getTemp(rhs.literal());
+  bool freeSlot = false;
+  Slot const slot = [&] {
+    if (rhs.hasSlot()) {
+      freeSlot = not rhs.slot()->direct();
+      return rhs.slot()->materialize(*this);
+    }
+    freeSlot = true;
+    return getTemp(rhs.literal());
+  }();
 
   for (int i = 0; i != slot.type->size(); ++i) {
     moveTo(slot + i, MacroCell::Value0);
@@ -20,7 +48,7 @@ void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
   }
   popPtr();
 
-  if (not rhs.hasSlot()) freeTemp(slot);
+  if (freeSlot) freeTemp(slot);
 }
 
 void Assembler::printImpl(Expression const &val, API_CTX) {
@@ -61,7 +89,9 @@ void Assembler::printDecimal(Expression const &expr) {
   
   if (expr.hasSlot()) {
     Slot const slot = expr.slot()->materialize(*this);
-    return printDecimalSlot(slot);
+    printDecimalSlot(slot);
+    if (not expr.slot()->direct()) freeTemp(slot);
+    return;
   }
 
   int const x = literal::cast<types::IntegerType>(expr.literal())->semanticValue();
@@ -178,7 +208,11 @@ void Assembler::printDecimalSlotSigned(Slot const &slot) {
 void Assembler::printString(Expression const &expr) {
   assert(types::isString(expr.type()));
   
-  if (expr.hasSlot()) return printStringSlot(expr.slot()->materialize(*this));
+  if (expr.hasSlot()) {
+    Slot const slot = expr.slot()->materialize(*this);
+    printStringSlot(slot);
+    if (not expr.slot()->direct()) freeTemp(slot);
+  }
   assert(expr.isLiteral());
   
   std::string const &str = literal::cast<types::StringType>(expr.literal())->stdstr();

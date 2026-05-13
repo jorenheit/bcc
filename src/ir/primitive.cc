@@ -642,6 +642,10 @@ GEN(Xor) {
   return Algorithm::xorValues(cur, oth, tmp1, tmp2);
 }
 
+// In
+TXT(In) { return "IN"; }
+GEN(In) { return ","; }
+
 
 // Out
 TXT(Out) { return "OUT"; }

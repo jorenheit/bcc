@@ -108,6 +108,7 @@ void Assembler::setNextBlock(Expression const &obj) {
   if (obj.hasSlot()) {
     Slot const ptrSlot = obj.slot()->materialize(*this);
     assignSlot(targetSlot, ptrSlot);
+    if (not obj.slot()->direct()) freeTemp(ptrSlot);
   } else {
     assignSlot(targetSlot, obj.literal());
   }

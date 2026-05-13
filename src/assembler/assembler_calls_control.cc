@@ -215,20 +215,20 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
   auto const constructInNextFrame = [&](auto&& self, int &offset, Expression const &arg) -> void {
 
     if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
-      Slot slot = arg.slot()->materialize(*this);
-      switch (slot.type->tag()) {
+      Slot const argSlot = arg.slot()->materialize(*this);
+      switch (argSlot.type->tag()) {
       case types::I8:
       case types::I16:
       case types::S8:
       case types::S16:
       case types::STRING:
       case types::FUNCTION_POINTER: {
-	copySlotToNextFrame(slot, offset);
+	copySlotToNextFrame(argSlot, offset);
 	break;
       }
       case types::POINTER: {
 	int const destOffset = offset;
-	copySlotToNextFrame(slot, offset);
+	copySlotToNextFrame(argSlot, offset);
 	primitive::DInt const distance = currentFrameSize + paramStart + destOffset + MacroCell::Value0;
 	moveTo(0, MacroCell::Value0);
 	emit<primitive::MovePointerRelative>(distance);
@@ -237,7 +237,7 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
 	break;
       }	
       case types::ARRAY: {
-	auto arrayType = types::cast<types::ArrayType>(slot.type);
+	auto arrayType = types::cast<types::ArrayType>(argSlot.type);
 	auto elementType = arrayType->elementType();
 	
 	for (int i = 0; i != arrayType->length(); ++i) {
@@ -245,21 +245,21 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
 	    .name = "dummy",
 	    .type = elementType,
 	    .kind = Slot::Dummy,
-	    .offset = slot.offset + i * elementType->size()
+	    .offset = argSlot.offset + i * elementType->size()
 	  };
 	  self(self, offset, rValue(elementSlot, API_FWD));
 	}
 	break;
       }
       case types::STRUCT: {
-	auto structType = types::cast<types::StructType>(slot.type);
+	auto structType = types::cast<types::StructType>(argSlot.type);
 	for (int i = 0; i != structType->fieldCount(); ++i) {
 	  auto fieldType = structType->fieldType(i);
 	  Slot const fieldSlot {
 	    .name = "dummy",
 	    .type = fieldType,
 	    .kind = Slot::Dummy,
-	    .offset = slot.offset + structType->fieldOffset(i)
+	    .offset = argSlot.offset + structType->fieldOffset(i)
 	  };
 	  self(self, offset, rValue(fieldSlot, API_FWD));
 	}
@@ -270,6 +270,8 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
 	std::unreachable();
       }
       } // switch (tag)
+
+      if (not arg.slot()->direct()) freeTemp(argSlot);
     }
     else { // anonymous value -> construct in-place
       types::TypeHandle argType = arg.type();

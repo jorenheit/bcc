@@ -51,12 +51,13 @@ namespace acus::error {
     NegativeIndex,
     TooManyElementsInArrayInitialization,
     TooFewElementsInArrayInitialization,
-
+    
     AssignmentTypeMismatch,
     UnexpectedType,
     FunctionParameterCountMismatch,
     InvalidFunctionPointerCall,    
-
+    InvalidReadType,
+    
     BuilderNotFinalized,
     ReturnTypeSpecifiedMultipleTimes    
   };

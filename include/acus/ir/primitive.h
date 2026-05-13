@@ -220,6 +220,10 @@ namespace acus::primitive {
     COMMON_INTERFACE;
     virtual std::shared_ptr<Node> merge(Node const *other) const override;
   };
+
+  struct In: Node {
+    COMMON_INTERFACE;
+  };
   
   struct Out: Node {
     COMMON_INTERFACE;

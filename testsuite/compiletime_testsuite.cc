@@ -85,7 +85,7 @@ std::string codeName(ErrorCode code) {
   case ErrorCode::WrongEntryFunctionType: return "WrongEntryFunctionType";
   case ErrorCode::ExecutionPathWithoutReturn: return "ExecutionPathWithoutReturn";
   case ErrorCode::UnreachableCodeSection: return "UnreachableCodeSection";
-
+  case ErrorCode::InvalidReadType: return "InvalidReadType";
   }
   return "<unknown>";
 }
