@@ -13,7 +13,8 @@ int main() try {
       c.assign("x", literal::i8(0));
 
       c.label("print");
-      c.writeOut("x");
+      c.print("x");
+      c.write(literal::i8('\n'));
       c.addAssign("x", literal::i8(1));
       c.jumpIf(c.eq("x", literal::i8(0)), "done", "print");
 

@@ -13,7 +13,8 @@ int main() try {
       c.label("a");
       for (int i = 0; i != 256; ++i) {
 	c.assign("x", literal::i8(i));
-	c.writeOut("x");
+	c.print("x");
+	c.write(literal::i8('\n'));
       }
       c.returnFromFunction();
     } c.endFunction();

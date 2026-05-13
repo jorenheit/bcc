@@ -29,7 +29,7 @@ int main() try {
 
       // Output current Fibonacci number.
       c.print("a");
-      c.writeOut(literal::string(", "));
+      c.print(literal::string(", "));
       // next = a + b
       c.assign("next", c.add("a", "b"));
       // a = b

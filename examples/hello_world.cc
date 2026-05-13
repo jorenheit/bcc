@@ -9,7 +9,7 @@ int main() try {
   c.program("hello", "main").begin(); {
 
     c.function("main").begin(); {
-      c.writeOut(literal::string("Hello, World!"));
+      c.print(literal::string("Hello, World!\n"));
       c.returnFromFunction();
     } c.endFunction();
 
