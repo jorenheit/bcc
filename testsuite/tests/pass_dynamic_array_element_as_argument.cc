@@ -18,7 +18,7 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("printChar").param("ch", ts::i8()).ret(ts::void_t()).begin(); {
-  c.writeOut("ch");
+  c.write("ch");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -17,7 +17,7 @@ c.function("main").begin(); {
   c.assign(c.structField("s", "p"), c.addressOf("x"));
 
   c.callFunction("foo").arg("s").done();
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 
@@ -25,7 +25,7 @@ c.function("foo").param("s", holder).ret(ts::void_t()).begin(); {
   auto p = c.structField("s", "p");
   auto pDeref = c.dereferencePointer(p);
 
-  c.writeOut(pDeref);
+  c.write(pDeref);
   c.assign(pDeref, literal::i8('X'));
   c.returnFromFunction();
 } c.endFunction();

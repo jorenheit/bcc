@@ -8,7 +8,7 @@ c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
 
   c.callFunction("foo").into("x").done();
-  c.writeOut("x");
+  c.write("x");
   c.callFunction("bar").done();
   c.returnFromFunction();
 } c.endFunction();
@@ -21,7 +21,7 @@ c.function("foo").ret(ts::i8()).begin(); {
 
 c.function("bar").begin(); {
   c.referGlobals({"g"});
-  c.writeOut("g");
+  c.write("g");
   c.returnFromFunction();
 } c.endFunction();
 

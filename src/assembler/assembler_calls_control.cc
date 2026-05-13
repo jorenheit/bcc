@@ -103,7 +103,6 @@ void Assembler::deferFunctionCallTypeCheck(std::string const &callee, std::vecto
 
 void Assembler::deferredFunctionCallTypeChecks() {
   assert(_currentFunction == nullptr);
-
   for (auto const &[API_CTX_NAME, callee, args]: _deferredFunctionCallTypeChecks) {
     API_REQUIRE_FUNCTION_DEFINED(callee);
     functionCallTypeCheck(_program.function(callee).type, args, API_FWD);

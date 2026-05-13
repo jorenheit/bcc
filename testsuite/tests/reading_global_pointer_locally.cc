@@ -16,8 +16,8 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf("g"));
 
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut("g");
-  c.writeOut(pDeref);
+  c.write("g");
+  c.write(pDeref);
 
   c.returnFromFunction();
 } c.endFunction();

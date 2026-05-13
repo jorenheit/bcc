@@ -13,11 +13,11 @@ c.function("main").begin(); {
   c.assign("y", literal::i8(3));
 
   c.divAssign("x", "y");           // 99 / 3 = 33 -> !
-  c.writeOut("x");                 // !
+  c.write("x");                 // !
 
   c.assign("x", literal::i8(105));
   c.assign("z", c.div("x", "y"));  // 105 / 3 = 35 -> #
-  c.writeOut("z");                 // #
+  c.write("z");                 // #
 
   c.returnFromFunction();
 } c.endFunction();

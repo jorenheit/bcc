@@ -18,7 +18,7 @@ c.function("main").begin(); {
   auto dst = c.arrayElement("arr", "dstIdx");
   c.assign(dst, src);
 
-  c.writeOut("arr");
+  c.write("arr");
   c.returnFromFunction();
 } c.endFunction();
 

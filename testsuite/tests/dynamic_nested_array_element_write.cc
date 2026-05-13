@@ -22,7 +22,7 @@ c.function("main").begin(); {
   auto cellRef = c.arrayElement(rowRef, "col");
   c.assign(cellRef, literal::i8('X'));
 
-  c.writeOut("m");
+  c.write("m");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -21,8 +21,8 @@ c.function("main").begin(); {
   c.assign(c.structField("s", "pb"), c.addressOf("b"));
 
   c.callFunction("foo").arg("s").done();
-  c.writeOut("a");
-  c.writeOut("b");
+  c.write("a");
+  c.write("b");
   c.returnFromFunction();
 } c.endFunction();
 
@@ -33,8 +33,8 @@ c.function("foo").param("s", pair).ret(ts::void_t()).begin(); {
   auto aDeref = c.dereferencePointer(pa);
   auto bDeref = c.dereferencePointer(pb);
 
-  c.writeOut(aDeref);
-  c.writeOut(bDeref);
+  c.write(aDeref);
+  c.write(bDeref);
 
   c.assign(aDeref, literal::i8('X'));
   c.assign(bDeref, literal::i8('Y'));

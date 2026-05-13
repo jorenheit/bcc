@@ -10,42 +10,42 @@ c.function("main").begin(); {
   // slot / const: -12 / 5 = -2; -2 + 'C' = 'A'
   c.assign("x", literal::s8(-12));
   c.assign("z", c.div("x", literal::s8(5)));
-  c.writeOut(c.add("z", literal::s8('C'))); // A
+  c.write(c.add("z", literal::s8('C'))); // A
 
   // slot / const: 12 / -5 = -2; -2 + 'D' = 'B'
   c.assign("x", literal::s8(12));
   c.assign("z", c.div("x", literal::s8(-5)));
-  c.writeOut(c.add("z", literal::s8('D'))); // B
+  c.write(c.add("z", literal::s8('D'))); // B
 
   // const / slot: -12 / 5 = -2; -2 + 'E' = 'C'
   c.assign("x", literal::s8(5));
   c.assign("z", c.div(literal::s8(-12), "x"));
-  c.writeOut(c.add("z", literal::s8('E'))); // C
+  c.write(c.add("z", literal::s8('E'))); // C
 
   // const / slot: 12 / -5 = -2; -2 + 'F' = 'D'
   c.assign("x", literal::s8(-5));
   c.assign("z", c.div(literal::s8(12), "x"));
-  c.writeOut(c.add("z", literal::s8('F'))); // D
+  c.write(c.add("z", literal::s8('F'))); // D
 
   // slot % const: -12 % 5 = -2; -2 + 'G' = 'E'
   c.assign("x", literal::s8(-12));
   c.assign("z", c.mod("x", literal::s8(5)));
-  c.writeOut(c.add("z", literal::s8('G'))); // E
+  c.write(c.add("z", literal::s8('G'))); // E
 
   // slot % const: 12 % -5 = 2; 2 + 'D' = 'F'
   c.assign("x", literal::s8(12));
   c.assign("z", c.mod("x", literal::s8(-5)));
-  c.writeOut(c.add("z", literal::s8('D'))); // F
+  c.write(c.add("z", literal::s8('D'))); // F
 
   // const % slot: -12 % 5 = -2; -2 + 'I' = 'G'
   c.assign("x", literal::s8(5));
   c.assign("z", c.mod(literal::s8(-12), "x"));
-  c.writeOut(c.add("z", literal::s8('I'))); // G
+  c.write(c.add("z", literal::s8('I'))); // G
 
   // const % slot: 12 % -5 = 2; 2 + 'F' = 'H'
   c.assign("x", literal::s8(-5));
   c.assign("z", c.mod(literal::s8(12), "x"));
-  c.writeOut(c.add("z", literal::s8('F'))); // H
+  c.write(c.add("z", literal::s8('F'))); // H
 
   c.returnFromFunction();
 } c.endFunction();

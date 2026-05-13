@@ -16,7 +16,7 @@ c.function("main").begin(); {
   auto elem = c.arrayElement("arr", "idx");
   c.assign("out", elem);
 
-  c.writeOut("out");
+  c.write("out");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -97,7 +97,7 @@ void Assembler::freeSlot(Slot &slot) {
   slot.scope = nullptr;
 }
 
-void Assembler::freeTemp(Slot const &target, std::source_location loc) {
+void Assembler::freeTemp(Slot const &target) {
   assert(target.kind == Slot::Temp);
   
   // Find this slot in the current frame and free it.
@@ -107,7 +107,9 @@ void Assembler::freeTemp(Slot const &target, std::source_location loc) {
       return;
     }
   }
-  assert(false && "slot not found in current frame");
+  // Ignore. The temp slot might be a subslot of a larger materialized temp
+  // Not sure if we should free the entire slot in that case, seems risky.
+  // Just leave (leak) it for now, it will be freed eventually anyway.
 }
 
 

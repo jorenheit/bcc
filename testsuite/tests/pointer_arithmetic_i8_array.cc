@@ -18,16 +18,16 @@ c.function("main").begin(); {
   c.assign(c.arrayElement("arr", 3), literal::i8('D'));
 
   c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
-  c.writeOut(c.dereferencePointer("p"));        // A
+  c.write(c.dereferencePointer("p"));        // A
 
   c.assign("q", c.add("p", literal::i16(2)));
-  c.writeOut(c.dereferencePointer("q"));        // C
+  c.write(c.dereferencePointer("q"));        // C
 
   c.addAssign("p", literal::i16(1));
-  c.writeOut(c.dereferencePointer("p"));        // B
+  c.write(c.dereferencePointer("p"));        // B
 
   c.subAssign("q", literal::i16(1));
-  c.writeOut(c.dereferencePointer("q"));        // B
+  c.write(c.dereferencePointer("q"));        // B
 
   c.returnFromFunction();
 } c.endFunction();

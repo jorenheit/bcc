@@ -20,17 +20,17 @@ c.function("main").begin(); {
 
   c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
   auto pArr = c.dereferencePointer("p");
-  c.writeOut(c.arrayElement(pArr, 0)); // A
+  c.write(c.arrayElement(pArr, 0)); // A
 
   c.assign("idx", literal::i16(2));
   c.assign("q", c.add("p", "idx"));
   auto qArr = c.dereferencePointer("q");
-  c.writeOut(c.arrayElement(qArr, 0)); // C
+  c.write(c.arrayElement(qArr, 0)); // C
 
   c.assign("idx", literal::i16(1));
   c.subAssign("q", "idx");
   auto qPrev = c.dereferencePointer("q");
-  c.writeOut(c.arrayElement(qPrev, 0)); // B
+  c.write(c.arrayElement(qPrev, 0)); // B
 
   c.returnFromFunction();
 } c.endFunction();

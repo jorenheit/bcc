@@ -20,8 +20,8 @@ c.function("main").begin(); {
 
   c.addAssign("p", literal::i16(1));
 
-  c.writeOut(c.dereferencePointer("q")); // A
-  c.writeOut(c.dereferencePointer("p")); // B
+  c.write(c.dereferencePointer("q")); // A
+  c.write(c.dereferencePointer("p")); // B
 
   c.returnFromFunction();
 } c.endFunction();

@@ -9,11 +9,11 @@ c.function("main").begin(); {
 
   c.assign("x", literal::i16(CAT('E', 'A'))); // low='C', high='A'
 
-  c.writeOut("x");                           // EA
+  c.write("x");                           // EA
   c.addAssign("x", literal::i16(254));        // EA + 254 -> CB
-  c.writeOut("x");                           // CB
+  c.write("x");                           // CB
   c.assign("z", c.add("x", literal::i16(254))); // CB + 254 -> AC
-  c.writeOut("z");                           // AC
+  c.write("z");                           // AC
 
   c.returnFromFunction();
 } c.endFunction();

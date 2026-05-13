@@ -6,23 +6,23 @@ c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
 
   c.assign("x", literal::i8('A'));
-  c.writeOut("x");
+  c.write("x");
   c.scope().begin(); {
     c.declareLocal("x", ts::array(ts::i8(), 2));
     c.assign("x", literal::array(ts::array(ts::i8(), 2)).push(literal::i8('B')).push(literal::i8('X')).done());
-    c.writeOut("x");
+    c.write("x");
     c.scope().begin(); {
       c.declareLocal("x", ts::i8());
       c.declareLocal("y", ts::i8());
       c.assign("x", literal::i8('C'));
       c.assign("y", literal::i8('D'));
-      c.writeOut("x");
-      c.writeOut("y");
+      c.write("x");
+      c.write("y");
     } c.endScope();
 
   } c.endScope();
 
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 

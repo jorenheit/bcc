@@ -17,9 +17,9 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf("g"));
 
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut("g");
+  c.write("g");
   c.assign(pDeref, literal::i8('H'));
-  c.writeOut("g");
+  c.write("g");
 
   c.returnFromFunction();
 } c.endFunction();

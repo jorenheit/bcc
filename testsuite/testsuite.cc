@@ -1212,7 +1212,12 @@ tests.push_back(expectOutput("Integer Division i8",
 #include "tests/integer_division_i8.cc"
                              }));
 
-
+tests.push_back(expectOutput("Integer casts",
+			     "-20|236|65535|-1|44|-1|255|255|32767|-32768|",
+			     []() {
+#include "tests/integer_casts.cc"
+			     }));
+ 
 tests.push_back(expectOutput("Integer Division Mixed i16/i8",
                              "AACC", []() {
 #include "tests/integer_division_mixed_i16_i8.cc"

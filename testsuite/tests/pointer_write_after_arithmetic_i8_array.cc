@@ -22,10 +22,10 @@ c.function("main").begin(); {
   auto pDeref = c.dereferencePointer("p");
   c.assign(pDeref, literal::i8('X'));
 
-  c.writeOut(c.arrayElement("arr", 0)); // A
-  c.writeOut(c.arrayElement("arr", 1)); // B
-  c.writeOut(c.arrayElement("arr", 2)); // X
-  c.writeOut(c.arrayElement("arr", 3)); // D
+  c.write(c.arrayElement("arr", 0)); // A
+  c.write(c.arrayElement("arr", 1)); // B
+  c.write(c.arrayElement("arr", 2)); // X
+  c.write(c.arrayElement("arr", 3)); // D
 
   c.returnFromFunction();
 } c.endFunction();

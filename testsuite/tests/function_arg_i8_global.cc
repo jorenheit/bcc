@@ -10,14 +10,14 @@ c.function("main").begin(); {
 
   c.assign("g", literal::i8('G'));
   c.callFunction("foo").arg("g").done();
-  c.writeOut("g");
+  c.write("g");
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("arg1", ts::i8()).ret(ts::void_t()).begin(); {
-  c.writeOut("arg1");
+  c.write("arg1");
   c.assign("arg1", literal::i8('H'));
-  c.writeOut("arg1");
+  c.write("arg1");
   c.returnFromFunction();
 } c.endFunction();
 

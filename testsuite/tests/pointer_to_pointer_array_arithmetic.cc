@@ -27,15 +27,15 @@ c.function("main").begin(); {
   c.assign("pp", c.addressOf(c.arrayElement("arr", 0)));
 
   auto p0 = c.dereferencePointer("pp");
-  c.writeOut(c.dereferencePointer(p0)); // A
+  c.write(c.dereferencePointer(p0)); // A
 
   c.assign("qq", c.add("pp", literal::i16(2)));
   auto p2 = c.dereferencePointer("qq");
-  c.writeOut(c.dereferencePointer(p2)); // C
+  c.write(c.dereferencePointer(p2)); // C
 
   c.subAssign("qq", literal::i16(1));
   auto p1 = c.dereferencePointer("qq");
-  c.writeOut(c.dereferencePointer(p1)); // B
+  c.write(c.dereferencePointer(p1)); // B
 
   c.returnFromFunction();
 } c.endFunction();

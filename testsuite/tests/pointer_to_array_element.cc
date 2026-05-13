@@ -20,13 +20,13 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf(c.arrayElement("arr", 1)));
 
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut(pDeref); // B
+  c.write(pDeref); // B
 
   c.assign(pDeref, literal::i8('X'));
 
-  c.writeOut(c.arrayElement("arr", 0)); // A
-  c.writeOut(c.arrayElement("arr", 1)); // X
-  c.writeOut(c.arrayElement("arr", 2)); // C
+  c.write(c.arrayElement("arr", 0)); // A
+  c.write(c.arrayElement("arr", 1)); // X
+  c.write(c.arrayElement("arr", 2)); // C
 
   c.returnFromFunction();
 } c.endFunction();

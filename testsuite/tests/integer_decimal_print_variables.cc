@@ -11,31 +11,31 @@ c.function("main").begin(); {
 
   c.assign("u8", literal::i8(255));
   c.print("u8");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("s8", literal::s8(-3));
   c.print("s8");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("u16", literal::i16(65535));
   c.print("u16");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("s16", literal::s16(-300));
   c.print("s16");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("s8", literal::s8(127));
   c.print("s8");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("s8", literal::s8(-128));
   c.print("s8");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("s16", literal::s16(32767));
   c.print("s16");
-  c.writeOut(literal::i8(' '));
+  c.write(literal::i8(' '));
 
   c.assign("s16", literal::s16(-32768));
   c.print("s16");

@@ -24,9 +24,9 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("foo").param("p0", ts::i8()).param("p1", ts::i16()).param("p2", array3).ret(ts::void_t()).begin(); {
-  c.writeOut("p0");
-  c.writeOut("p1");
-  c.writeOut("p2");
+  c.write("p0");
+  c.write("p1");
+  c.write("p2");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -22,7 +22,7 @@ void Assembler::readImpl(Expression const &rhs, API_CTX) {
   }
 }
 
-void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
+void Assembler::writeImpl(Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
 
@@ -212,6 +212,7 @@ void Assembler::printString(Expression const &expr) {
     Slot const slot = expr.slot()->materialize(*this);
     printStringSlot(slot);
     if (not expr.slot()->direct()) freeTemp(slot);
+    return;
   }
   assert(expr.isLiteral());
   

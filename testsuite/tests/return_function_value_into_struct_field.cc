@@ -13,7 +13,7 @@ c.function("main").begin(); {
 
   c.assign(x, literal::i8('A'));
   c.callFunction("makeZ").into(y).done();
-  c.writeOut("s");
+  c.write("s");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -1,10 +1,10 @@
-// Tests if we can pass a value stored in a temporary cell to writeOut
+// Tests if we can pass a value stored in a temporary cell to write
 // Expect: "A"
 
 TEST_BEGIN
 
 c.function("main").begin(); {
-  c.writeOut(literal::i8('A'));
+  c.write(literal::i8('A'));
   c.returnFromFunction();
 } c.endFunction();
 

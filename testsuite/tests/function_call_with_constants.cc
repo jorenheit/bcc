@@ -15,10 +15,10 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("foo").param("p0", ts::i8()).param("p1", ts::i8()).param("p2", ts::i8()).param("p3", ts::i8()).ret(ts::void_t()).begin(); {
-  c.writeOut("p0");
-  c.writeOut("p1");
-  c.writeOut("p2");
-  c.writeOut("p3");
+  c.write("p0");
+  c.write("p1");
+  c.write("p2");
+  c.write("p3");
   c.returnFromFunction();
 } c.endFunction();
 

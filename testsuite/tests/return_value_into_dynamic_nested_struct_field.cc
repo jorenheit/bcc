@@ -19,7 +19,7 @@ c.function("main").begin(); {
   auto selectedPoint = c.arrayElement("pts", "idx");
   auto dest = c.structField(selectedPoint, "y");
   c.callFunction("makeQ").into(dest).done();
-  c.writeOut("pts");
+  c.write("pts");
   c.returnFromFunction();
 } c.endFunction();
 

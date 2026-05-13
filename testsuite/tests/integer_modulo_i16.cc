@@ -13,11 +13,11 @@ c.function("main").begin(); {
   c.assign("y", literal::i16(0x5050));
 
   c.modAssign("x", "y");           // 0x7070 % 0x5050 = 0x2020 -> two spaces
-  c.writeOut("x");                 // "  "
+  c.write("x");                 // "  "
 
   c.assign("x", literal::i16(0x7171));
   c.assign("z", c.mod("x", "y"));  // 0x7171 % 0x5050 = 0x2121 -> !!
-  c.writeOut("z");                 // !!
+  c.write("z");                 // !!
 
   c.returnFromFunction();
 } c.endFunction();

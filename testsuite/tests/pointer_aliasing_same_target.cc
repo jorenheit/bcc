@@ -17,8 +17,8 @@ c.function("main").begin(); {
 
   c.assign(c.dereferencePointer("p"), literal::i8('X'));
 
-  c.writeOut(c.dereferencePointer("p")); // X
-  c.writeOut(c.dereferencePointer("q")); // X
+  c.write(c.dereferencePointer("p")); // X
+  c.write(c.dereferencePointer("q")); // X
 
   c.returnFromFunction();
 } c.endFunction();

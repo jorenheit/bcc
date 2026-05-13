@@ -105,7 +105,7 @@ namespace acus::proxy {
     return Slot {
       .name = std::string("__field_") + name(),
       .type = structType->_fields[_fieldIndex].type,
-      .kind = Slot::StructField,
+      .kind = obj.kind == Slot::Temp ? Slot::Temp : Slot::StructField,
       .offset = obj.offset + _fieldOffset
     };  
   }

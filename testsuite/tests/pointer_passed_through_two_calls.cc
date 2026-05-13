@@ -14,7 +14,7 @@ c.function("main").begin(); {
   c.assign("x", literal::i8('A'));
   c.assign("p", c.addressOf("x"));
   c.callFunction("foo").arg("p").done();
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 
@@ -25,7 +25,7 @@ c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
 
 c.function("bar").param("p", i8p).ret(ts::void_t()).begin(); {
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut(pDeref);
+  c.write(pDeref);
   c.assign(pDeref, literal::i8('X'));
   c.returnFromFunction();
 } c.endFunction();

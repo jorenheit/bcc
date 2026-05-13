@@ -11,49 +11,49 @@ c.function("main").begin(); {
   c.assign("x", literal::s16(-12));
   c.assign("z", c.div("x", literal::s16(5)));
   c.addAssign("z", literal::s16(CAT('C', 'B')));
-  c.writeOut("z"); // AB
+  c.write("z"); // AB
 
   // slot / const: 12 / -5 = -2 -> CD
   c.assign("x", literal::s16(12));
   c.assign("z", c.div("x", literal::s16(-5)));
   c.addAssign("z", literal::s16(CAT('E', 'D')));
-  c.writeOut("z"); // CD
+  c.write("z"); // CD
 
   // const / slot: -12 / 5 = -2 -> EF
   c.assign("x", literal::s16(5));
   c.assign("z", c.div(literal::s16(-12), "x"));
   c.addAssign("z", literal::s16(CAT('G', 'F')));
-  c.writeOut("z"); // EF
+  c.write("z"); // EF
 
   // const / slot: 12 / -5 = -2 -> GH
   c.assign("x", literal::s16(-5));
   c.assign("z", c.div(literal::s16(12), "x"));
   c.addAssign("z", literal::s16(CAT('I', 'H')));
-  c.writeOut("z"); // GH
+  c.write("z"); // GH
 
   // slot % const: -12 % 5 = -2 -> IJ
   c.assign("x", literal::s16(-12));
   c.assign("z", c.mod("x", literal::s16(5)));
   c.addAssign("z", literal::s16(CAT('K', 'J')));
-  c.writeOut("z"); // IJ
+  c.write("z"); // IJ
 
   // slot % const: 12 % -5 = 2 -> KL
   c.assign("x", literal::s16(12));
   c.assign("z", c.mod("x", literal::s16(-5)));
   c.addAssign("z", literal::s16(CAT('I', 'L')));
-  c.writeOut("z"); // KL
+  c.write("z"); // KL
 
   // const % slot: -12 % 5 = -2 -> MN
   c.assign("x", literal::s16(5));
   c.assign("z", c.mod(literal::s16(-12), "x"));
   c.addAssign("z", literal::s16(CAT('O', 'N')));
-  c.writeOut("z"); // MN
+  c.write("z"); // MN
 
   // const % slot: 12 % -5 = 2 -> OP
   c.assign("x", literal::s16(-5));
   c.assign("z", c.mod(literal::s16(12), "x"));
   c.addAssign("z", literal::s16(CAT('M', 'P')));
-  c.writeOut("z"); // OP
+  c.write("z"); // OP
 
   c.returnFromFunction();
 } c.endFunction();

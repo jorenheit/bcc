@@ -8,7 +8,7 @@ c.function("main").begin(); {
   c.declareLocal("s", point);
 
   c.assign("s", literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done());
-  c.writeOut("s");
+  c.write("s");
   c.returnFromFunction();
 } c.endFunction();
 

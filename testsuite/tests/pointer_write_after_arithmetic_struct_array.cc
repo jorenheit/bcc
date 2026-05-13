@@ -22,9 +22,9 @@ c.function("main").begin(); {
   auto obj = c.dereferencePointer("p");
   c.assign(c.structField(obj, "x"), literal::i8('X'));
 
-  c.writeOut(c.structField(c.arrayElement("arr", 0), "x")); // A
-  c.writeOut(c.structField(c.arrayElement("arr", 1), "x")); // X
-  c.writeOut(c.structField(c.arrayElement("arr", 2), "x")); // C
+  c.write(c.structField(c.arrayElement("arr", 0), "x")); // A
+  c.write(c.structField(c.arrayElement("arr", 1), "x")); // X
+  c.write(c.structField(c.arrayElement("arr", 2), "x")); // C
 
   c.returnFromFunction();
 } c.endFunction();

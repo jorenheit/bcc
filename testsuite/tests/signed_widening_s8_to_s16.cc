@@ -13,7 +13,7 @@ c.function("main").begin(); {
   c.assign("x", literal::s8(-1));
   c.assign("y", "x");
   c.addAssign("y", literal::s16(CAT('B', 'B')));
-  c.writeOut("y"); // AB
+  c.write("y"); // AB
 
   // -2 sign-extended to s16 is 0xfffe.
   // 0xfffe + 0x4444 = 0x4442 -> BD.
@@ -21,14 +21,14 @@ c.function("main").begin(); {
   c.assign("x", literal::s8(-2));
   c.assign("y", "x");
   c.addAssign("y", literal::s16(CAT('D', 'D')));
-  c.writeOut("y"); // BD
+  c.write("y"); // BD
 
   // Positive widening should still zero-extend normally.
   // 1 + 0x4141 = 0x4142 -> BA.
   c.assign("x", literal::s8(1));
   c.assign("y", "x");
   c.addAssign("y", literal::s16(CAT('A', 'A')));
-  c.writeOut("y"); // BA
+  c.write("y"); // BA
 
   c.returnFromFunction();
 } c.endFunction();

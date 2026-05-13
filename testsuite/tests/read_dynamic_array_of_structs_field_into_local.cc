@@ -21,7 +21,7 @@ c.function("main").begin(); {
   auto x = c.structField(selected, "x");
   c.assign("out", x);
 
-  c.writeOut("out");
+  c.write("out");
   c.returnFromFunction();
 } c.endFunction();
 

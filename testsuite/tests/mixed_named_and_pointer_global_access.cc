@@ -18,16 +18,16 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf("g"));
 
   c.callFunction("foo").arg("p").done();
-  c.writeOut("g");
+  c.write("g");
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
   c.referGlobals({"g"});
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut(pDeref);
+  c.write(pDeref);
   c.assign(pDeref, literal::i8('X'));
-  c.writeOut("g");
+  c.write("g");
   c.returnFromFunction();
 } c.endFunction();
 

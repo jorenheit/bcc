@@ -13,9 +13,9 @@ c.function("main").begin(); {
   c.assign("y", literal::i8(13));
 
   c.mulAssign("x", "y");           // 5 * 13 = 65 -> A
-  c.writeOut("x");                 // A
+  c.write("x");                 // A
   c.assign("z", c.mul("x", "y"));  // 65 * 13 = 845 mod 256 = 77 -> M
-  c.writeOut("z");                 // M
+  c.write("z");                 // M
 
   c.returnFromFunction();
 } c.endFunction();

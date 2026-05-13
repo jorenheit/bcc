@@ -13,11 +13,11 @@ c.function("main").begin(); {
   c.assign("y", literal::i8(34));
 
   c.modAssign("x", "y");           // 100 % 34 = 32 -> space
-  c.writeOut("x");                 // ' '
+  c.write("x");                 // ' '
 
   c.assign("x", literal::i8(101));
   c.assign("z", c.mod("x", "y"));  // 101 % 34 = 33 -> !
-  c.writeOut("z");                 // !
+  c.write("z");                 // !
 
   c.returnFromFunction();
 } c.endFunction();

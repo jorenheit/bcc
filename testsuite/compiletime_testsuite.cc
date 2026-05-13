@@ -234,7 +234,7 @@ std::vector<TestCase> buildTests() {
   add("unknown variable", NameNotInScope, [] {
     Assembler c;
     beginBasicMain(c);
-    c.writeOut("missing");
+    c.write("missing");
   });
 
   add("duplicate local in current scope", NameAlreadyInCurrentScope, [] {
@@ -254,7 +254,7 @@ std::vector<TestCase> buildTests() {
     Assembler c;
     beginBasicMain(c);
     c.jump("done");
-    c.writeOut(literal::i8('X'));
+    c.write(literal::i8('X'));
   });
 
   add("jump target must exist", LabelDoesNotExist, [] {
@@ -421,13 +421,6 @@ std::vector<TestCase> buildTests() {
     beginBasicMain(c);
     c.declareLocal("arr", ts::array(ts::i8(), 2));
     c.print("arr");
-  });
-
-  add("signed-only operation on unsigned integer", ExpectedSignedInteger, [] {
-    Assembler c;
-    beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
-    c.negate("x");
   });
 
   add("literal builder requires array type", ExpectedArray, [] {

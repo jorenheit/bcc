@@ -96,12 +96,58 @@ Expression Assembler::castImpl(Expression const &obj, types::TypeHandle toType, 
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   auto opResult = types::rules::castResult(obj.type(), toType);
   API_REQUIRE(opResult, error::ErrorCode::IncompatibleOperands, opResult.errorMsg);
-  assert(not obj.isLiteral());
 
+  assert(not obj.isLiteral());
+  assert(types::isInteger(obj.type()));
+  assert(types::isInteger(toType));
+  assert(toType == opResult.type);
+
+  Slot const slot = obj.slot()->materialize(*this);
+  if (slot.type == toType && not obj.slot()->direct()) {
+    // fast path: we already have a temp and the type is the same
+    return Expression{slot};
+  }
+
+  Slot const result = getTemp(toType);
+  if (slot.type == toType) {
+    // same type but direct slot, so we copy it directly into our temp
+    assignSlot(result, slot);
+    return Expression{result};
+  }
   
-  Slot objSlot = obj.slot()->materialize(*this);
-  objSlot.type = toType;
-  return Expression{objSlot};
+  // All other cases: construct a temp to return and populate it based on the type conversion
+  // First byte can be copied without modification.
+  pushPtr();
+  moveTo(slot, MacroCell::Value0);
+  copyField(Cell{result, MacroCell::Value0}, Temps<1>::select(result, MacroCell::Scratch0));
+
+  // If both types (from and to) are 16-bits, we need to copy the high byte as well:
+  if (slot.type->usesValue1() && toType->usesValue1()) {
+    moveTo(slot, MacroCell::Value1);
+    copyField(Cell{result, MacroCell::Value1}, Temps<1>::select(result, MacroCell::Scratch0));    
+  }
+  // If we're widening S8, we need to sign-extend
+  else if (slot.type->tag() == types::S8 && toType->usesValue1()) {
+    moveTo(slot, MacroCell::Value0);    
+    signBitConstructive(Cell{slot, MacroCell::Flag},
+			Temps<4>::select(slot, MacroCell::Scratch0,
+					 slot, MacroCell::Scratch1,
+					 slot, MacroCell::Payload0,
+					 slot, MacroCell::Payload1));
+    moveTo(slot, MacroCell::Flag);
+    loopOpen(); {
+      moveTo(result, MacroCell::Value1); zeroCell(); dec();
+      moveTo(slot, MacroCell::Flag);     zeroCell();
+    } loopClose();
+  }
+  // All other cases, just zero the high byte
+  else {
+    moveTo(result, MacroCell::Value1);
+    zeroCell();
+  }
+
+  popPtr();
+  return Expression{result};
 }
 
 

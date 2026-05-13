@@ -21,13 +21,13 @@ c.function("main").begin(); {
   c.assign("g", literal::i8('H'));
 
   c.callFunction("foo").arg("pg").done();
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut(pDeref);
+  c.write(pDeref);
   c.returnFromFunction();
 } c.endFunction();
 

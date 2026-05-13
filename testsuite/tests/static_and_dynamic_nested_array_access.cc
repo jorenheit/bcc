@@ -20,7 +20,7 @@ c.function("main").begin(); {
   auto cell = c.arrayElement(row1, "idx");
   c.assign(cell, literal::i8('Q'));
 
-  c.writeOut("m");
+  c.write("m");
   c.returnFromFunction();
 } c.endFunction();
 

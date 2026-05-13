@@ -29,12 +29,12 @@ c.function("callCallback").param("callback", callbackPtr).ret(voidT).begin(); {
 } c.endFunction();
 
 c.function("printX").begin(); {
-  c.writeOut(literal::i8('X'));
+  c.write(literal::i8('X'));
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("printY").begin(); {
-  c.writeOut(literal::i8('Y'));
+  c.write(literal::i8('Y'));
   c.returnFromFunction();
 } c.endFunction();
 

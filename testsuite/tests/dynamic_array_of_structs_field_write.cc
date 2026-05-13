@@ -24,7 +24,7 @@ c.function("main").begin(); {
   c.assign(px, literal::i8('Q'));
   c.assign(py, literal::i8('R'));
 
-  c.writeOut("pts");
+  c.write("pts");
   c.returnFromFunction();
 } c.endFunction();
 

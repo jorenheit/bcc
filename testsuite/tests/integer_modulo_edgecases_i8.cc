@@ -13,29 +13,29 @@ c.function("main").begin(); {
   // x % 0 -> 0, mapped to 'A'
   c.assign("x", literal::i8(100));
   c.assign("y", literal::i8(0));
-  c.writeOut(c.add(c.mod("x", "y"), literal::i8(65)));
+  c.write(c.add(c.mod("x", "y"), literal::i8(65)));
 
   // 0 % x -> 0, mapped to 'B'
   c.assign("x", literal::i8(0));
   c.assign("y", literal::i8(7));
-  c.writeOut(c.add(c.mod("x", "y"), literal::i8(66)));
+  c.write(c.add(c.mod("x", "y"), literal::i8(66)));
 
   // 0 % 0 -> 0, mapped to 'C'
   c.assign("x", literal::i8(0));
   c.assign("y", literal::i8(0));
-  c.writeOut(c.add(c.mod("x", "y"), literal::i8(67)));
+  c.write(c.add(c.mod("x", "y"), literal::i8(67)));
 
   // x %= 0 -> 0, mapped to 'D'
   c.assign("x", literal::i8(100));
   c.assign("y", literal::i8(0));
   c.modAssign("x", "y");
-  c.writeOut(c.add("x", literal::i8(68)));
+  c.write(c.add("x", literal::i8(68)));
 
   // 0 %= x -> 0, mapped to 'E'
   c.assign("x", literal::i8(0));
   c.assign("y", literal::i8(7));
   c.modAssign("x", "y");
-  c.writeOut(c.add("x", literal::i8(69)));
+  c.write(c.add("x", literal::i8(69)));
 
   c.returnFromFunction();
 } c.endFunction();

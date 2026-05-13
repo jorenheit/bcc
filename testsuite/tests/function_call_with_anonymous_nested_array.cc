@@ -15,7 +15,7 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("foo").param("arr", array22).ret(ts::void_t()).begin(); {
-  c.writeOut("arr");
+  c.write("arr");
   c.returnFromFunction();
 } c.endFunction();
 

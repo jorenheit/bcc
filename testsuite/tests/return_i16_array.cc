@@ -9,7 +9,7 @@ c.function("main").begin(); {
   c.declareLocal("x", array4);
 
   c.callFunction("foo").into("x").done();
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -9,10 +9,10 @@ c.function("main").begin(); {
   c.declareLocal("x", array4);
 
   c.callFunction("foo").into("x").done();
-  c.writeOut(c.arrayElement("x", 0));
-  c.writeOut(c.arrayElement("x", 1));
-  c.writeOut(c.arrayElement("x", 2));
-  c.writeOut(c.arrayElement("x", 3));
+  c.write(c.arrayElement("x", 0));
+  c.write(c.arrayElement("x", 1));
+  c.write(c.arrayElement("x", 2));
+  c.write(c.arrayElement("x", 3));
   c.returnFromFunction();
 } c.endFunction();
 
@@ -29,7 +29,7 @@ c.function("foo").ret(array4).begin(); {
   c.assign(x2, literal::i8('C'));
   c.assign(x3, literal::i8('D'));
 
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction("x");
 } c.endFunction();
 

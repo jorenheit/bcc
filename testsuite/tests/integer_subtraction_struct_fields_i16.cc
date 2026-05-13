@@ -15,11 +15,11 @@ c.function("main").begin(); {
   c.assign(x, literal::i16(CAT('G', 'A')));
   c.assign(y, literal::i16(3));
 
-  c.writeOut(x);              // GA
+  c.write(x);              // GA
   c.subAssign(x, y);          // p.x -= p.y
-  c.writeOut(x);              // DA
+  c.write(x);              // DA
   c.assign("z", c.sub(x, y)); // z = p.x - p.y
-  c.writeOut("z");            // AA
+  c.write("z");            // AA
 
   c.returnFromFunction();
 } c.endFunction();

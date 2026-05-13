@@ -63,7 +63,6 @@ namespace acus {
     Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
 
     Expression cast(auto const &lhs, types::TypeHandle toType, API_FUNC);
-    Expression castAssign(auto const &lhs, types::TypeHandle toType, API_FUNC);
     
     Expression structField(auto const &obj, std::string const &field, API_FUNC);
     Expression structField(auto const &obj, int fieldIndex, API_FUNC);
@@ -134,7 +133,7 @@ namespace acus {
 
     Expression addressOf(auto const &obj, API_FUNC);
 
-    void writeOut(auto const &val, API_FUNC);
+    void write(auto const &val, API_FUNC);
     void read(auto const &rhs, API_FUNC);
     void print(auto const &val, API_FUNC);
 
@@ -251,7 +250,7 @@ namespace acus {
     Expression castImpl(Expression const &obj, types::TypeHandle toType, API_CTX);
     
     void jumpIfImpl(Expression const &condition, std::string const &trueLabel, std::string const &falseLabel, API_CTX);
-    void writeOutImpl(Expression const &rhs, API_CTX); 
+    void writeImpl(Expression const &rhs, API_CTX); 
     void readImpl(Expression const &rhs, API_CTX); 
     void printImpl(Expression const &rhs, API_CTX);
 
@@ -584,7 +583,7 @@ namespace acus {
     // Temporaries and memory management (assembler_memory.cc)
     void freeSlot(Slot &slot);
     void freeTemps();
-    void freeTemp(Slot const &slot, std::source_location = std::source_location::current());
+    void freeTemp(Slot const &slot);
     void freeScope(Function::Scope const *scope);
     Slot allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind);
     Slot getTemp(types::TypeHandle type);

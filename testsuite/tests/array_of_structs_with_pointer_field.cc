@@ -22,8 +22,8 @@ c.function("main").begin(); {
   c.assign(c.structField(c.arrayElement("arr", 1), "p"), c.addressOf("b"));
 
   c.callFunction("foo").arg("arr").done();
-  c.writeOut("a");
-  c.writeOut("b");
+  c.write("a");
+  c.write("b");
   c.returnFromFunction();
 } c.endFunction();
 
@@ -35,8 +35,8 @@ c.function("foo").param("arr", holders).ret(ts::void_t()).begin(); {
   auto d0 = c.dereferencePointer(p0);
   auto d1 = c.dereferencePointer(p1);
 
-  c.writeOut(d0);
-  c.writeOut(d1);
+  c.write(d0);
+  c.write(d1);
 
   c.assign(d0, literal::i8('X'));
   c.assign(d1, literal::i8('Y'));

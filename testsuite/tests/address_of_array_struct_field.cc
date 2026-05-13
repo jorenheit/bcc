@@ -20,13 +20,13 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf(c.structField(c.arrayElement("arr", 1), "y")));
 
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut(pDeref);                                    // b
+  c.write(pDeref);                                    // b
 
   c.assign(pDeref, literal::i8('X'));
 
-  c.writeOut(c.structField(c.arrayElement("arr", 0), "y")); // a
-  c.writeOut(c.structField(c.arrayElement("arr", 1), "y")); // X
-  c.writeOut(c.structField(c.arrayElement("arr", 2), "y")); // c
+  c.write(c.structField(c.arrayElement("arr", 0), "y")); // a
+  c.write(c.structField(c.arrayElement("arr", 1), "y")); // X
+  c.write(c.structField(c.arrayElement("arr", 2), "y")); // c
 
   c.returnFromFunction();
 } c.endFunction();

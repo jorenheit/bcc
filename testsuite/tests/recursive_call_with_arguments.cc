@@ -7,9 +7,9 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("foo").param("x", ts::i8()).param("y", ts::i8()).param("z", ts::i8()).ret(ts::void_t()).begin(); {
-  c.writeOut("x");
-  c.writeOut("y");
-  c.writeOut("z");
+  c.write("x");
+  c.write("y");
+  c.write("z");
 
   c.callFunction("foo").arg("x").arg("y").arg("z").done();
   c.returnFromFunction();

@@ -12,13 +12,13 @@ c.function("main").begin(); {
   c.assign("x", literal::s8(-1));
   c.assign("y", literal::s16(CAT('B', 'B')));
   c.assign("z", c.add("x", "y"));
-  c.writeOut("z"); // AB
+  c.write("z"); // AB
 
   // s16(0x4242) - s8(1) -> s16(0x4241) -> AB
   c.assign("x", literal::s8(1));
   c.assign("y", literal::s16(CAT('B', 'B')));
   c.assign("z", c.sub("y", "x"));
-  c.writeOut("z"); // AB
+  c.write("z"); // AB
 
   c.returnFromFunction();
 } c.endFunction();

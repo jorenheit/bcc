@@ -17,14 +17,14 @@ c.function("main").begin(); {
   c.assign(x2, literal::i8('C'));
   c.assign(x3, literal::i8('D'));
 
-  c.writeOut("x");
+  c.write("x");
   c.callFunction("foo").arg("x").done();
   c.returnFromFunction();
 } c.endFunction();
 
 
 c.function("foo").param("x", array4).ret(ts::void_t()).begin(); {
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 

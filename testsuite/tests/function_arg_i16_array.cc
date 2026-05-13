@@ -13,13 +13,13 @@ c.function("main").begin(); {
   c.assign(x0, literal::i16(CAT('A', 'B')));
   c.assign(x1, literal::i16(CAT('C', 'D')));
 
-  c.writeOut("x");
+  c.write("x");
   c.callFunction("foo").arg("x").done();
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("foo").param("x", array2).ret(ts::void_t()).begin(); {
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 

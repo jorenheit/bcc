@@ -11,11 +11,11 @@ c.function("main").begin(); {
   c.assign("x", literal::i8('G'));
   c.assign("y", literal::i8(3));
 
-  c.writeOut("x");                    // G
+  c.write("x");                    // G
   c.subAssign("x", "y");              // x -= y
-  c.writeOut("x");                    // D
+  c.write("x");                    // D
   c.assign("z", c.sub("x", "y"));     // z = x - y
-  c.writeOut("z");                    // A
+  c.write("z");                    // A
 
   c.returnFromFunction();
 } c.endFunction();

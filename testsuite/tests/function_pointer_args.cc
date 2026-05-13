@@ -23,14 +23,14 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("leftEcho").param("x", i8).ret(voidT).begin(); {
-  c.writeOut(literal::i8('L'));
-  c.writeOut("x");
+  c.write(literal::i8('L'));
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("rightEcho").param("x", i8).ret(voidT).begin(); {
-  c.writeOut(literal::i8('R'));
-  c.writeOut("x");
+  c.write(literal::i8('R'));
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -28,12 +28,12 @@ c.function("choose").param("flag", i8).ret(targetPtr).begin(); {
 } c.endFunction();
 
 c.function("printT").begin(); {
-  c.writeOut(literal::i8('T'));
+  c.write(literal::i8('T'));
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("printF").begin(); {
-  c.writeOut(literal::i8('F'));
+  c.write(literal::i8('F'));
   c.returnFromFunction();
 } c.endFunction();
 

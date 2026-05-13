@@ -37,11 +37,7 @@ struct Slot {
 };
 
   inline bool operator==(Slot const &s1, Slot const &s2) {
-    return (s1.name == s2.name) &&
-      (s1.type == s2.type) &&
-      (s1.kind == s2.kind) &&
-      (s1.offset == s2.offset) &&
-      (s1.scope == s2.scope);
+    return s1.offset == s2.offset && s1.size() == s2.size();
   }
 
   

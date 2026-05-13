@@ -12,56 +12,56 @@ c.function("main").begin(); {
   c.assign("y", literal::s16(3));
   c.divAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('C', 'B')));
-  c.writeOut("x"); // AB
+  c.write("x"); // AB
 
   // 7 / -3 = -2 -> CD
   c.assign("x", literal::s16(7));
   c.assign("y", literal::s16(-3));
   c.divAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('E', 'D')));
-  c.writeOut("x"); // CD
+  c.write("x"); // CD
 
   // -7 / -3 = 2 -> EF
   c.assign("x", literal::s16(-7));
   c.assign("y", literal::s16(-3));
   c.divAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('C', 'F')));
-  c.writeOut("x"); // EF
+  c.write("x"); // EF
 
   // 7 / 3 = 2 -> GH
   c.assign("x", literal::s16(7));
   c.assign("y", literal::s16(3));
   c.divAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('E', 'H')));
-  c.writeOut("x"); // GH
+  c.write("x"); // GH
 
   // -7 % 3 = -1 -> IJ
   c.assign("x", literal::s16(-7));
   c.assign("y", literal::s16(3));
   c.modAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('J', 'J')));
-  c.writeOut("x"); // IJ
+  c.write("x"); // IJ
 
   // 7 % -3 = 1 -> KL
   c.assign("x", literal::s16(7));
   c.assign("y", literal::s16(-3));
   c.modAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('J', 'L')));
-  c.writeOut("x"); // KL
+  c.write("x"); // KL
 
   // -7 % -3 = -1 -> MN
   c.assign("x", literal::s16(-7));
   c.assign("y", literal::s16(-3));
   c.modAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('N', 'N')));
-  c.writeOut("x"); // MN
+  c.write("x"); // MN
 
   // 7 % 3 = 1 -> OP
   c.assign("x", literal::s16(7));
   c.assign("y", literal::s16(3));
   c.modAssign("x", "y");
   c.addAssign("x", literal::s16(CAT('N', 'P')));
-  c.writeOut("x"); // OP
+  c.write("x"); // OP
 
   c.returnFromFunction();
 } c.endFunction();

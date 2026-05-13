@@ -16,9 +16,9 @@ c.function("main").begin(); {
   c.assign(x, literal::i8('A'));
   c.assign(y, literal::i8('B'));
 
-  c.writeOut(x);
-  c.writeOut(y);
-  c.writeOut("s");
+  c.write(x);
+  c.write(y);
+  c.write("s");
 
   c.returnFromFunction();
 } c.endFunction();

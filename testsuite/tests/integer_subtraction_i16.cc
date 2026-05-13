@@ -11,11 +11,11 @@ c.function("main").begin(); {
   c.assign("x", literal::i16(CAT('G', 'A')));
   c.assign("y", literal::i16(3));
 
-  c.writeOut("x");                    // AG
+  c.write("x");                    // AG
   c.subAssign("x", "y");              // x -= y
-  c.writeOut("x");                    // AD
+  c.write("x");                    // AD
   c.assign("z", c.sub("x", "y"));     // z = x - y
-  c.writeOut("z");                    // AA
+  c.write("z");                    // AA
 
   c.returnFromFunction();
 } c.endFunction();

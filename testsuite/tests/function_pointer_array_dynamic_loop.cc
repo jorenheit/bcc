@@ -37,12 +37,12 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("printA").begin(); {
-  c.writeOut(literal::i8('A'));
+  c.write(literal::i8('A'));
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("printB").begin(); {
-  c.writeOut(literal::i8('B'));
+  c.write(literal::i8('B'));
   c.returnFromFunction();
 } c.endFunction();
 

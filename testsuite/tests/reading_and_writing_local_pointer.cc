@@ -18,13 +18,13 @@ c.function("main").begin(); {
   auto pDeref = c.dereferencePointer("p");
   c.assign("y", pDeref);
 
-  c.writeOut("x");
-  c.writeOut("y");
+  c.write("x");
+  c.write("y");
 
   c.assign(pDeref, literal::i8('Y'));
 
-  c.writeOut("x");
-  c.writeOut("y");
+  c.write("x");
+  c.write("y");
 
   c.returnFromFunction();
 } c.endFunction();

@@ -13,28 +13,28 @@ c.function("main").begin(); {
   c.assign("y", literal::s16(2));
   c.assign("z", c.mul("x", "y"));
   c.addAssign("z", literal::s16(CAT('C', 'B')));
-  c.writeOut("z"); // AB
+  c.write("z"); // AB
 
   // 2. -3 * -2 = 6
   c.assign("x", literal::s16(-3));
   c.assign("y", literal::s16(-2));
   c.assign("z", c.mul("x", "y"));
   c.addAssign("z", literal::s16(CAT('=', 'D')));
-  c.writeOut("z"); // CD
+  c.write("z"); // CD
 
   // 3. 300 * 2 = 600
   c.assign("x", literal::s16(300));
   c.assign("y", literal::s16(2));
   c.assign("z", c.mul("x", "y"));
   c.addAssign("z", literal::s16(CAT('E', 'F') - 600));
-  c.writeOut("z"); // EF
+  c.write("z"); // EF
 
   // 4. -20 * -10 = 200
   c.assign("x", literal::s16(-20));
   c.assign("y", literal::s16(-10));
   c.assign("z", c.mul("x", "y"));
   c.addAssign("z", literal::s16(CAT('G', 'H') - 200));
-  c.writeOut("z"); // GH
+  c.write("z"); // GH
 
   c.returnFromFunction();
 } c.endFunction();

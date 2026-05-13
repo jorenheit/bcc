@@ -13,7 +13,7 @@ c.function("foo").param("x", ts::i8()).ret(ts::void_t()).begin(); {
 } c.endFunction();
 
 c.function("bar").param("y", ts::i8()).ret(ts::void_t()).begin(); {
-  c.writeOut("y");
+  c.write("y");
   c.returnFromFunction();
 } c.endFunction();
 

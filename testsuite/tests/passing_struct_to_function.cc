@@ -13,10 +13,10 @@ c.function("main").begin(); {
 
   c.assign(x, literal::i8('A'));
   c.assign(y, literal::i8('B'));
-  c.writeOut("s");
+  c.write("s");
 
   c.callFunction("foo").arg("s").done();
-  c.writeOut("s");
+  c.write("s");
   c.returnFromFunction();
 } c.endFunction();
 
@@ -24,10 +24,10 @@ c.function("foo").param("p", point).ret(ts::void_t()).begin(); {
   auto px = c.structField("p", "x");
   auto py = c.structField("p", "y");
 
-  c.writeOut("p");
+  c.write("p");
   c.assign(px, literal::i8('X'));
   c.assign(py, literal::i8('Y'));
-  c.writeOut("p");
+  c.write("p");
   c.returnFromFunction();
 } c.endFunction();
 

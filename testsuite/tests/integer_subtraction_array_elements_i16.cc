@@ -15,11 +15,11 @@ c.function("main").begin(); {
   auto x = c.arrayElement("arr", 0);
   auto y = c.arrayElement("arr", 1);
 
-  c.writeOut(x);              // GA
+  c.write(x);              // GA
   c.subAssign(x, y);          // arr[0] -= arr[1]
-  c.writeOut(x);              // DA
+  c.write(x);              // DA
   c.assign("z", c.sub(x, y)); // z = arr[0] - arr[1]
-  c.writeOut("z");            // AA
+  c.write("z");            // AA
 
   c.returnFromFunction();
 } c.endFunction();

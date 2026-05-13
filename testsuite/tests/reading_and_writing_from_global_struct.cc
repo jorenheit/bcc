@@ -16,10 +16,10 @@ c.function("main").begin(); {
 
   c.assign(gx, literal::i8('A'));
   c.assign(gy, literal::i8('B'));
-  c.writeOut("g");
+  c.write("g");
 
   c.callFunction("foo").done();
-  c.writeOut("g");
+  c.write("g");
   c.returnFromFunction();
 } c.endFunction();
 

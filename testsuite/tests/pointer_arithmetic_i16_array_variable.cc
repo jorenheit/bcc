@@ -18,15 +18,15 @@ c.function("main").begin(); {
   c.assign(c.arrayElement("arr", 2), literal::i16(CAT('C', 'c')));
 
   c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
-  c.writeOut(c.dereferencePointer("p"));        // Aa
+  c.write(c.dereferencePointer("p"));        // Aa
 
   c.assign("idx", literal::i16(2));
   c.assign("q", c.add("p", "idx"));
-  c.writeOut(c.dereferencePointer("q"));        // Cc
+  c.write(c.dereferencePointer("q"));        // Cc
 
   c.assign("idx", literal::i16(1));
   c.subAssign("q", "idx");
-  c.writeOut(c.dereferencePointer("q"));        // Bb
+  c.write(c.dereferencePointer("q"));        // Bb
 
   c.returnFromFunction();
 } c.endFunction();

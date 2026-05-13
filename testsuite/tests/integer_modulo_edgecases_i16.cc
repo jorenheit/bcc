@@ -13,29 +13,29 @@ c.function("main").begin(); {
   // x % 0 -> 0, mapped to "AA"
   c.assign("x", literal::i16(0x1234));
   c.assign("y", literal::i16(0));
-  c.writeOut(c.add(c.mod("x", "y"), literal::i16(0x4141)));
+  c.write(c.add(c.mod("x", "y"), literal::i16(0x4141)));
 
   // 0 % x -> 0, mapped to "BB"
   c.assign("x", literal::i16(0));
   c.assign("y", literal::i16(0x1111));
-  c.writeOut(c.add(c.mod("x", "y"), literal::i16(0x4242)));
+  c.write(c.add(c.mod("x", "y"), literal::i16(0x4242)));
 
   // 0 % 0 -> 0, mapped to "CC"
   c.assign("x", literal::i16(0));
   c.assign("y", literal::i16(0));
-  c.writeOut(c.add(c.mod("x", "y"), literal::i16(0x4343)));
+  c.write(c.add(c.mod("x", "y"), literal::i16(0x4343)));
 
   // x %= 0 -> 0, mapped to "DD"
   c.assign("x", literal::i16(0x1234));
   c.assign("y", literal::i16(0));
   c.modAssign("x", "y");
-  c.writeOut(c.add("x", literal::i16(0x4444)));
+  c.write(c.add("x", literal::i16(0x4444)));
 
   // 0 %= x -> 0, mapped to "EE"
   c.assign("x", literal::i16(0));
   c.assign("y", literal::i16(0x1111));
   c.modAssign("x", "y");
-  c.writeOut(c.add("x", literal::i16(0x4545)));
+  c.write(c.add("x", literal::i16(0x4545)));
 
   c.returnFromFunction();
 } c.endFunction();

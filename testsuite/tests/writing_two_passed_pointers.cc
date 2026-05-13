@@ -19,8 +19,8 @@ c.function("main").begin(); {
   c.assign("pb", c.addressOf("b"));
 
   c.callFunction("foo").arg("pa").arg("pb").done();
-  c.writeOut("a");
-  c.writeOut("b");
+  c.write("a");
+  c.write("b");
   c.returnFromFunction();
 } c.endFunction();
 
@@ -28,8 +28,8 @@ c.function("foo").param("pa", i8p).param("pb", i8p).ret(ts::void_t()).begin(); {
   auto aDeref = c.dereferencePointer("pa");
   auto bDeref = c.dereferencePointer("pb");
 
-  c.writeOut(aDeref);
-  c.writeOut(bDeref);
+  c.write(aDeref);
+  c.write(bDeref);
 
   c.assign(aDeref, literal::i8('X'));
   c.assign(bDeref, literal::i8('Y'));

@@ -6,7 +6,7 @@ c.function("main").begin(); {
   c.declareLocal("r", ts::i8());
 
   c.callFunction("foo").into("r").arg(literal::i8('Z')).done();
-  c.writeOut("r");
+  c.write("r");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -9,9 +9,9 @@ void Assembler::returnFromFunction(auto const &rhs, API_FUNC_SOURCE) {
   returnFromFunctionImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
-void Assembler::writeOut(auto const &rhs, API_FUNC_SOURCE) {
+void Assembler::write(auto const &rhs, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
-  writeOutImpl(rValue(rhs, API_FWD), API_FWD);
+  writeImpl(rValue(rhs, API_FWD), API_FWD);
 }
 
 void Assembler::read(auto const &rhs, API_FUNC_SOURCE) {

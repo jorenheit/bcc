@@ -18,12 +18,12 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf(c.structField("s", "y")));
 
   auto pDeref = c.dereferencePointer("p");
-  c.writeOut(pDeref);                  // B
+  c.write(pDeref);                  // B
 
   c.assign(pDeref, literal::i8('X'));
 
-  c.writeOut(c.structField("s", "x")); // A
-  c.writeOut(c.structField("s", "y")); // X
+  c.write(c.structField("s", "x")); // A
+  c.write(c.structField("s", "y")); // X
 
   c.returnFromFunction();
 } c.endFunction();

@@ -17,14 +17,14 @@ c.function("main").begin(); {
   c.assign(c.arrayElement("arr", 2), literal::i8('C'));
 
   c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
-  c.writeOut(c.dereferencePointer("p")); // A
+  c.write(c.dereferencePointer("p")); // A
 
   c.assign("q", c.add("p", literal::i16(0)));
-  c.writeOut(c.dereferencePointer("q")); // A
+  c.write(c.dereferencePointer("q")); // A
 
   c.addAssign("p", literal::i16(2));
   c.subAssign("p", literal::i16(2));
-  c.writeOut(c.dereferencePointer("p")); // A
+  c.write(c.dereferencePointer("p")); // A
 
   c.returnFromFunction();
 } c.endFunction();

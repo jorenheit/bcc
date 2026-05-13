@@ -21,9 +21,9 @@ c.function("main").begin(); {
   auto pDeref = c.dereferencePointer("p");
   c.assign(pDeref, literal::i16(CAT('X', 'x')));
 
-  c.writeOut(c.arrayElement("arr", 0)); // Aa
-  c.writeOut(c.arrayElement("arr", 1)); // Xx
-  c.writeOut(c.arrayElement("arr", 2)); // Cc
+  c.write(c.arrayElement("arr", 0)); // Aa
+  c.write(c.arrayElement("arr", 1)); // Xx
+  c.write(c.arrayElement("arr", 2)); // Cc
 
   c.returnFromFunction();
 } c.endFunction();

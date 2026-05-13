@@ -15,57 +15,57 @@ c.function("main").begin(); {
   c.assign("a", literal::s8(-1));
   c.assign("b", literal::s8(0));
   c.ltAssign("a", "b");
-  c.writeOut(c.add("a", literal::s8('A'))); // B
+  c.write(c.add("a", literal::s8('A'))); // B
 
   // s8 gtAssign: -1 > 0 -> false
   c.assign("a", literal::s8(-1));
   c.assign("b", literal::s8(0));
   c.gtAssign("a", "b");
-  c.writeOut(c.add("a", literal::s8('A'))); // A
+  c.write(c.add("a", literal::s8('A'))); // A
 
   // s8 leAssign: -5 <= -5 -> true
   c.assign("a", literal::s8(-5));
   c.assign("b", literal::s8(-5));
   c.leAssign("a", "b");
-  c.writeOut(c.add("a", literal::s8('A'))); // B
+  c.write(c.add("a", literal::s8('A'))); // B
 
   // s8 geAssign: -6 >= -5 -> false
   c.assign("a", literal::s8(-6));
   c.assign("b", literal::s8(-5));
   c.geAssign("a", "b");
-  c.writeOut(c.add("a", literal::s8('A'))); // A
+  c.write(c.add("a", literal::s8('A'))); // A
 
   // s16 ltAssign: -300 < -20 -> true
   // true as s16 is 1; CAT('A','B') + 1 => "BB"
   c.assign("x", literal::s16(-300));
   c.assign("y", literal::s16(-20));
   c.ltAssign("x", "y");
-  c.writeOut(c.add("x", literal::s16(CAT('A', 'B')))); // BB
+  c.write(c.add("x", literal::s16(CAT('A', 'B')))); // BB
 
   // s16 gtAssign: -300 > -20 -> false
   // false as s16 is 0; CAT('A','B') => "AB"
   c.assign("x", literal::s16(-300));
   c.assign("y", literal::s16(-20));
   c.gtAssign("x", "y");
-  c.writeOut(c.add("x", literal::s16(CAT('A', 'B')))); // AB
+  c.write(c.add("x", literal::s16(CAT('A', 'B')))); // AB
 
   // mixed-width ltAssign: s8(-1) < s16(1) -> true
   c.assign("a", literal::s8(-1));
   c.assign("x", literal::s16(1));
   c.ltAssign("a", "x");
-  c.writeOut(c.add("a", literal::s8('A'))); // B
+  c.write(c.add("a", literal::s8('A'))); // B
 
   // mixed-width geAssign: s8(-2) >= s16(-1) -> false
   c.assign("a", literal::s8(-2));
   c.assign("x", literal::s16(-1));
   c.geAssign("a", "x");
-  c.writeOut(c.add("a", literal::s8('A'))); // A
+  c.write(c.add("a", literal::s8('A'))); // A
 
   // mixed-width gtAssign into s16 lhs: s16(-1) > s8(-2) -> true
   c.assign("x", literal::s16(-1));
   c.assign("a", literal::s8(-2));
   c.gtAssign("x", "a");
-  c.writeOut(c.add("x", literal::s16(CAT('A', 'B')))); // BB
+  c.write(c.add("x", literal::s16(CAT('A', 'B')))); // BB
 
   c.returnFromFunction();
 } c.endFunction();

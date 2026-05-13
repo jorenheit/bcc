@@ -20,15 +20,15 @@ c.function("main").begin(); {
   c.assign("p", c.addressOf(c.arrayElement("arr", 0)));
 
   auto pObj = c.dereferencePointer("p");
-  c.writeOut(c.structField(pObj, "x"));        // A
+  c.write(c.structField(pObj, "x"));        // A
 
   c.assign("q", c.add("p", literal::i16(2)));
   auto qObj = c.dereferencePointer("q");
-  c.writeOut(c.structField(qObj, "x"));        // C
+  c.write(c.structField(qObj, "x"));        // C
 
   c.subAssign("q", literal::i16(1));
   auto qPrev = c.dereferencePointer("q");
-  c.writeOut(c.structField(qPrev, "x"));       // B
+  c.write(c.structField(qPrev, "x"));       // B
 
   c.returnFromFunction();
 } c.endFunction();

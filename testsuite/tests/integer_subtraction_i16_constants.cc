@@ -9,11 +9,11 @@ c.function("main").begin(); {
 
   c.assign("x", literal::i16(CAT('G', 'A')));
 
-  c.writeOut("x");                           // GA
+  c.write("x");                           // GA
   c.subAssign("x", literal::i16(3));          // x -= 3
-  c.writeOut("x");                           // DA
+  c.write("x");                           // DA
   c.assign("z", c.sub("x", literal::i16(3))); // z = x - 3
-  c.writeOut("z");                           // AA
+  c.write("z");                           // AA
 
   c.returnFromFunction();
 } c.endFunction();

@@ -19,7 +19,7 @@ c.function("main").begin(); {
   c.callFunction("noop").done();
   auto elemAfterCall = c.arrayElement("arr", "idx");
   c.assign("out", elemAfterCall);
-  c.writeOut("out");
+  c.write("out");
   c.returnFromFunction();
 } c.endFunction();
 

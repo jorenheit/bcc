@@ -14,7 +14,7 @@ c.function("main").begin(); {
 
   auto dest = c.arrayElement("arr", "idx");
   c.callFunction("makeZ").into(dest).done();
-  c.writeOut("arr");
+  c.write("arr");
   c.returnFromFunction();
 } c.endFunction();
 

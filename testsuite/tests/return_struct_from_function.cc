@@ -8,7 +8,7 @@ c.function("main").begin(); {
   c.declareLocal("s", point);
 
   c.callFunction("makePoint").into("s").done();
-  c.writeOut("s");
+  c.write("s");
   c.returnFromFunction();
 } c.endFunction();
 

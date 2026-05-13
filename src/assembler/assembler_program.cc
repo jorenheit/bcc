@@ -42,11 +42,8 @@ void Assembler::endProgram(API_FUNC) {
 
   // Generate the metablocks, builtin functions, bootstrap and hatstrap sequences.
   constructBuiltinFunctions();
-  constructMetaBlocks();
-
-  // Done compiling the program. Check deferred diagnostics before generating
-  // structures that assume their referenced functions and labels exist.
   deferredFunctionCallTypeChecks();
+  constructMetaBlocks();
   deferredLabelChecks();
 
   

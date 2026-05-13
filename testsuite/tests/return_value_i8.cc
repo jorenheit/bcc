@@ -8,7 +8,7 @@ c.function("main").begin(); {
   c.declareLocal("x", ts::i8());
 
   c.callFunction("foo").into("x").done();
-  c.writeOut("x");
+  c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 

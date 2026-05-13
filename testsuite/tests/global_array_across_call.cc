@@ -30,10 +30,10 @@ c.function("foo").begin(); {
   auto x2 = c.arrayElement("x", literal::i8(2));
   auto x3 = c.arrayElement("x", literal::i8(3));
 
-  c.writeOut(x0);
-  c.writeOut(x1);
-  c.writeOut(x2);
-  c.writeOut(x3);
+  c.write(x0);
+  c.write(x1);
+  c.write(x2);
+  c.write(x3);
 
   c.returnFromFunction();
 } c.endFunction();

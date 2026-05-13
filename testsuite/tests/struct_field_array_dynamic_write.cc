@@ -19,7 +19,7 @@ c.function("main").begin(); {
   auto elem = c.arrayElement(dataField, "idx");
   c.assign(elem, literal::i8('Q'));
 
-  c.writeOut("h");
+  c.write("h");
   c.returnFromFunction();
 } c.endFunction();
 

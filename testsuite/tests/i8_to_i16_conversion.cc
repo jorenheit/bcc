@@ -10,9 +10,9 @@ c.function("main").begin(); {
   c.declareLocal("y", ts::i16());
 
   c.assign("x", literal::i8('A'));
-  c.writeOut("x");
+  c.write("x");
   c.assign("y", "x");
-  c.writeOut("y");
+  c.write("y");
   c.returnFromFunction();
 } c.endFunction();
 

@@ -8,7 +8,7 @@ c.function("main").begin(); {
 
   c.assign("x", literal::i16(CAT('C', 'D')));
   c.callFunction("foo").into("y").arg("x").arg(literal::i16(CAT('A', 'B'))).done();
-  c.writeOut("y");
+  c.write("y");
   c.returnFromFunction();
 } c.endFunction();
 

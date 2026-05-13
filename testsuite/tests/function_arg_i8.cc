@@ -9,8 +9,8 @@ c.function("main").begin(); {
 
   c.assign("x", literal::i8('A'));
   c.callFunction("foo").into("y").arg("x").arg(literal::i8('B')).done();
-  c.writeOut("x");
-  c.writeOut("y");
+  c.write("x");
+  c.write("y");
   c.returnFromFunction();
 } c.endFunction();
 

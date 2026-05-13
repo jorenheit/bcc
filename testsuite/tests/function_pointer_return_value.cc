@@ -14,10 +14,10 @@ c.function("main").begin(); {
 
   c.assign("fptr", literal::function_pointer(fnType, "inc"));
   c.callFunctionPointer("fptr").into("r").arg(literal::i8('A')).done();
-  c.writeOut("r");
+  c.write("r");
   c.assign("fptr", literal::function_pointer(fnType, "dec"));
   c.callFunctionPointer("fptr").into("r").arg(literal::i8('B')).done();
-  c.writeOut("r");
+  c.write("r");
   c.returnFromFunction();
 } c.endFunction();
 

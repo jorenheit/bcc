@@ -19,12 +19,12 @@ c.function("main").begin(); {
   auto pFromPp = c.dereferencePointer("pp");
   auto xFromPp = c.dereferencePointer(pFromPp);
 
-  c.writeOut(xFromPp);                 // A
+  c.write(xFromPp);                 // A
 
   c.assign(xFromPp, literal::i8('Z'));
 
-  c.writeOut("x");                     // Z
-  c.writeOut(c.dereferencePointer("p"));// Z
+  c.write("x");                     // Z
+  c.write(c.dereferencePointer("p"));// Z
 
   c.returnFromFunction();
 } c.endFunction();

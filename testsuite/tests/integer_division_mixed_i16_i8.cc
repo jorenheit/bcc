@@ -13,11 +13,11 @@ c.function("main").begin(); {
   c.assign("y", literal::i8(2));
 
   c.divAssign("x", "y");           // 0x8282 / 2 = 0x4141 -> AA
-  c.writeOut("x");                 // AA
+  c.write("x");                 // AA
 
   c.assign("x", literal::i16(0x8686));
   c.assign("z", c.div("x", "y"));  // 0x8686 / 2 = 0x4343 -> CC
-  c.writeOut("z");                 // CC
+  c.write("z");                 // CC
 
   c.returnFromFunction();
 } c.endFunction();
