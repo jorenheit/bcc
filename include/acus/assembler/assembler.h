@@ -343,20 +343,24 @@ namespace acus {
     void mulSlotBySlotSigned(Slot const &lhs, Slot const &rhs);
 
     void divSlotByConst(Slot const &lhs, int denom);
-    void divSlotByConstUnsigned(Slot const &lhs, int denom);
-    void divSlotByConstSigned(Slot const &lhs, int denom);
+    void divSlotByConst(Slot const &lhs, int denom, Slot const &modSlot);
+    void divSlotByConstUnsigned(Slot const &lhs, int denom, std::optional<Slot> const &modSlot = {});
+    void divSlotByConstSigned(Slot const &lhs, int denom, std::optional<Slot> const &modSlot = {});
 
     void modSlotByConst(Slot const &lhs, int denom);
-    void modSlotByConstUnsigned(Slot const &lhs, int denom);
-    void modSlotByConstSigned(Slot const &lhs, int denom);
+    void modSlotByConst(Slot const &lhs, int denom, Slot const &divSlot);
+    void modSlotByConstUnsigned(Slot const &lhs, int denom, std::optional<Slot> const &divSlot = {});
+    void modSlotByConstSigned(Slot const &lhs, int denom, std::optional<Slot> const &divSlot = {});
 
     void divSlotBySlot(Slot const &lhs, Slot const &rhs);
-    void divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
-    void divSlotBySlotSigned(Slot const &lhs, Slot const &rhs);
+    void divSlotBySlot(Slot const &lhs, Slot const &rhs, Slot const &modSlot);
+    void divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &modSlot = {}, bool const destroyRhs = false);
+    void divSlotBySlotSigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &modSlot = {});
 
     void modSlotBySlot(Slot const &lhs, Slot const &rhs);
-    void modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs = false);
-    void modSlotBySlotSigned(Slot const &lhs, Slot const &rhs);
+    void modSlotBySlot(Slot const &lhs, Slot const &rhs, Slot const &divSlot);
+    void modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &divSlot = {}, bool const destroyRhs = false);
+    void modSlotBySlotSigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &divSlot = {});
 
     void andSlotWithConst(Slot const &lhs, int val);
     void andSlotWithSlot(Slot const &lhs, Slot const &rhs);
@@ -578,6 +582,7 @@ namespace acus {
     // Temporaries and memory management (assembler_memory.cc)
     void freeSlot(Slot &slot);
     void freeTemps();
+    void freeTemp(Slot const &slot, std::source_location = std::source_location::current());
     void freeScope(Function::Scope const *scope);
     Slot allocSlot(std::string const &name, types::TypeHandle type, Slot::Kind kind);
     Slot getTemp(types::TypeHandle type);

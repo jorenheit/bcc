@@ -134,7 +134,8 @@ void Assembler::endFunction(API_FUNC) {
   API_REQUIRE_NO_SCOPE();
 
   endBlock();
-
+  freeTemps();
+ 
   _currentFunction = nullptr;
 }
 

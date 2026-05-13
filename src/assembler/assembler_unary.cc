@@ -152,10 +152,11 @@ void Assembler::negateSlot(Slot const &rhs) {
     negate16Destructive(Cell{rhs, MacroCell::Value1},
 			Temps<6>::select(rhs, MacroCell::Scratch0,
 					 rhs, MacroCell::Scratch1,
-					 rhs, MacroCell::Payload0,
-					 rhs, MacroCell::Payload1,
 					 tmp, MacroCell::Scratch0,
-					 tmp, MacroCell::Scratch1));
+					 tmp, MacroCell::Scratch1,
+					 tmp, MacroCell::Payload0, 
+					 tmp, MacroCell::Payload1));
+    freeTemp(tmp);
   } else {
     negateDestructive(Temps<2>::select(rhs, MacroCell::Scratch0,
 				       rhs, MacroCell::Scratch1));

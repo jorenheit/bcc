@@ -1,6 +1,5 @@
 #include "assembler.ih"
 
-// TODO: factor out into a writeSlot? That's more consistent with the other API functions
 void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
@@ -20,6 +19,8 @@ void Assembler::writeOutImpl(Expression const &rhs, API_CTX) {
     }
   }
   popPtr();
+
+  if (not rhs.hasSlot()) freeTemp(slot);
 }
 
 void Assembler::printImpl(Expression const &val, API_CTX) {
@@ -82,10 +83,12 @@ void Assembler::printDecimalSlot(Slot const &slot) {
 void Assembler::printDecimalSlotUnsigned(Slot const &slot, bool const destroySlot) {
   assert(types::isUnsignedInteger(slot.type));
 
+  bool freeValSlot = false;
   Slot const valSlot = [&] {
     if (destroySlot) return slot;
     Slot const copy = getTemp(slot.type);
     assignSlot(copy, slot);
+    freeValSlot = true;
     return copy;
   }();
 
@@ -96,12 +99,8 @@ void Assembler::printDecimalSlotUnsigned(Slot const &slot, bool const destroySlo
 	  
   Slot const digits = getTemp(ts::raw(maxDigits));
   for (int i = 0; i != 5; ++i) {
-    Slot const currentDigitSlot = digits.sub(ts::i16(), i);
-    assignSlot(currentDigitSlot, valSlot);
-
-    // TODO: these can be combined; the divmod algorithm already computes both.
-    modSlotByConst(currentDigitSlot, 10);
-    divSlotByConst(valSlot, 10);
+    Slot const currentDigitSlot = digits.sub(ts::i8(), i);
+    divSlotByConst(valSlot, 10, currentDigitSlot);
   }
 	
   // Already add '0' to the 1's digit (at the base) to make sure there is at least 1 nonzero.
@@ -143,6 +142,8 @@ void Assembler::printDecimalSlotUnsigned(Slot const &slot, bool const destroySlo
   _dp.set(Cell{digits, MacroCell::Value0});
 
   popPtr();
+  freeTemp(digits);
+  if (freeValSlot) freeTemp(valSlot);
 }
 
 void Assembler::printDecimalSlotSigned(Slot const &slot) {
@@ -171,6 +172,7 @@ void Assembler::printDecimalSlotSigned(Slot const &slot) {
   popPtr();
 
   printDecimalSlotUnsigned(valSlot.unsignedView(), true);
+  // valSlot will already be freed
 }
 
 void Assembler::printString(Expression const &expr) {
@@ -201,7 +203,7 @@ void Assembler::printStringConst(std::string const &str) {
   zeroCell();
   popPtr();
 
-  // TODO: free temp immediately
+  freeTemp(ch);
 }
  
 void Assembler::printStringSlot(Slot const &slot) {

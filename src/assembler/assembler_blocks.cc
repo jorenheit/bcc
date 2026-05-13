@@ -52,7 +52,6 @@ void Assembler::endBlock() {
   moveTo(FrameLayout::RunState, MacroCell::Flag);
   loopClose();
   moveToOrigin();
-  freeTemps();
   _currentBlock = nullptr;
 }
 
@@ -183,6 +182,7 @@ void Assembler::constructMetaBlocks() {
 	  Slot const ret = getTemp(returnType);
 	  fetchReturnData(ret);
 	  returnSlot->write(*this, ret);
+	  freeTemp(ret);
 	}
       }
 

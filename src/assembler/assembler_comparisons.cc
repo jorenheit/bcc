@@ -81,6 +81,7 @@ void Assembler::slotEqualSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 void Assembler::slotNotEqualConst(Slot const &lhs, int val) {
@@ -93,9 +94,7 @@ void Assembler::slotNotEqualConst(Slot const &lhs, int val) {
 
 void Assembler::slotNotEqualSlot(Slot const &lhs, Slot const &rhs) {
   pushPtr();
-  Slot const rhsCopy = getTemp(rhs.type);
-  assignSlot(rhsCopy, rhs);
-  slotEqualSlot(lhs, rhsCopy);
+  slotEqualSlot(lhs, rhs);
   moveTo(lhs);
   notDestructive(Temps<1>::select(lhs, MacroCell::Scratch0));
   popPtr();
@@ -110,8 +109,9 @@ void Assembler::slotLessConst(Slot const &lhs, int val) {
 
 void Assembler::slotLessConstUnsigned(Slot const &lhs, int val) {
   assert(types::isUnsignedInteger(lhs.type));
-
-  if (val <= 0) {
+  assert(val >= 0);
+  
+  if (val == 0) {
     pushPtr();
     moveTo(lhs);
     setToValue16(0, Cell{lhs, MacroCell::Value1});
@@ -122,7 +122,8 @@ void Assembler::slotLessConstUnsigned(Slot const &lhs, int val) {
   pushPtr();
 
   Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
-  slotLessSlot(lhs, valSlot);
+  slotLessSlotUnsigned(lhs, valSlot, true);
+  freeTemp(valSlot);
 
   popPtr();
 }
@@ -173,10 +174,12 @@ void Assembler::slotLessSlotUnsigned(Slot const &lhs, Slot const &rhs, bool cons
   
   pushPtr();
 
+  bool freeRhsCopy = false;
   Slot const rhsCopy = [&] {
     if (destroyRhs) return rhs;
     Slot const tmp = getTemp(rhs.type);
     assignSlot(tmp, rhs);
+    freeRhsCopy = true;
     return tmp;
   }();
 
@@ -196,6 +199,7 @@ void Assembler::slotLessSlotUnsigned(Slot const &lhs, Slot const &rhs, bool cons
   }
 
   popPtr();
+  if (freeRhsCopy) freeTemp(rhsCopy);
 }
 
 void Assembler::slotLessSlotSigned(Slot const &lhs, Slot const &rhs) {
@@ -217,6 +221,7 @@ void Assembler::slotLessSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
 				      slotGreaterSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
+				      freeTemp(rhsCopy);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      // lhs negative but rhs is not, so lhs is always less
@@ -249,7 +254,8 @@ void Assembler::slotLessEqualConst(Slot const &lhs, int val) {
 
 void Assembler::slotLessEqualConstUnsigned(Slot const &lhs, int val) {
   assert(types::isUnsignedInteger(lhs.type));
-
+  assert(val >= 0);
+  
   pushPtr();
 
   // If val is maximal, the result must be true
@@ -265,10 +271,10 @@ void Assembler::slotLessEqualConstUnsigned(Slot const &lhs, int val) {
   }
   
   Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
-  slotLessEqualSlot(lhs, valSlot);
+  slotLessEqualSlotUnsigned(lhs, valSlot);
+  freeTemp(valSlot);
 
   popPtr();
-  
 }
 
 void Assembler::slotLessEqualConstSigned(Slot const &lhs, int val) {
@@ -314,10 +320,12 @@ void Assembler::slotLessEqualSlotUnsigned(Slot const &lhs, Slot const &rhs, bool
 
   pushPtr();
 
+  bool freeRhsCopy = false;
   Slot const rhsCopy = [&] {
     if (destroyRhs) return rhs;
     Slot const tmp = getTemp(rhs.type);
     assignSlot(tmp, rhs);
+    freeRhsCopy = true;
     return tmp;
   }();
 
@@ -337,6 +345,7 @@ void Assembler::slotLessEqualSlotUnsigned(Slot const &lhs, Slot const &rhs, bool
   }
 
   popPtr();
+  if (freeRhsCopy) freeTemp(rhsCopy);
 }
 
 void Assembler::slotLessEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
@@ -358,6 +367,7 @@ void Assembler::slotLessEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
 				      slotGreaterEqualSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
+				      freeTemp(rhsCopy);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      setSlotToBool(lhs, true);
@@ -386,7 +396,8 @@ void Assembler::slotGreaterConst(Slot const &lhs, int val) {
 
 void Assembler::slotGreaterConstUnsigned(Slot const &lhs, int val) {
   assert(types::isUnsignedInteger(lhs.type));
-
+  assert(val >= 0);
+  
   pushPtr();
 
   // If val is maximal, the result must be false
@@ -404,14 +415,15 @@ void Assembler::slotGreaterConstUnsigned(Slot const &lhs, int val) {
   }
 
   Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
-  slotGreaterSlot(lhs, valSlot);
-
+  slotGreaterSlotUnsigned(lhs, valSlot, true);
+  freeTemp(valSlot);
+  
   popPtr();
 }
 
 void Assembler::slotGreaterConstSigned(Slot const &lhs, int val) {
   assert(types::isSignedInteger(lhs.type));
-
+  
   slotLessEqualConstSigned(lhs, val);
   notSlot(lhs);
 }
@@ -431,13 +443,14 @@ void Assembler::slotGreaterSlotUnsigned(Slot const &lhs, Slot const &rhs, bool c
   assert(types::isUnsignedInteger(lhs.type));
   assert(types::isUnsignedInteger(rhs.type));
   
-  // TODO: can this just be "not lessEqual?"
   pushPtr();
 
+  bool freeRhsCopy = false;
   Slot const rhsCopy = [&] {
     if (destroyRhs) return rhs;
     Slot const tmp = getTemp(rhs.type);
     assignSlot(tmp, rhs);
+    freeRhsCopy = true;
     return tmp;
   }();
     
@@ -457,6 +470,8 @@ void Assembler::slotGreaterSlotUnsigned(Slot const &lhs, Slot const &rhs, bool c
   }
 
   popPtr();
+
+  if (freeRhsCopy) freeTemp(rhsCopy);
 }
 
 void Assembler::slotGreaterSlotSigned(Slot const &lhs, Slot const &rhs) {
@@ -478,6 +493,7 @@ void Assembler::slotGreaterSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
 				      slotLessSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
+				      freeTemp(rhsCopy);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      setSlotToBool(lhs, false);
@@ -505,7 +521,8 @@ void Assembler::slotGreaterEqualConst(Slot const &lhs, int val) {
 
 void Assembler::slotGreaterEqualConstUnsigned(Slot const &lhs, int val) {
   assert(types::isUnsignedInteger(lhs.type));
-
+  assert(val >= 0);
+  
   pushPtr();
 
   // If val is 0, the result must be true
@@ -523,7 +540,8 @@ void Assembler::slotGreaterEqualConstUnsigned(Slot const &lhs, int val) {
   }
 
   Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
-  slotGreaterEqualSlot(lhs, valSlot);
+  slotGreaterEqualSlotUnsigned(lhs, valSlot, true);
+  freeTemp(valSlot);
 
   popPtr();
 }
@@ -553,10 +571,12 @@ void Assembler::slotGreaterEqualSlotUnsigned(Slot const &lhs, Slot const &rhs, b
   
   pushPtr();
 
+  bool freeRhsCopy = false;
   Slot const rhsCopy = [&] {
     if (destroyRhs) return rhs;
     Slot const tmp = getTemp(rhs.type);
     assignSlot(tmp, rhs);
+    freeRhsCopy = true;
     return tmp;
   }();
 
@@ -576,6 +596,8 @@ void Assembler::slotGreaterEqualSlotUnsigned(Slot const &lhs, Slot const &rhs, b
   }
 
   popPtr();
+
+  if (freeRhsCopy) freeTemp(rhsCopy);
 }
 
 void Assembler::slotGreaterEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
@@ -597,6 +619,7 @@ void Assembler::slotGreaterEqualSlotSigned(Slot const &lhs, Slot const &rhs) {
 				      assignSlot(rhsCopy, rhs);
 				      negateSlot(rhsCopy);
 				      slotLessEqualSlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
+				      freeTemp(rhsCopy);
 				    },
 				    [&] /* rhs >= 0 */ {
 				      setSlotToBool(lhs, false);

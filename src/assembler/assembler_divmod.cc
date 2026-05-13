@@ -19,6 +19,14 @@ Assembler::Mop const Assembler::modSpec {
 };
 
 
+void Assembler::divSlotByConst(Slot const &lhs, int denom, Slot const &modSlot) {
+  assert(types::isInteger(lhs.type));
+  
+  if (types::isUnsignedInteger(lhs.type)) return divSlotByConstUnsigned(lhs, denom, modSlot);
+  if (types::isSignedInteger(lhs.type)) return divSlotByConstSigned(lhs, denom, modSlot);
+  std::unreachable();
+}
+
 void Assembler::divSlotByConst(Slot const &lhs, int denom) {
   assert(types::isInteger(lhs.type));
   
@@ -27,7 +35,7 @@ void Assembler::divSlotByConst(Slot const &lhs, int denom) {
   std::unreachable();
 }
 
-void Assembler::divSlotByConstUnsigned(Slot const &lhs, int denom) {
+void Assembler::divSlotByConstUnsigned(Slot const &lhs, int denom, std::optional<Slot> const &modSlot) {
   assert(types::isUnsignedInteger(lhs.type));
   assert(denom >= 0);
   
@@ -48,31 +56,35 @@ void Assembler::divSlotByConstUnsigned(Slot const &lhs, int denom) {
 				   tmp + 1, MacroCell::Payload0,
 				   tmp + 1, MacroCell::Payload1));
 
-    // TODO: leave in payload if requested by caller
-    moveTo(lhs, MacroCell::Payload0);
-    zeroCell();
+    moveTo(lhs, MacroCell::Payload0);    
+    if (modSlot.has_value()) moveField(Cell{*modSlot, MacroCell::Value0});
+    else zeroCell();
+
     moveTo(lhs, MacroCell::Payload1);
-    zeroCell();
-    
+    if (modSlot.has_value()) moveField(Cell{*modSlot, MacroCell::Value1});
+    else zeroCell();
+
+    freeTemp(tmp);
   } else {
     Slot const tmp = getTemp(ts::raw(1));
     moveTo(lhs, MacroCell::Value0);    
-    divModConst(denom, Cell{lhs, MacroCell::Scratch0},
-		Temps<5>::select(lhs, MacroCell::Scratch1,
-				 lhs, MacroCell::Payload0,
+    divModConst(denom, Cell{lhs, MacroCell::Payload0},
+		Temps<5>::select(lhs, MacroCell::Scratch0,
+				 lhs, MacroCell::Scratch1,
 				 lhs, MacroCell::Payload1,
 				 tmp, MacroCell::Scratch0,
 				 tmp, MacroCell::Scratch1));
 
-    // TODO: leave in payload if requested by caller
-    moveTo(lhs, MacroCell::Scratch0);
-    zeroCell();
+    moveTo(lhs, MacroCell::Payload0);    
+    if (modSlot.has_value()) moveField(Cell{*modSlot, MacroCell::Value0});
+    else zeroCell();
+    freeTemp(tmp);
   }
   
   popPtr();
 }
 
-void Assembler::divSlotByConstSigned(Slot const &lhs, int denom) {
+void Assembler::divSlotByConstSigned(Slot const &lhs, int denom, std::optional<Slot> const &modSlot) {
   assert(types::isSignedInteger(lhs.type));
   
   // For signed integers, check if the value is negative. If so, take the
@@ -97,7 +109,7 @@ void Assembler::divSlotByConstSigned(Slot const &lhs, int denom) {
   } loopClose();
 
   
-  divSlotByConstUnsigned(lhs.unsignedView(), std::abs(denom));
+  divSlotByConstUnsigned(lhs.unsignedView(), std::abs(denom), modSlot);
 
   moveTo(lhsNegative);
   if (denom < 0) {
@@ -109,6 +121,7 @@ void Assembler::divSlotByConstSigned(Slot const &lhs, int denom) {
   } loopClose();
 
   popPtr();
+  freeTemp(tmp);
 }
 
 
@@ -123,21 +136,43 @@ void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs) {
   std::unreachable();
 }
 
-void Assembler::divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs) {
+void Assembler::divSlotBySlot(Slot const &lhs, Slot const &rhs, Slot const &modSlot) {
+  assert(types::isInteger(lhs.type));
+  assert(types::isInteger(rhs.type));
+  assert(types::cast<types::IntegerType>(lhs.type)->signedness() ==
+	 types::cast<types::IntegerType>(rhs.type)->signedness());
+    
+  if (types::isUnsignedInteger(lhs.type)) return divSlotBySlotUnsigned(lhs, rhs, modSlot);
+  if (types::isSignedInteger(lhs.type))   return divSlotBySlotSigned(lhs, rhs, modSlot);
+  std::unreachable();
+}
+
+void Assembler::divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &modSlot, bool const destroyRhs) {
   assert(types::isUnsignedInteger(lhs.type));
   assert(types::isUnsignedInteger(rhs.type));
 
-  Slot const rhsCopy = destroyRhs ? rhs : [&] {
+  bool freeRhsCopy = false;
+  Slot const rhsCopy = [&] {
+    if (destroyRhs) return rhs;
     Slot const tmp = getTemp(rhs.type);
     assignSlot(tmp, rhs);
+    freeRhsCopy = true;
     return tmp;    
   }();
-  
-  Slot const tmp = destroyRhs ? getTemp(ts::raw(1)) : rhs;
+
 
   pushPtr();
   if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
 
+    bool freeTmpDonor = false;
+    Slot const tmpDonor = [&] {
+      if (destroyRhs) {
+	freeTmpDonor = true;
+	return getTemp(ts::raw(1));
+      }
+      return rhs;
+    }();
+    
     moveTo(lhs, MacroCell::Value0);    
     divMod16Destructive(Cell{lhs, MacroCell::Value1},
 			Cell{rhsCopy, MacroCell::Value0},
@@ -146,18 +181,23 @@ void Assembler::divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
 			Cell{lhs, MacroCell::Payload1},
 			Temps<8>::select(lhs, MacroCell::Scratch0,
 					 lhs, MacroCell::Scratch1,
-					 tmp, MacroCell::Scratch0,
-					 tmp, MacroCell::Scratch1,
+					 tmpDonor, MacroCell::Scratch0,
+					 tmpDonor, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Scratch0,
 					 rhsCopy, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Payload0,
 					 rhsCopy, MacroCell::Payload1));
 
-    moveTo(lhs, MacroCell::Payload0);
-    zeroCell();
+    moveTo(lhs, MacroCell::Payload0);    
+    if (modSlot.has_value()) moveField(Cell{*modSlot, MacroCell::Value0});
+    else zeroCell();
+
     moveTo(lhs, MacroCell::Payload1);
-    zeroCell();
-    
+    if (modSlot.has_value()) moveField(Cell{*modSlot, MacroCell::Value1});
+    else zeroCell();
+
+    if (freeTmpDonor) freeTemp(tmpDonor);
+
   } else {
     moveTo(lhs, MacroCell::Value0);    
     divModDestructive(Cell{rhsCopy, MacroCell::Value0},
@@ -168,14 +208,17 @@ void Assembler::divSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
 				       rhsCopy, MacroCell::Scratch0,
 				       rhsCopy, MacroCell::Scratch1));
 
-    moveTo(lhs, MacroCell::Payload0);
-    zeroCell();
+    moveTo(lhs, MacroCell::Payload0);    
+    if (modSlot.has_value()) moveField(Cell{*modSlot, MacroCell::Value0});
+    else zeroCell();
   }
   
   popPtr();
+
+  if (freeRhsCopy) freeTemp(rhsCopy);
 }
 
-void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
+void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &modSlot) {
   assert(types::isSignedInteger(lhs.type));
   assert(types::isSignedInteger(rhs.type));
 
@@ -188,8 +231,6 @@ void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
 				       lhs, MacroCell::Payload1));
 
   Slot const tmp = getTemp(ts::raw(2));
-
-  
   Cell const resultNegative { tmp, MacroCell::Flag };
   moveTo(lhs, MacroCell::Flag);
   loopOpen(); {    
@@ -224,8 +265,7 @@ void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
   } loopClose();
 
   // Both operands are now positive and the resultNegative cell holds the sign bit for the result.  
-  divSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
-
+  divSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), modSlot, true);
   
   // Correct the sign
   moveTo(resultNegative);
@@ -235,6 +275,15 @@ void Assembler::divSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
   } loopClose();
 
   popPtr();
+  freeTemp(tmp);
+}
+
+
+void Assembler::modSlotByConst(Slot const &lhs, int denom, Slot const &divSlot) {
+  assert(types::isInteger(lhs.type));
+  if (types::isUnsignedInteger(lhs.type))  return modSlotByConstUnsigned(lhs, denom, divSlot);
+  if (types::isSignedInteger(lhs.type)) return modSlotByConstSigned(lhs, denom, divSlot);
+  std::unreachable();
 }
 
 void Assembler::modSlotByConst(Slot const &lhs, int denom) {
@@ -244,7 +293,7 @@ void Assembler::modSlotByConst(Slot const &lhs, int denom) {
   std::unreachable();
 }
 
-void Assembler::modSlotByConstUnsigned(Slot const &lhs, int denom) {
+void Assembler::modSlotByConstUnsigned(Slot const &lhs, int denom, std::optional<Slot> const &divSlot) {
   assert(types::isUnsignedInteger(lhs.type));
   assert(denom >= 0);
   
@@ -264,10 +313,18 @@ void Assembler::modSlotByConstUnsigned(Slot const &lhs, int denom) {
 				   tmp + 1, MacroCell::Payload0,
 				   tmp + 1, MacroCell::Payload1));
 
+
+    // If divslot provided, move division result into there before moving the modresult back into the value-cells
+    moveTo(lhs, MacroCell::Value0); 
+    if (divSlot.has_value())  moveField(Cell{*divSlot, MacroCell::Value0});
+    moveTo(lhs, MacroCell::Value1); 
+    if (divSlot.has_value())  moveField(Cell{*divSlot, MacroCell::Value1});
+
     moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
     moveTo(lhs, MacroCell::Payload1);
     moveField(Cell{lhs, MacroCell::Value1});
+    freeTemp(tmp);
   } else {
     Slot const tmp = getTemp(ts::raw(1));
     divModConst(denom, Cell{lhs, MacroCell::Payload0},
@@ -277,16 +334,19 @@ void Assembler::modSlotByConstUnsigned(Slot const &lhs, int denom) {
 				 tmp, MacroCell::Scratch1,
 				 tmp, MacroCell::Payload0));
 
+    // If divslot provided, move division result into there before moving the modresult back into the value-cells
+    moveTo(lhs, MacroCell::Value0); 
+    if (divSlot.has_value())  moveField(Cell{*divSlot, MacroCell::Value0});
     moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
+    freeTemp(tmp);    
   }
-
 
   popPtr();
 }
 
 
-void Assembler::modSlotByConstSigned(Slot const &lhs, int denom) {
+void Assembler::modSlotByConstSigned(Slot const &lhs, int denom, std::optional<Slot> const &divSlot) {
   assert(types::isSignedInteger(lhs.type));
 
   pushPtr();
@@ -298,7 +358,7 @@ void Assembler::modSlotByConstSigned(Slot const &lhs, int denom) {
 				       lhs, MacroCell::Payload0,
 				       lhs, MacroCell::Payload1));
 
-  Slot const tmp = getTemp(ts::raw(1));
+  Slot const tmp = getTemp(ts::i8());
   Cell const resultNegative { tmp, MacroCell::Flag };
   moveTo(lhs, MacroCell::Flag);
   loopOpen(); {
@@ -310,8 +370,8 @@ void Assembler::modSlotByConstSigned(Slot const &lhs, int denom) {
   } loopClose();
   
   // lhs is now positive and the resulting sign has been stored -> use unsigned version
-  modSlotByConstUnsigned(lhs.unsignedView(), std::abs(denom));
-
+  modSlotByConstUnsigned(lhs.unsignedView(), std::abs(denom), divSlot);
+  
   // Restore sign
   moveTo(resultNegative);
   loopOpen(); {
@@ -320,6 +380,19 @@ void Assembler::modSlotByConstSigned(Slot const &lhs, int denom) {
   } loopClose();
   
   popPtr();
+  freeTemp(tmp);
+}
+
+
+void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs, Slot const &divSlot) {
+  assert(types::isInteger(lhs.type));
+  assert(types::isInteger(rhs.type));
+  assert(types::cast<types::IntegerType>(lhs.type)->signedness() ==
+	 types::cast<types::IntegerType>(rhs.type)->signedness());
+    
+  if (types::isUnsignedInteger(lhs.type)) return modSlotBySlotUnsigned(lhs, rhs, divSlot);
+  if (types::isSignedInteger(lhs.type))   return modSlotBySlotSigned(lhs, rhs, divSlot);
+  std::unreachable();
 }
 
 void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
@@ -333,14 +406,15 @@ void Assembler::modSlotBySlot(Slot const &lhs, Slot const &rhs) {
   std::unreachable();
 }
 
-void Assembler::modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool const destroyRhs) {
+void Assembler::modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &divSlot, bool const destroyRhs) {
   assert(types::isUnsignedInteger(lhs.type));
   assert(types::isUnsignedInteger(rhs.type));
   
-
+  bool freeRhsCopy = false;
   Slot const rhsCopy = destroyRhs ? rhs : [&] {
     Slot const tmp = getTemp(rhs.type);
     assignSlot(tmp, rhs);
+    freeRhsCopy = true;
     return tmp;    
   }();
 
@@ -348,6 +422,17 @@ void Assembler::modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
   
   pushPtr();
   if (lhs.type->usesValue1() || rhs.type->usesValue1()) {
+
+    bool freeTmpDonor = false;
+    Slot const tmpDonor = [&] {
+      if (destroyRhs) {
+	freeTmpDonor = true;
+	return getTemp(ts::raw(1));
+      }
+      return rhs;
+    }();
+
+    
     moveTo(lhs, MacroCell::Value0);    
     divMod16Destructive(Cell{lhs, MacroCell::Value1},
 			Cell{rhsCopy, MacroCell::Value0},
@@ -356,17 +441,25 @@ void Assembler::modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
 			Cell{lhs, MacroCell::Payload1},
 			Temps<8>::select(lhs, MacroCell::Scratch0,
 					 lhs, MacroCell::Scratch1,
-					 tmp, MacroCell::Scratch0,
-					 tmp, MacroCell::Scratch1,
+					 tmpDonor, MacroCell::Scratch0,
+					 tmpDonor, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Scratch0,
 					 rhsCopy, MacroCell::Scratch1,
 					 rhsCopy, MacroCell::Payload0,
 					 rhsCopy, MacroCell::Payload1));
+
+    // If divslot provided, move division result into there before moving the modresult back into the value-cells
+    moveTo(lhs, MacroCell::Value0); 
+    if (divSlot.has_value())  moveField(Cell{*divSlot, MacroCell::Value0});
+    moveTo(lhs, MacroCell::Value1); 
+    if (divSlot.has_value())  moveField(Cell{*divSlot, MacroCell::Value1});
+
     moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
     moveTo(lhs, MacroCell::Payload1);
     moveField(Cell{lhs, MacroCell::Value1});
-    
+    if (freeTmpDonor) freeTemp(tmpDonor);
+        
   } else {
     moveTo(lhs, MacroCell::Value0);    
     divModDestructive(Cell{rhsCopy, MacroCell::Value0},
@@ -377,14 +470,18 @@ void Assembler::modSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
 				       rhsCopy, MacroCell::Scratch0,
 				       rhsCopy, MacroCell::Scratch1));
 
+    // If divslot provided, move division result into there before moving the modresult back into the value-cells
+    moveTo(lhs, MacroCell::Value0); 
+    if (divSlot.has_value())  moveField(Cell{*divSlot, MacroCell::Value0});
     moveTo(lhs, MacroCell::Payload0);
     moveField(Cell{lhs, MacroCell::Value0});
   }
 
   popPtr();
+  if (freeRhsCopy) freeTemp(rhsCopy);
 }
 
-void Assembler::modSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
+void Assembler::modSlotBySlotSigned(Slot const &lhs, Slot const &rhs, std::optional<Slot> const &divSlot) {
   assert(types::isSignedInteger(lhs.type));
   assert(types::isSignedInteger(rhs.type));
 
@@ -416,14 +513,16 @@ void Assembler::modSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
     absSlot(rhsCopy);
   }
 
-  modSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), true);
+  modSlotBySlotUnsigned(lhs.unsignedView(), rhsCopy.unsignedView(), divSlot, true);
   
   moveTo(resultNegative);
   loopOpen(); {
     zeroCell();
     negateSlot(lhs);
   } loopClose();
-  
+
+  popPtr();
+  freeTemp(tmp);
 }
 
 

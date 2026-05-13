@@ -83,6 +83,7 @@ void Assembler::andSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 
@@ -127,6 +128,7 @@ void Assembler::nandSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 
@@ -171,6 +173,7 @@ void Assembler::orSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 void Assembler::norSlotWithConst(Slot const &lhs, int val) {
@@ -214,6 +217,7 @@ void Assembler::norSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 void Assembler::xorSlotWithConst(Slot const &lhs, int val) {
@@ -261,6 +265,7 @@ void Assembler::xorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 void Assembler::xnorSlotWithConst(Slot const &lhs, int val) {
@@ -308,6 +313,7 @@ void Assembler::xnorSlotWithSlot(Slot const &lhs, Slot const &rhs) {
   }
 
   popPtr();
+  freeTemp(rhsCopy);
 }
 
 void Assembler::orDestructive(Cell other, Temps<1> tmp) {

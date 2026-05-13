@@ -369,10 +369,15 @@ void Assembler::prepareNextFrame(Expression const &fptr, std::vector<Expression>
   
   
   // Set target block
-  Slot const fptrSlot = (fptr.hasSlot())
-    ? fptr.slot()->materialize(*this)
-    :  getTemp(fptr.literal());
-
+  bool freeFptrSlot = false;
+  Slot const fptrSlot = [&] {
+    if (fptr.hasSlot()) {
+      freeFptrSlot = not fptr.slot()->direct();
+      return fptr.slot()->materialize(*this);
+    }
+    freeFptrSlot = true;
+    return getTemp(fptr.literal());
+  }();
 
   primitive::DInt const sourceCell0 = getFieldIndex(fptrSlot, MacroCell::Value0);
   primitive::DInt const sourceCell1 = getFieldIndex(fptrSlot, MacroCell::Value1);
@@ -386,7 +391,8 @@ void Assembler::prepareNextFrame(Expression const &fptr, std::vector<Expression>
   switchField(MacroCell::Value1);   
   emit<primitive::CopyData>(sourceCell1, targetCell1, scratchCell);
   popPtr();
-  
+
+  if (freeFptrSlot) freeTemp(fptrSlot);
 }
 
 
@@ -477,4 +483,6 @@ void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std
   } loopClose();
 
   popPtr();
+
+  freeTemp(tmp);
 }

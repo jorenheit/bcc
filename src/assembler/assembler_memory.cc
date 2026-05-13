@@ -43,21 +43,25 @@ Slot Assembler::allocSlot(std::string const &name, types::TypeHandle type, Slot:
 	slot.kind = kind;
 	slot.scope = _currentScope;
 
+	// Store the slot in case the reference is invalidated below
+	Slot const result = slot;
+
 	// Split the slot if there is still room
 	auto const dummyName = []() {
 	  static int counter = 0; return std::string("__dummy_") + std::to_string(counter++);
 	};
-	
+
 	if (diff > 0) {
-	  frame.locals.emplace_back(Slot{
+	  // Might invalidate the reference -> use result below
+	  frame.locals.push_back(Slot{
 	      .name = dummyName(),
 	      .type = ts::raw(diff),
 	      .kind = Slot::Available,
-	      .offset = slot.offset + type->size(),
+	      .offset = slot.offset + slot.type->size(),
 	      .scope = nullptr
 	    });
 	}
-	return slot;
+	return result;
       }
     }
     return {};
@@ -85,12 +89,27 @@ Slot Assembler::allocSlot(std::string const &name, types::TypeHandle type, Slot:
   return newSlot(name, type, kind);
 }
 
+
 void Assembler::freeSlot(Slot &slot) {
   slot.name = "";
   slot.type = ts::raw(slot.type->size());
   slot.kind = Slot::Available;
   slot.scope = nullptr;
 }
+
+void Assembler::freeTemp(Slot const &target, std::source_location loc) {
+  assert(target.kind == Slot::Temp);
+  
+  // Find this slot in the current frame and free it.
+  for (auto &slot: _currentFunction->frame.locals) {
+    if (slot == target) {
+      freeSlot(slot);
+      return;
+    }
+  }
+  assert(false && "slot not found in current frame");
+}
+
 
 void Assembler::freeTemps() {
   for (auto &slot: _currentFunction->frame.locals) {

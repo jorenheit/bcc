@@ -25,13 +25,27 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
 
   if (rhs.hasSlot()) {
     Slot operandSlot = rhs.slot()->materialize(*this);
+    bool freeOperandSlot = not rhs.slot()->direct();
     if (stride != 1) {
-      Slot const operandCopy = getTemp(operandSlot.type);
-      assignSlot(operandCopy, operandSlot);
-      mulSlotByConst(operandCopy, stride);
-      operandSlot = operandCopy;
+      // rhs operand needs to be multiplied, so we need a copy unless
+      // this was an indirect access, in which case we can simply
+      // modify the temporary materialized slot.
+      
+      if (rhs.slot()->direct()) {
+	// Direct -> we need a temp copy
+	Slot const operandCopy = getTemp(operandSlot.type);
+	assignSlot(operandCopy, operandSlot);
+	mulSlotByConst(operandCopy, stride);
+	operandSlot = operandCopy;
+	freeOperandSlot = true;
+      } else {
+	// Indirect -> we can can modify the slot 
+	mulSlotByConst(operandSlot, stride);
+      }
     }
     (this->*spec.applyWithSlot)(targetSlot, operandSlot);
+    if (freeOperandSlot) freeTemp(operandSlot);
+
   }
   else {
     int const delta = literal::cast<types::IntegerType>(rhs.literal())->semanticValue();
@@ -41,6 +55,7 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
   
   if (not lhs.slot()->direct()) {
     lhs.slot()->write(*this, lhsBase);
+    freeTemp(lhsBase);
   }
 
   popPtr();

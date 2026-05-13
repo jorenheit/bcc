@@ -33,6 +33,7 @@ void Assembler::mulSlotByConstUnsigned(Slot const &lhs, int factor) {
 				tmp, MacroCell::Scratch1,
 				tmp, MacroCell::Payload0,
 				tmp, MacroCell::Payload1));
+    freeTemp(tmp);
   } else {
     mulConst(factor,
 	     Temps<3>::select(lhs, MacroCell::Scratch0,
@@ -80,6 +81,7 @@ void Assembler::mulSlotByConstSigned(Slot const &lhs, int factor) {
   } loopClose();
 
   popPtr();
+  freeTemp(tmp);
 }
 
 
@@ -146,9 +148,12 @@ void Assembler::mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
     Slot const lhsCopy = getTemp(lhs.type);
     assignSlot(lhsCopy, lhs);
 
+
+    bool freeRhsCopy = false;
     Slot const rhsCopy = destroyRhs ? rhs : [&] {
       Slot const tmp = getTemp(rhs.type);
       assignSlot(tmp, rhs);
+      freeRhsCopy = true;
       return tmp;    
     }();
     
@@ -157,7 +162,7 @@ void Assembler::mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
     zeroByte(lhs, High);
 
     // rhsLow = only low byte of rhs (b0), high byte zeroed
-    Slot const rhsLow = getTemp(ts::i16());    
+    Slot const rhsLow = getTemp(ts::i16());
     copyByte(rhsCopy, Low, rhsLow, Low);
     zeroByte(rhsLow, High);
 
@@ -203,6 +208,10 @@ void Assembler::mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
     //   lhs.high += low(a0*b1) + low(a1*b0)
     addByteInto(lhs, High, cross0, Low);
     addByteInto(lhs, High, lhsCopy, High);
+
+    freeTemp(lhsCopy);
+    freeTemp(rhsLow);
+    if (freeRhsCopy) freeTemp(rhsCopy);
     
   } else {
     Slot const tmp = getTemp(rhs.type);
@@ -212,6 +221,7 @@ void Assembler::mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
 		   Temps<3>::select(lhs, MacroCell::Scratch0,
 				    lhs, MacroCell::Scratch1,
 				    tmp, MacroCell::Scratch0));
+    freeTemp(tmp);
   }
   popPtr();
 }
@@ -229,8 +239,6 @@ void Assembler::mulSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
 				       lhs, MacroCell::Payload1));
 
   Slot const tmp = getTemp(ts::raw(2));
-
-  
   Cell const resultNegative { tmp, MacroCell::Flag };
   moveTo(lhs, MacroCell::Flag);
   loopOpen(); {    
@@ -275,9 +283,8 @@ void Assembler::mulSlotBySlotSigned(Slot const &lhs, Slot const &rhs) {
   } loopClose();
 
   popPtr();
+  freeTemp(tmp);
 }
-
-
 
 // Implementations of mul algorithms
 
