@@ -1,8 +1,8 @@
-// Tests pass-by-value of an array of i16 values, verifying multi-cell argument copying across a function call.
+// Tests pass-by-value of an array of u16 values, verifying multi-cell argument copying across a function call.
 // Expect: ABCDABCD
 
 TEST_BEGIN
-auto array2 = ts::array(ts::i16(), 2);
+auto array2 = ts::array(ts::u16(), 2);
 
 c.function("main").begin(); {
   c.declareLocal("x", array2);
@@ -10,8 +10,8 @@ c.function("main").begin(); {
   auto x0 = c.arrayElement("x", 0);
   auto x1 = c.arrayElement("x", 1);
 
-  c.assign(x0, literal::i16(CAT('A', 'B')));
-  c.assign(x1, literal::i16(CAT('C', 'D')));
+  c.assign(x0, literal::u16(CAT('A', 'B')));
+  c.assign(x1, literal::u16(CAT('C', 'D')));
 
   c.write("x");
   c.callFunction("foo").arg("x").done();

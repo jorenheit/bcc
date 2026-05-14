@@ -4,17 +4,17 @@
 
 TEST_BEGIN
 
-auto i8  = ts::i8();
-auto i8p = ts::pointer(i8);
+auto u8  = ts::u8();
+auto u8p = ts::pointer(u8);
 
 c.function("main").begin(); {
-  c.declareLocal("pa", i8p);
-  c.declareLocal("pb", i8p);
-  c.declareLocal("a", i8);
-  c.declareLocal("b", i8);
+  c.declareLocal("pa", u8p);
+  c.declareLocal("pb", u8p);
+  c.declareLocal("a", u8);
+  c.declareLocal("b", u8);
 
-  c.assign("a", literal::i8('A'));
-  c.assign("b", literal::i8('B'));
+  c.assign("a", literal::u8('A'));
+  c.assign("b", literal::u8('B'));
   c.assign("pa", c.addressOf("a"));
   c.assign("pb", c.addressOf("b"));
 
@@ -24,15 +24,15 @@ c.function("main").begin(); {
   c.returnFromFunction();
 } c.endFunction();
 
-c.function("foo").param("pa", i8p).param("pb", i8p).ret(ts::void_t()).begin(); {
+c.function("foo").param("pa", u8p).param("pb", u8p).ret(ts::void_t()).begin(); {
   auto aDeref = c.dereferencePointer("pa");
   auto bDeref = c.dereferencePointer("pb");
 
   c.write(aDeref);
   c.write(bDeref);
 
-  c.assign(aDeref, literal::i8('X'));
-  c.assign(bDeref, literal::i8('Y'));
+  c.assign(aDeref, literal::u8('X'));
+  c.assign(bDeref, literal::u8('Y'));
 
   c.returnFromFunction();
 } c.endFunction();

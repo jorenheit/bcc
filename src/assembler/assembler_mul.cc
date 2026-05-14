@@ -162,7 +162,7 @@ void Assembler::mulSlotBySlotUnsigned(Slot const &lhs, Slot const &rhs, bool con
     zeroByte(lhs, High);
 
     // rhsLow = only low byte of rhs (b0), high byte zeroed
-    Slot const rhsLow = getTemp(ts::i16());
+    Slot const rhsLow = getTemp(ts::u16());
     copyByte(rhsCopy, Low, rhsLow, Low);
     zeroByte(rhsLow, High);
 

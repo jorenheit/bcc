@@ -1,9 +1,9 @@
 
-// Tests returning an i8 array from a callee into a caller local array.
+// Tests returning an u8 array from a callee into a caller local array.
 // Expected: ABCDABCD
 
 TEST_BEGIN
-auto array4 = ts::array(ts::i8(), 4);
+auto array4 = ts::array(ts::u8(), 4);
 
 c.function("main").begin(); {
   c.declareLocal("x", array4);
@@ -24,10 +24,10 @@ c.function("foo").ret(array4).begin(); {
   auto x2 = c.arrayElement("x", 2);
   auto x3 = c.arrayElement("x", 3);
 
-  c.assign(x0, literal::i8('A'));
-  c.assign(x1, literal::i8('B'));
-  c.assign(x2, literal::i8('C'));
-  c.assign(x3, literal::i8('D'));
+  c.assign(x0, literal::u8('A'));
+  c.assign(x1, literal::u8('B'));
+  c.assign(x2, literal::u8('C'));
+  c.assign(x3, literal::u8('D'));
 
   c.write("x");
   c.returnFromFunction("x");

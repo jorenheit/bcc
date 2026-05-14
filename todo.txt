@@ -1,11 +1,7 @@
-[ ] binary operators
-[ ] large value constuctor algorithms to reduce code size. Enable with compiler option for size optimization
-[ ] design alg to reduce amount of >>> and <<< sequences. Insert the relative amount in one of the payload cells
-    and use that as a counter. Slower runtime but less code. Have a compiler option to optimize for size.
-[ ] zeroCell -> decrement if value is known to be 1
-[ ] dynamic array indices
-[ ] assignMove -> reduce code size when returning non-globals by moving them into return-slot instead of copy/
-[ ] seperate Error from Warning -> issue warning for certain type conversions (I8 <-> I16, arrays of, etc).
-    make sure that these warnings can be disabled by the frontend
-[ ] when copying large objects (either locally or into a call-frame (as argument, global, whatever)), have a runtime
-    iteration to loop over its elements rather than a compile-time loop to reduce code (compiler option Os).
+
+[ ] assignMove -> reduce code size when returning non-globals by moving them into return-slot instead of copy.
+[ ] go over TODO's in the code
+[ ] options
+[ ] typesystem namespace should be used by user and should import types::TypeHanlde
+[ ] no more ts::init
+[ ] namespace acus::sugar -> initialize a global assembler and define free function api with functions that return an expression container that has operator overloading.

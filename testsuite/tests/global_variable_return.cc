@@ -2,10 +2,10 @@
 // GG
 TEST_BEGIN
 
-c.declareGlobal("g", ts::i8());
+c.declareGlobal("g", ts::u8());
 
 c.function("main").begin(); {
-  c.declareLocal("x", ts::i8());
+  c.declareLocal("x", ts::u8());
 
   c.callFunction("foo").into("x").done();
   c.write("x");
@@ -13,9 +13,9 @@ c.function("main").begin(); {
   c.returnFromFunction();
 } c.endFunction();
 
-c.function("foo").ret(ts::i8()).begin(); {
+c.function("foo").ret(ts::u8()).begin(); {
   c.referGlobals({"g"});
-  c.assign("g", literal::i8('G'));
+  c.assign("g", literal::u8('G'));
   c.returnFromFunction("g");
 } c.endFunction();
 

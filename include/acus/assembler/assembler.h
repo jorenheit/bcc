@@ -28,8 +28,6 @@ namespace acus {
 
   class Assembler {
   public:
-    inline Assembler() { ts::init(); }
-
     // TODO: API_FUNC 
     std::string primitives(std::string const &name) const;
     std::string brainfuck(std::string const &name) const;
@@ -48,9 +46,8 @@ namespace acus {
     void endScope(API_FUNC);
 
     void referGlobals(std::vector<std::string> const &names, API_FUNC);
-    // TODO: these should return Expression
-    Slot declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
-    Slot declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
+    Expression declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
+    Expression declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
 
     void returnFromFunction(auto const &ret, API_FUNC);
     void returnFromFunction(API_FUNC);
@@ -59,9 +56,7 @@ namespace acus {
     FunctionCallBuilder callFunction(std::string const &functionName, API_FUNC);
     FunctionCallBuilder callFunctionPointer(auto const &functionPtr, API_FUNC);
 
-    Expression expr(auto const &obj, API_FUNC);
     Expression assign(auto const &lhs, auto const &rhs, API_FUNC);
-
     Expression cast(auto const &lhs, types::TypeHandle toType, API_FUNC);
     
     Expression structField(auto const &obj, std::string const &field, API_FUNC);

@@ -4,16 +4,16 @@
 
 TEST_BEGIN
 
-auto i8  = ts::i8();
-auto i8p = ts::pointer(i8);
+auto u8  = ts::u8();
+auto u8p = ts::pointer(u8);
 
 c.function("main").begin(); {
-  c.declareLocal("p", i8p);
-  c.declareLocal("x", i8);
-  c.declareLocal("y", i8);
+  c.declareLocal("p", u8p);
+  c.declareLocal("x", u8);
+  c.declareLocal("y", u8);
 
-  c.assign("p", c.addressOf("x")); //literal::pointer(i8, "x"));
-  c.assign("x", literal::i8('X'));
+  c.assign("p", c.addressOf("x")); //literal::pointer(u8, "x"));
+  c.assign("x", literal::u8('X'));
 
   auto pDeref = c.dereferencePointer("p");
   c.assign("y", pDeref);
@@ -21,7 +21,7 @@ c.function("main").begin(); {
   c.write("x");
   c.write("y");
 
-  c.assign(pDeref, literal::i8('Y'));
+  c.assign(pDeref, literal::u8('Y'));
 
   c.write("x");
   c.write("y");

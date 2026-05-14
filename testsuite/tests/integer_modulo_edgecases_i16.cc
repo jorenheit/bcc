@@ -1,41 +1,41 @@
-// Filename: integer_modulo_edgecases_i16.cc
-// Modulo edge cases for i16: x%0, 0%x, 0%0, and assign variants
+// Filename: integer_modulo_edgecases_u16.cc
+// Modulo edge cases for u16: x%0, 0%x, 0%0, and assign variants
 // Expected: AABBCCDDEE
 
 TEST_BEGIN
 
-auto i16 = ts::i16();
+auto u16 = ts::u16();
 
 c.function("main").begin(); {
-  c.declareLocal("x", i16);
-  c.declareLocal("y", i16);
+  c.declareLocal("x", u16);
+  c.declareLocal("y", u16);
 
   // x % 0 -> 0, mapped to "AA"
-  c.assign("x", literal::i16(0x1234));
-  c.assign("y", literal::i16(0));
-  c.write(c.add(c.mod("x", "y"), literal::i16(0x4141)));
+  c.assign("x", literal::u16(0x1234));
+  c.assign("y", literal::u16(0));
+  c.write(c.add(c.mod("x", "y"), literal::u16(0x4141)));
 
   // 0 % x -> 0, mapped to "BB"
-  c.assign("x", literal::i16(0));
-  c.assign("y", literal::i16(0x1111));
-  c.write(c.add(c.mod("x", "y"), literal::i16(0x4242)));
+  c.assign("x", literal::u16(0));
+  c.assign("y", literal::u16(0x1111));
+  c.write(c.add(c.mod("x", "y"), literal::u16(0x4242)));
 
   // 0 % 0 -> 0, mapped to "CC"
-  c.assign("x", literal::i16(0));
-  c.assign("y", literal::i16(0));
-  c.write(c.add(c.mod("x", "y"), literal::i16(0x4343)));
+  c.assign("x", literal::u16(0));
+  c.assign("y", literal::u16(0));
+  c.write(c.add(c.mod("x", "y"), literal::u16(0x4343)));
 
   // x %= 0 -> 0, mapped to "DD"
-  c.assign("x", literal::i16(0x1234));
-  c.assign("y", literal::i16(0));
+  c.assign("x", literal::u16(0x1234));
+  c.assign("y", literal::u16(0));
   c.modAssign("x", "y");
-  c.write(c.add("x", literal::i16(0x4444)));
+  c.write(c.add("x", literal::u16(0x4444)));
 
   // 0 %= x -> 0, mapped to "EE"
-  c.assign("x", literal::i16(0));
-  c.assign("y", literal::i16(0x1111));
+  c.assign("x", literal::u16(0));
+  c.assign("y", literal::u16(0x1111));
   c.modAssign("x", "y");
-  c.write(c.add("x", literal::i16(0x4545)));
+  c.write(c.add("x", literal::u16(0x4545)));
 
   c.returnFromFunction();
 } c.endFunction();

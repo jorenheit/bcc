@@ -3,16 +3,16 @@
 
 TEST_BEGIN
 
-auto array4 = ts::array(ts::i8(), 4);
+auto array4 = ts::array(ts::u8(), 4);
 
 c.function("main").begin(); {
   c.declareLocal("arr", array4);
-  c.declareLocal("srcIdx", ts::i8());
-  c.declareLocal("dstIdx", ts::i8());
+  c.declareLocal("srcIdx", ts::u8());
+  c.declareLocal("dstIdx", ts::u8());
 
-  c.assign("arr", literal::array(ts::array(ts::i8(), 4)).push(literal::i8('A')).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done());
-  c.assign("srcIdx", literal::i8(0));
-  c.assign("dstIdx", literal::i8(2));
+  c.assign("arr", literal::array(ts::array(ts::u8(), 4)).push(literal::u8('A')).push(literal::u8('B')).push(literal::u8('C')).push(literal::u8('D')).done());
+  c.assign("srcIdx", literal::u8(0));
+  c.assign("dstIdx", literal::u8(2));
 
   auto src = c.arrayElement("arr", "srcIdx");
   auto dst = c.arrayElement("arr", "dstIdx");

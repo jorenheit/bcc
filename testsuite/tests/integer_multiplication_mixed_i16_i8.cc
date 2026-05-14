@@ -1,16 +1,16 @@
-// Filename: integer_multiplication_mixed_i16_i8.cc
-// Multiply mixed i16/i8 integers using mul and mulAssign
+// Filename: integer_multiplication_mixed_u16_u8.cc
+// Multiply mixed u16/u8 integers using mul and mulAssign
 // Expected: ""DD
 
 TEST_BEGIN
 
 c.function("main").begin(); {
-  c.declareLocal("x", ts::i16());
-  c.declareLocal("y", ts::i8());
-  c.declareLocal("z", ts::i16());
+  c.declareLocal("x", ts::u16());
+  c.declareLocal("y", ts::u8());
+  c.declareLocal("z", ts::u16());
 
-  c.assign("x", literal::i16(0x1111));
-  c.assign("y", literal::i8(2));
+  c.assign("x", literal::u16(0x1111));
+  c.assign("y", literal::u8(2));
 
   c.mulAssign("x", "y");           // 0x1111 * 2 = 0x2222 -> ""
   c.write("x");                 // ""

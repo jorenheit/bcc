@@ -1,15 +1,15 @@
-// Add i8 integers together using add and addAssign
+// Add u8 integers together using add and addAssign
 // Expected: ADG
 
 TEST_BEGIN
 
 c.function("main").begin(); {
-  c.declareLocal("x", ts::i8());
-  c.declareLocal("y", ts::i8());
-  c.declareLocal("z", ts::i8());
+  c.declareLocal("x", ts::u8());
+  c.declareLocal("y", ts::u8());
+  c.declareLocal("z", ts::u8());
 
-  c.assign("x", literal::i8('A'));
-  c.assign("y", literal::i8(3));
+  c.assign("x", literal::u8('A'));
+  c.assign("y", literal::u8(3));
 
   c.write("x"); // A
   c.addAssign("x", "y"); // x += y

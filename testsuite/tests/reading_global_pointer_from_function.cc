@@ -3,29 +3,29 @@
 
 TEST_BEGIN
 
-types::TypeHandle i8 = ts::i8();
-types::TypeHandle i8p = ts::pointer(ts::i8());
+TypeHandle u8 = ts::u8();
+TypeHandle u8p = ts::pointer(ts::u8());
 
 
-c.declareGlobal("g", i8);
+c.declareGlobal("g", u8);
 
 c.function("main").begin(); {
   c.referGlobals({"g"});
-  c.declareLocal("pg", i8p);
-  c.declareLocal("x", i8);
+  c.declareLocal("pg", u8p);
+  c.declareLocal("x", u8);
 
   c.assign("pg", c.addressOf("g"));
-  c.assign("g", literal::i8('G'));
-  c.assign("x", literal::i8('X'));
+  c.assign("g", literal::u8('G'));
+  c.assign("x", literal::u8('X'));
   c.callFunction("foo").arg("pg").done();
-  c.assign("g", literal::i8('H'));
+  c.assign("g", literal::u8('H'));
 
   c.callFunction("foo").arg("pg").done();
   c.write("x");
   c.returnFromFunction();
 } c.endFunction();
 
-c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
+c.function("foo").param("p", u8p).ret(ts::void_t()).begin(); {
   auto pDeref = c.dereferencePointer("p");
   c.write(pDeref);
   c.returnFromFunction();

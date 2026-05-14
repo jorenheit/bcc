@@ -10,7 +10,7 @@
 namespace acus::types {
 
   enum TypeTag {
-    VOID, RAW, I8, S8, I16, S16, ARRAY, STRING, STRUCT, POINTER, FUNCTION, FUNCTION_POINTER
+    VOID, RAW, U8, S8, U16, S16, ARRAY, STRING, STRUCT, POINTER, FUNCTION, FUNCTION_POINTER
   };
 
   enum Signedness {
@@ -64,8 +64,8 @@ namespace acus::types {
     IntegerType(int bits, Signedness sig = UNSIGNED): _bits(bits), _sig(sig) {}
 
     virtual TypeTag tag() const override {
-      if (not isSigned() && _bits == 8)  return I8;
-      if (not isSigned() && _bits == 16) return I16;
+      if (not isSigned() && _bits == 8)  return U8;
+      if (not isSigned() && _bits == 16) return U16;
       if (isSigned() && _bits == 8)      return S8;
       if (isSigned() && _bits == 16)     return S16;
       std::unreachable();
@@ -228,13 +228,13 @@ namespace acus::types {
   };
   
   // Convenience functions to check type categories
-  inline bool isI8(types::TypeHandle t)       { return t->tag() == types::I8; }
-  inline bool isI16(types::TypeHandle t)      { return t->tag() == types::I16; }
+  inline bool isU8(types::TypeHandle t)       { return t->tag() == types::U8; }
+  inline bool isU16(types::TypeHandle t)      { return t->tag() == types::U16; }
   inline bool isS8(types::TypeHandle t)       { return t->tag() == types::S8; }
   inline bool isS16(types::TypeHandle t)      { return t->tag() == types::S16; }
-  inline bool isInteger(TypeHandle t)         { return isI8(t) || isI16(t) || isS8(t) || isS16(t); }
+  inline bool isInteger(TypeHandle t)         { return isU8(t) || isU16(t) || isS8(t) || isS16(t); }
   inline bool isSignedInteger(TypeHandle t)   { return isS8(t) || isS16(t); }
-  inline bool isUnsignedInteger(TypeHandle t) { return isI8(t) || isI16(t); }
+  inline bool isUnsignedInteger(TypeHandle t) { return isU8(t) || isU16(t); }
   inline bool isArray(TypeHandle t)           { return t->tag() == ARRAY; }
   inline bool isString(TypeHandle t)          { return t->tag() == STRING; }
   inline bool isArrayLike(TypeHandle t)       { return isArray(t) || isString(t); }

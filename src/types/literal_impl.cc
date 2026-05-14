@@ -58,13 +58,13 @@ namespace acus::literal::impl {
     std::unreachable();
   }  
 
-  // i8
-  i8::i8(int v, API_CTX_IGNORE):
-    Integer(ts::i8(), wrapUnsigned(v, 8))
+  // u8
+  u8::u8(int v, API_CTX_IGNORE):
+    Integer(ts::u8(), wrapUnsigned(v, 8))
   {}
 
-  Literal i8::clone() const {
-    return std::make_shared<i8>(*this);
+  Literal u8::clone() const {
+    return std::make_shared<u8>(*this);
   }
 
   // s8
@@ -77,12 +77,12 @@ namespace acus::literal::impl {
   }
   
   // i16
-  i16::i16(int v, API_CTX_IGNORE):
-    Integer(ts::i16(), wrapUnsigned(v, 16))
+  u16::u16(int v, API_CTX_IGNORE):
+    Integer(ts::u16(), wrapUnsigned(v, 16))
   {}
 
-  Literal i16::clone() const  {
-    return std::make_shared<i16>(*this);
+  Literal u16::clone() const  {
+    return std::make_shared<u16>(*this);
   }      
 
   // s16
@@ -109,8 +109,8 @@ namespace acus::literal::impl {
     ArrayLike(ts::string(s.length())),
     _str(s)
   {
-    for (char c: _str)  (ArrayLike::arr).emplace_back(std::make_shared<i8>(c, API_FWD));
-    (ArrayLike::arr).emplace_back(std::make_shared<i8>(0, API_FWD));
+    for (char c: _str)  (ArrayLike::arr).emplace_back(std::make_shared<u8>(c, API_FWD));
+    (ArrayLike::arr).emplace_back(std::make_shared<u8>(0, API_FWD));
   }
       
   string::string(string const &other):

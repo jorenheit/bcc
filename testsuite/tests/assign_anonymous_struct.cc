@@ -2,12 +2,12 @@
 // Expected: "AB"
 
 TEST_BEGIN
-auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
+auto point = ts::defineStruct("Point").field("x", ts::u8()).field("y", ts::u8()).done();
 
 c.function("main").begin(); {
   c.declareLocal("s", point);
 
-  c.assign("s", literal::struct_t(point).init("x", literal::i8('A')).init("y", literal::i8('B')).done());
+  c.assign("s", literal::struct_t(point).init("x", literal::u8('A')).init("y", literal::u8('B')).done());
   c.write("s");
   c.returnFromFunction();
 } c.endFunction();

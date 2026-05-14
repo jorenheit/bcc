@@ -7,16 +7,15 @@
 
 // Public typesystem API (implemented in typesystem.cc)
 namespace acus::ts {
+  using TypeHandle = types::TypeHandle;
+
   struct FunctionTypeBuilder;
   struct StructTypeBuilder;  
-
-  // TODO: remove init. Construct builtin types when they are requested
-  void init();
-
+  
   types::VoidType const *void_t(API_FUNC);
-  types::IntegerType const *i8(API_FUNC);
+  types::IntegerType const *u8(API_FUNC);
   types::IntegerType const *s8(API_FUNC);
-  types::IntegerType const *i16(API_FUNC);
+  types::IntegerType const *u16(API_FUNC);
   types::IntegerType const *s16(API_FUNC);
   
   types::ArrayType const *array(types::TypeHandle elem, int length, API_FUNC);
@@ -33,7 +32,6 @@ namespace acus::ts {
 
 // Builder Classes (implemented in type_builders.cc)
 namespace acus::ts {
-
   
   struct FunctionTypeBuilder: builder::BuilderBase {
     FunctionTypeBuilder&  ret(types::TypeHandle returnType)  &;    

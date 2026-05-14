@@ -30,6 +30,6 @@ Slot Slot::invalid() {
 Slot Slot::unsignedView() const {
   assert(types::isInteger(type));
   Slot view = *this;
-  view.type = type->usesValue1() ? ts::i16() : ts::i8();
+  view.type = type->usesValue1() ? ts::u16() : ts::u8();
   return view;
 }

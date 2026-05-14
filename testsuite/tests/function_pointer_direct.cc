@@ -4,7 +4,7 @@
 
 TEST_BEGIN
 
-auto i8 = ts::i8();
+auto u8 = ts::u8();
 auto voidT = ts::void_t();
 auto fooType = ts::function().ret(voidT).done();
 auto fooPtr = ts::function_pointer(fooType);
@@ -12,15 +12,15 @@ auto fooPtr = ts::function_pointer(fooType);
 c.function("main").begin(); {
   c.declareLocal("fptr", fooPtr);
 
-  c.callFunction("getPtr").into("fptr").arg(literal::i8(0)).done();
+  c.callFunction("getPtr").into("fptr").arg(literal::u8(0)).done();
   c.callFunctionPointer("fptr").done();
-  c.callFunction("getPtr").into("fptr").arg(literal::i8(1)).done();
+  c.callFunction("getPtr").into("fptr").arg(literal::u8(1)).done();
   c.callFunctionPointer("fptr").done();
   c.returnFromFunction();
 } c.endFunction();
 
 
-c.function("getPtr").param("x", i8).ret(fooPtr).begin(); {
+c.function("getPtr").param("x", u8).ret(fooPtr).begin(); {
   c.jumpIf("x", "true", "false");
   c.label("true");
   c.returnFromFunction(literal::function_pointer(fooType, "foo1"));

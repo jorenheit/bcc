@@ -32,9 +32,9 @@ namespace acus::literal::impl {
     int semanticValue() const;
   };
     
-  struct i8: Integer {
-    i8(i8 const &other) = default;
-    i8(int v, API_CTX_IGNORE);
+  struct u8: Integer {
+    u8(u8 const &other) = default;
+    u8(int v, API_CTX_IGNORE);
     virtual Literal clone() const override;
   };
 
@@ -44,9 +44,9 @@ namespace acus::literal::impl {
     virtual Literal clone() const override;
   };
   
-  struct i16: Integer {
-    i16(i16 const& other) = default;
-    i16(int v, API_CTX_IGNORE);
+  struct u16: Integer {
+    u16(u16 const& other) = default;
+    u16(int v, API_CTX_IGNORE);
     virtual Literal clone() const override;
   };      
 

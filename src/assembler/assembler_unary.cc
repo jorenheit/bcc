@@ -47,17 +47,17 @@ Expression Assembler::unOpAssignImpl(Expression const &obj, SpecType const &spec
 
 
 namespace {
-  auto returnType(types::TypeHandle slotType, bool(*)(int)) { return ts::i8(); }
+  auto returnType(types::TypeHandle slotType, bool(*)(int)) { return ts::u8(); }
   auto returnType(types::TypeHandle slotType, int(*)(int))  { return slotType; }
 
   auto folded(int val, types::TypeHandle, bool(*f)(int))  {
-    return literal::i8(f(val));
+    return literal::u8(f(val));
   }
   
   auto folded(int val, types::TypeHandle type, int(*f)(int))  {
-    if (types::isI8(type)) return literal::i8(f(val));
+    if (types::isU8(type)) return literal::u8(f(val));
     if (types::isS8(type)) return literal::s8(f(val));
-    if (types::isI16(type)) return literal::i16(f(val));
+    if (types::isU16(type)) return literal::u16(f(val));
     if (types::isS16(type)) return literal::s16(f(val));
     std::unreachable();
   }

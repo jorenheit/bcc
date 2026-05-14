@@ -5,16 +5,16 @@
 
 TEST_BEGIN
 
-auto i8  = ts::i8();
-auto i8p = ts::pointer(i8);
+auto u8  = ts::u8();
+auto u8p = ts::pointer(u8);
 
-c.declareGlobal("g", i8);
+c.declareGlobal("g", u8);
 
 c.function("main").begin(); {
   c.referGlobals({"g"});
-  c.declareLocal("p", i8p);
+  c.declareLocal("p", u8p);
 
-  c.assign("g", literal::i8('A'));
+  c.assign("g", literal::u8('A'));
   c.assign("p", c.addressOf("g"));
 
   c.callFunction("foo").arg("p").done();
@@ -22,11 +22,11 @@ c.function("main").begin(); {
   c.returnFromFunction();
 } c.endFunction();
 
-c.function("foo").param("p", i8p).ret(ts::void_t()).begin(); {
+c.function("foo").param("p", u8p).ret(ts::void_t()).begin(); {
   c.referGlobals({"g"});
   auto pDeref = c.dereferencePointer("p");
   c.write(pDeref);
-  c.assign(pDeref, literal::i8('X'));
+  c.assign(pDeref, literal::u8('X'));
   c.write("g");
   c.returnFromFunction();
 } c.endFunction();

@@ -2,7 +2,7 @@
 // Expected result: YY
 
 TEST_BEGIN
-c.declareGlobal("g", ts::i8());
+c.declareGlobal("g", ts::u8());
 
 c.function("main").begin(); {
   c.referGlobals({"g"});
@@ -13,9 +13,9 @@ c.function("main").begin(); {
   c.returnFromFunction();
 } c.endFunction();
 
-c.function("foo").ret(ts::i8()).begin(); {
-  c.declareLocal("y", ts::i8());
-  c.assign("y", literal::i8('Y'));
+c.function("foo").ret(ts::u8()).begin(); {
+  c.declareLocal("y", ts::u8());
+  c.assign("y", literal::u8('Y'));
   c.returnFromFunction("y");
 } c.endFunction();
 

@@ -1,66 +1,66 @@
 // Filename: logical_xor.cc
-// Test logical XOR (lxor / lxorAssign) on i8 args, i16 args, mixed args,
+// Test logical XOR (lxor / lxorAssign) on u8 args, u16 args, mixed args,
 // variable/literal combinations, two literals for constant folding, and assign variants.
 // Each check prints 'A' for false and 'B' for true.
 // Expected: ABABABABAA
 
 TEST_BEGIN
 
-auto i8 = ts::i8();
-auto i16 = ts::i16();
+auto u8 = ts::u8();
+auto u16 = ts::u16();
 
 c.function("main").begin(); {
-  c.declareLocal("a", i8);
-  c.declareLocal("b", i8);
-  c.declareLocal("x", i16);
-  c.declareLocal("y", i16);
+  c.declareLocal("a", u8);
+  c.declareLocal("b", u8);
+  c.declareLocal("x", u16);
+  c.declareLocal("y", u16);
 
-  // 1. i8 variable + i8 variable: true XOR true -> 0
-  c.assign("a", literal::i8(0x7B));
-  c.assign("b", literal::i8(0x2D));
-  c.write(c.add(c.lxor("a", "b"), literal::i8('A')));
+  // 1. u8 variable + u8 variable: true XOR true -> 0
+  c.assign("a", literal::u8(0x7B));
+  c.assign("b", literal::u8(0x2D));
+  c.write(c.add(c.lxor("a", "b"), literal::u8('A')));
 
-  // 2. i8 variable + i8 variable: true XOR false -> 1
-  c.assign("a", literal::i8(0x7B));
-  c.assign("b", literal::i8(0));
-  c.write(c.add(c.lxor("a", "b"), literal::i8('A')));
+  // 2. u8 variable + u8 variable: true XOR false -> 1
+  c.assign("a", literal::u8(0x7B));
+  c.assign("b", literal::u8(0));
+  c.write(c.add(c.lxor("a", "b"), literal::u8('A')));
 
-  // 3. i16 variable + i16 variable: true XOR true -> 0
-  c.assign("x", literal::i16(0x1234));
-  c.assign("y", literal::i16(0xBEEF));
-  c.write(c.add(c.lxor("x", "y"), literal::i8('A')));
+  // 3. u16 variable + u16 variable: true XOR true -> 0
+  c.assign("x", literal::u16(0x1234));
+  c.assign("y", literal::u16(0xBEEF));
+  c.write(c.add(c.lxor("x", "y"), literal::u8('A')));
 
-  // 4. i16 variable + i16 variable: false XOR true -> 1
-  c.assign("x", literal::i16(0));
-  c.assign("y", literal::i16(0xCAFE));
-  c.write(c.add(c.lxor("x", "y"), literal::i8('A')));
+  // 4. u16 variable + u16 variable: false XOR true -> 1
+  c.assign("x", literal::u16(0));
+  c.assign("y", literal::u16(0xCAFE));
+  c.write(c.add(c.lxor("x", "y"), literal::u8('A')));
 
-  // 5. mixed i8/i16 variables: true XOR true -> 0
-  c.assign("a", literal::i8(0x55));
-  c.assign("x", literal::i16(0x4001));
-  c.write(c.add(c.lxor("a", "x"), literal::i8('A')));
+  // 5. mixed u8/u16 variables: true XOR true -> 0
+  c.assign("a", literal::u8(0x55));
+  c.assign("x", literal::u16(0x4001));
+  c.write(c.add(c.lxor("a", "x"), literal::u8('A')));
 
   // 6. variable + literal: true XOR false -> 1
-  c.assign("a", literal::i8(0x66));
-  c.write(c.add(c.lxor("a", literal::i8(0)), literal::i8('A')));
+  c.assign("a", literal::u8(0x66));
+  c.write(c.add(c.lxor("a", literal::u8(0)), literal::u8('A')));
 
   // 7. literal + variable: true XOR true -> 0
-  c.assign("x", literal::i16(0x2345));
-  c.write(c.add(c.lxor(literal::i16(0x7777), "x"), literal::i8('A')));
+  c.assign("x", literal::u16(0x2345));
+  c.write(c.add(c.lxor(literal::u16(0x7777), "x"), literal::u8('A')));
 
   // 8. literal + literal, constant-folded: true XOR false -> 1
-  c.write(c.add(c.lxor(literal::i16(0x9999), literal::i16(0)), literal::i8('A')));
+  c.write(c.add(c.lxor(literal::u16(0x9999), literal::u16(0)), literal::u8('A')));
 
-  // 9. i8 assign variant: true XOR true -> 0
-  c.assign("a", literal::i8(0x42));
-  c.lxorAssign("a", literal::i8(0x24));
-  c.write(c.add("a", literal::i8('A')));
+  // 9. u8 assign variant: true XOR true -> 0
+  c.assign("a", literal::u8(0x42));
+  c.lxorAssign("a", literal::u8(0x24));
+  c.write(c.add("a", literal::u8('A')));
 
-  // 10. i16 assign variant: false XOR false -> 0
+  // 10. u16 assign variant: false XOR false -> 0
   // Use land(result, 1) to print the boolean value as a single output byte.
-  c.assign("x", literal::i16(0));
-  c.lxorAssign("x", literal::i16(0));
-  c.write(c.add(c.land("x", literal::i16(1)), literal::i8('A')));
+  c.assign("x", literal::u16(0));
+  c.lxorAssign("x", literal::u16(0));
+  c.write(c.add(c.land("x", literal::u16(1)), literal::u8('A')));
 
   c.returnFromFunction();
 } c.endFunction();

@@ -1,4 +1,4 @@
-// Signed i8 sanity: addition, subtraction, and negation-via-zero-minus-x
+// Signed u8 sanity: addition, subtraction, and negation-via-zero-minus-x
 // Expected: ABCDEF
 
 TEST_BEGIN

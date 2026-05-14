@@ -3,7 +3,7 @@
 
 TEST_BEGIN
 
-c.declareGlobal("x", ts::array(ts::i8(), 10));
+c.declareGlobal("x", ts::array(ts::u8(), 10));
 
 c.function("main").begin(); {
   c.referGlobals({"x"});
@@ -13,10 +13,10 @@ c.function("main").begin(); {
   auto x2 = c.arrayElement("x", 2);
   auto x3 = c.arrayElement("x", 3);
 
-  c.assign(x0, literal::i8('A'));
-  c.assign(x1, literal::i8('B'));
-  c.assign(x2, literal::i8('C'));
-  c.assign(x3, literal::i8('D'));
+  c.assign(x0, literal::u8('A'));
+  c.assign(x1, literal::u8('B'));
+  c.assign(x2, literal::u8('C'));
+  c.assign(x3, literal::u8('D'));
 
   c.callFunction("foo").done();
   c.returnFromFunction();
@@ -25,10 +25,10 @@ c.function("main").begin(); {
 c.function("foo").begin(); {
   c.referGlobals({"x"});
 
-  auto x0 = c.arrayElement("x", literal::i8(0));
-  auto x1 = c.arrayElement("x", literal::i8(1));
-  auto x2 = c.arrayElement("x", literal::i8(2));
-  auto x3 = c.arrayElement("x", literal::i8(3));
+  auto x0 = c.arrayElement("x", literal::u8(0));
+  auto x1 = c.arrayElement("x", literal::u8(1));
+  auto x2 = c.arrayElement("x", literal::u8(2));
+  auto x3 = c.arrayElement("x", literal::u8(3));
 
   c.write(x0);
   c.write(x1);

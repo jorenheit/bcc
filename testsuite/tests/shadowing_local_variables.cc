@@ -3,19 +3,19 @@
 
 TEST_BEGIN
 c.function("main").begin(); {
-  c.declareLocal("x", ts::i8());
+  c.declareLocal("x", ts::u8());
 
-  c.assign("x", literal::i8('A'));
+  c.assign("x", literal::u8('A'));
   c.write("x");
   c.scope().begin(); {
-    c.declareLocal("x", ts::array(ts::i8(), 2));
-    c.assign("x", literal::array(ts::array(ts::i8(), 2)).push(literal::i8('B')).push(literal::i8('X')).done());
+    c.declareLocal("x", ts::array(ts::u8(), 2));
+    c.assign("x", literal::array(ts::array(ts::u8(), 2)).push(literal::u8('B')).push(literal::u8('X')).done());
     c.write("x");
     c.scope().begin(); {
-      c.declareLocal("x", ts::i8());
-      c.declareLocal("y", ts::i8());
-      c.assign("x", literal::i8('C'));
-      c.assign("y", literal::i8('D'));
+      c.declareLocal("x", ts::u8());
+      c.declareLocal("y", ts::u8());
+      c.assign("x", literal::u8('C'));
+      c.assign("y", literal::u8('D'));
       c.write("x");
       c.write("y");
     } c.endScope();

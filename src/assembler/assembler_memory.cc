@@ -138,7 +138,7 @@ Slot Assembler::getTemp(literal::Literal const &value) {
   return tmp;
 }
 
-Slot Assembler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
+Expression Assembler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_DECLARE_GLOBAL_ALLOWED();
@@ -156,17 +156,17 @@ Slot Assembler::declareGlobal(std::string const &name, types::TypeHandle type, A
   };
 
   _program.globals.emplace_back(slot);
-  return slot;
+  return Expression{slot};
 }
 
 
-Slot Assembler::declareLocal(std::string const& name, types::TypeHandle type, API_FUNC) {
+Expression Assembler::declareLocal(std::string const& name, types::TypeHandle type, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_INSIDE_FUNCTION_BLOCK();
   API_REQUIRE_NOT_IN_CURRENT_SCOPE(name);
 
-  return allocSlot(name, type, Slot::Local);
+  return Expression{allocSlot(name, type, Slot::Local)};
 }
 
 Slot Assembler::declareGlobalReference(Slot const &globalSlot) {

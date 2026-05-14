@@ -85,7 +85,7 @@ namespace acus::proxy {
     Slot ptr = _arr->addressOf(a);
     ptr.type = ts::pointer(this->type());
     if (std::holds_alternative<int>(_index)) {
-      a.addAssign(ptr, literal::i16(std::get<int>(_index)));
+      a.addAssign(ptr, literal::u16(std::get<int>(_index)));
     } else {
       a.addAssign(ptr, std::get<SlotProxy>(_index));
     }
@@ -141,7 +141,7 @@ namespace acus::proxy {
   Slot impl::StructField::addressOf(Assembler &a) const {
     Slot ptr = _obj->addressOf(a);
     ptr.type = ts::pointer(this->type());
-    a.addAssign(ptr, literal::i16(_fieldOffset));
+    a.addAssign(ptr, literal::u16(_fieldOffset));
     return ptr;
   }
   

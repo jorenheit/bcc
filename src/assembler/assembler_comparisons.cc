@@ -121,7 +121,7 @@ void Assembler::slotLessConstUnsigned(Slot const &lhs, int val) {
 
   pushPtr();
 
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::u16(val) : literal::u8(val));
   slotLessSlotUnsigned(lhs, valSlot, true);
   freeTemp(valSlot);
 
@@ -270,7 +270,7 @@ void Assembler::slotLessEqualConstUnsigned(Slot const &lhs, int val) {
     popPtr();
   }
   
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::u16(val) : literal::u8(val));
   slotLessEqualSlotUnsigned(lhs, valSlot);
   freeTemp(valSlot);
 
@@ -414,7 +414,7 @@ void Assembler::slotGreaterConstUnsigned(Slot const &lhs, int val) {
     return;
   }
 
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::u16(val) : literal::u8(val));
   slotGreaterSlotUnsigned(lhs, valSlot, true);
   freeTemp(valSlot);
   
@@ -539,7 +539,7 @@ void Assembler::slotGreaterEqualConstUnsigned(Slot const &lhs, int val) {
     return;
   }
 
-  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::i16(val) : literal::i8(val));
+  Slot const valSlot = getTemp(((val >> 8) & 0xff) ? literal::u16(val) : literal::u8(val));
   slotGreaterEqualSlotUnsigned(lhs, valSlot, true);
   freeTemp(valSlot);
 

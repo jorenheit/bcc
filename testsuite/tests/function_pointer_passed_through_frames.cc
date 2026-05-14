@@ -32,7 +32,7 @@ c.function("pass3").param("fp", actionPtr).ret(voidT).begin(); {
 } c.endFunction();
 
 c.function("printZ").begin(); {
-  c.write(literal::i8('Z'));
+  c.write(literal::u8('Z'));
   c.returnFromFunction();
 } c.endFunction();
 

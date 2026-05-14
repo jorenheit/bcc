@@ -4,7 +4,7 @@
 TEST_BEGIN
 
 c.function("main").begin(); {
-  c.write(literal::i8('A'));
+  c.write(literal::u8('A'));
   c.returnFromFunction();
 } c.endFunction();
 

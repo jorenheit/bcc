@@ -1,8 +1,8 @@
-// Tests pass-by-value of an i8 array argument, verifying full array copy and correct element ordering in caller and callee.
+// Tests pass-by-value of an u8 array argument, verifying full array copy and correct element ordering in caller and callee.
 // Expected: ABCDABCD
 
 TEST_BEGIN
-auto array4 = ts::array(ts::i8(), 4);
+auto array4 = ts::array(ts::u8(), 4);
 
 c.function("main").begin(); {
   c.declareLocal("x", array4);
@@ -12,10 +12,10 @@ c.function("main").begin(); {
   auto x2 = c.arrayElement("x", 2);
   auto x3 = c.arrayElement("x", 3);
 
-  c.assign(x0, literal::i8('A'));
-  c.assign(x1, literal::i8('B'));
-  c.assign(x2, literal::i8('C'));
-  c.assign(x3, literal::i8('D'));
+  c.assign(x0, literal::u8('A'));
+  c.assign(x1, literal::u8('B'));
+  c.assign(x2, literal::u8('C'));
+  c.assign(x3, literal::u8('D'));
 
   c.write("x");
   c.callFunction("foo").arg("x").done();

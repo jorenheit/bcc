@@ -11,8 +11,6 @@
 #include <vector>
 
 #include "acus.h"
-
-using namespace acus;
 using namespace acus::api;
 
 namespace ct {
@@ -138,16 +136,16 @@ void finishProgram(Assembler &c) {
   c.endProgram();
 }
 
-types::StructType const *pairStruct() {
+TypeHandle pairStruct() {
   auto existing = ts::struct_t("Pair");
   if (existing) return existing;
-  return ts::defineStruct("Pair").field("a", ts::i8()).field("b", ts::i8()).done();
+  return ts::defineStruct("Pair").field("a", ts::u8()).field("b", ts::u8()).done();
 }
 
-types::StructType const *singleStruct() {
+TypeHandle singleStruct() {
   auto existing = ts::struct_t("Single");
   if (existing) return existing;
-  return ts::defineStruct("Single").field("a", ts::i8()).done();
+  return ts::defineStruct("Single").field("a", ts::u8()).done();
 }
 
 std::vector<TestCase> buildTests() {
@@ -204,7 +202,7 @@ std::vector<TestCase> buildTests() {
     Assembler c;
     beginProgram(c);
     beginMain(c);
-    c.declareGlobal("g", ts::i8());    
+    c.declareGlobal("g", ts::u8());    
     c.returnFromFunction();
     c.endFunction();
   });
@@ -212,8 +210,8 @@ std::vector<TestCase> buildTests() {
   add("duplicate global name", GlobalNameUnavailable, [] {
     Assembler c;
     beginProgram(c);
-    c.declareGlobal("g", ts::i8());
-    c.declareGlobal("g", ts::i8());
+    c.declareGlobal("g", ts::u8());
+    c.declareGlobal("g", ts::u8());
   });
 
   add("referGlobals requires declared global", ExpectedGlobal, [] {
@@ -225,7 +223,7 @@ std::vector<TestCase> buildTests() {
   add("duplicate global reference", DuplicateGlobalReferences, [] {
     Assembler c;
     beginProgram(c);
-    c.declareGlobal("g", ts::i8());
+    c.declareGlobal("g", ts::u8());
     beginMain(c);
     c.label("start");
     c.referGlobals({"g", "g"});
@@ -240,27 +238,27 @@ std::vector<TestCase> buildTests() {
   add("duplicate local in current scope", NameAlreadyInCurrentScope, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
+    c.declareLocal("x", ts::u8());
   });
 
   add("function with duplicate parameter names", DuplicateFunctionParameters, [] {
     Assembler c;
     beginProgram(c);
-    c.function("main").param("x", ts::i8()).param("x", ts::i8()).begin();
+    c.function("main").param("x", ts::u8()).param("x", ts::u8()).begin();
   });
 
   add("emit after jump requires label", UnexpectedApiCall, [] {
     Assembler c;
     beginBasicMain(c);
     c.jump("done");
-    c.write(literal::i8('X'));
+    c.write(literal::u8('X'));
   });
 
   add("jump target must exist", LabelDoesNotExist, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.jumpIf("x", "missing", "after_jump");
     c.label("after_jump");
     c.returnFromFunction();
@@ -271,7 +269,7 @@ std::vector<TestCase> buildTests() {
   add("jumpIf target must exist", LabelDoesNotExist, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.jumpIf("x", "yes", "missing");
     c.label("yes");
     c.returnFromFunction();
@@ -282,14 +280,14 @@ std::vector<TestCase> buildTests() {
   add("jumpIf requires integer condition", ExpectedInteger, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("arr", ts::array(ts::i8(), 2));
+    c.declareLocal("arr", ts::array(ts::u8(), 2));
     c.jumpIf("arr", "yes", "no");
   });
 
   add("field access requires struct", ExpectedStruct, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.structField("x", "a");
   });
 
@@ -310,50 +308,50 @@ std::vector<TestCase> buildTests() {
   add("array element requires array or string", ExpectedArrayOrString, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.arrayElement("x", 0);
   });
 
   add("static array index out of bounds", IndexOutOfBounds, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("arr", ts::array(ts::i8(), 2));
+    c.declareLocal("arr", ts::array(ts::u8(), 2));
     c.arrayElement("arr", 2);
   });
 
   add("dynamic array index must be integer", ExpectedInteger, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("arr", ts::array(ts::i8(), 2));
-    c.declareLocal("idx", ts::array(ts::i8(), 1));
+    c.declareLocal("arr", ts::array(ts::u8(), 2));
+    c.declareLocal("idx", ts::array(ts::u8(), 1));
     c.arrayElement("arr", "idx");
   });
 
   add("negative dynamic array index", NegativeIndex, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("arr", ts::array(ts::i8(), 2));
+    c.declareLocal("arr", ts::array(ts::u8(), 2));
     c.arrayElement("arr", literal::s8(-1));
   });
 
   add("dereference requires pointer", ExpectedPointer, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.dereferencePointer("x");
   });
 
   add("callFunctionPointer requires function pointer", ExpectedFunctionPointer, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.callFunctionPointer("x").done();
   });
 
   add("function pointer call arity", InvalidFunctionPointerCall, [] {
     Assembler c;
     beginBasicMain(c);
-    auto fType = ts::function().param(ts::i8()).done();
+    auto fType = ts::function().param(ts::u8()).done();
     c.callFunctionPointer(literal::function_pointer(fType, "somewhere")).done();
   });
 
@@ -369,7 +367,7 @@ std::vector<TestCase> buildTests() {
   add("direct function call arity", InvalidFunctionPointerCall, [] {
     Assembler c;
     beginProgram(c);
-    c.function("callee").param("x", ts::i8()).begin();
+    c.function("callee").param("x", ts::u8()).begin();
     c.label("callee_start");
     c.returnFromFunction();
     c.endFunction();
@@ -384,94 +382,94 @@ std::vector<TestCase> buildTests() {
   add("assignment type mismatch", AssignmentTypeMismatch, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
-    auto arr = literal::array(ts::array(ts::i8(), 1)).push(literal::i8('A')).done();
+    c.declareLocal("x", ts::u8());
+    auto arr = literal::array(ts::array(ts::u8(), 1)).push(literal::u8('A')).done();
     c.assign("x", arr);
   });
 
   add("unexpected literal element type", UnexpectedType, [] {
-    literal::array(ts::array(ts::i8(), 1)).push(literal::i16(123)).done();
+    literal::array(ts::array(ts::u8(), 1)).push(literal::u16(123)).done();
   });
 
   add("incompatible binary operands", IncompatibleOperands, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
-    c.declareLocal("arr", ts::array(ts::i8(), 1));
+    c.declareLocal("x", ts::u8());
+    c.declareLocal("arr", ts::array(ts::u8(), 1));
     c.add("x", "arr");
   });
 
   add("taking address of temporary", TakingAddressOfTemporary, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("x", ts::i8());
-    auto tmp = c.add("x", literal::i8(1));
+    c.declareLocal("x", ts::u8());
+    auto tmp = c.add("x", literal::u8(1));
     c.addressOf(tmp);
   });
 
   add("read-only expression as lvalue", ReadOnlyExpression, [] {
     Assembler c;
     beginBasicMain(c);
-    auto value = c.expr(literal::i8(1));
-    c.assign(value, literal::i8(2));
+    auto value = c.expr(literal::u8(1));
+    c.assign(value, literal::u8(2));
   });
 
   add("print unsupported type", NotPrintable, [] {
     Assembler c;
     beginBasicMain(c);
-    c.declareLocal("arr", ts::array(ts::i8(), 2));
+    c.declareLocal("arr", ts::array(ts::u8(), 2));
     c.print("arr");
   });
 
   add("literal builder requires array type", ExpectedArray, [] {
-    literal::array(ts::i8());
+    literal::array(ts::u8());
   });
 
   add("struct literal requires struct type", ExpectedStruct, [] {
-    literal::struct_t(ts::i8()).done();
+    literal::struct_t(ts::u8()).done();
   });
 
   add("struct literal field count mismatch", FieldCountMismatch, [] {
-    literal::struct_t(pairStruct()).init("a", literal::i8('A')).done();
+    literal::struct_t(pairStruct()).init("a", literal::u8('A')).done();
   });
 
   add("struct literal missing field", MissingField, [] {
     literal::struct_t(pairStruct())
-      .init("a", literal::i8('A'))
-      .init("c", literal::i8('C'))
+      .init("a", literal::u8('A'))
+      .init("c", literal::u8('C'))
       .done();
   });
 
   add("struct literal duplicate field initialization", MultipleInitializationsOfSameField, [] {
     literal::struct_t(singleStruct())
-      .init("a", literal::i8('A'))
-      .init("a", literal::i8('B'));
+      .init("a", literal::u8('A'))
+      .init("a", literal::u8('B'));
   });
 
   add("too many array literal elements", TooManyElementsInArrayInitialization, [] {
-    literal::array(ts::array(ts::i8(), 1))
-      .push(literal::i8('A'))
-      .push(literal::i8('B'));
+    literal::array(ts::array(ts::u8(), 1))
+      .push(literal::u8('A'))
+      .push(literal::u8('B'));
   });
 
   add("too few array literal elements", TooFewElementsInArrayInitialization, [] {
-    literal::array(ts::array(ts::i8(), 2))
-      .push(literal::i8('A'))
+    literal::array(ts::array(ts::u8(), 2))
+      .push(literal::u8('A'))
       .done();
   });
 
   add("return type specified twice on type builder", ReturnTypeSpecifiedMultipleTimes, [] {
     auto builder = ts::function();
-    builder.ret(ts::i8());
-    builder.ret(ts::i16());
+    builder.ret(ts::u8());
+    builder.ret(ts::u16());
   });
 
   add("return type specified twice on function builder", ReturnTypeSpecifiedMultipleTimes, [] {
     Assembler c;
     beginProgram(c);
     auto builder = c.function("main");
-    builder.ret(ts::i8());
-    builder.ret(ts::i16());
+    builder.ret(ts::u8());
+    builder.ret(ts::u16());
   });
 
   add("missing entry function", EntryFunctionNotDefined, [] {
@@ -486,7 +484,7 @@ std::vector<TestCase> buildTests() {
   add("entry function wrong type", WrongEntryFunctionType, [] {
     Assembler c;
     c.program("test", "main").begin();
-    c.function("main").param("x", ts::i8()).begin();
+    c.function("main").param("x", ts::u8()).begin();
     c.returnFromFunction();
     c.endFunction();
     c.endProgram();
@@ -496,7 +494,7 @@ std::vector<TestCase> buildTests() {
     Assembler c;
     c.program("test", "main").begin();
     c.function("main").begin();
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.jumpIf("x", "true", "false");
     c.label("true");
     c.returnFromFunction();
@@ -509,10 +507,10 @@ std::vector<TestCase> buildTests() {
     Assembler c;
     c.program("test", "main").begin();
     c.function("main").begin();
-    c.declareLocal("x", ts::i8());
+    c.declareLocal("x", ts::u8());
     c.returnFromFunction();
     c.label("unreachable");
-    c.assign("x", literal::i8(0));
+    c.assign("x", literal::u8(0));
     c.endFunction();
     c.endProgram();
   });
@@ -523,7 +521,6 @@ std::vector<TestCase> buildTests() {
 } // namespace ct
 
 int main() {
-  ts::init();
   auto tests = ct::buildTests();
   std::size_t passed = 0;
 

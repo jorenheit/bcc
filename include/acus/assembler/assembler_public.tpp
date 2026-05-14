@@ -64,11 +64,6 @@ void Assembler::jumpIf(auto const &condition, std::string const &trueLabel, std:
   return jumpIfImpl(rValue(condition, API_FWD), trueLabel, falseLabel, API_FWD);
 }
 
-Expression Assembler::expr(auto const &obj, API_FUNC_SOURCE) {
-  API_FUNC_BEGIN();
-  return rValue(obj, API_FWD);
-}
-
 Expression Assembler::cast(auto const &obj, types::TypeHandle toType, API_FUNC_SOURCE) {
   API_FUNC_BEGIN();
   return castImpl(lValue(obj, API_FWD), toType, API_FWD);

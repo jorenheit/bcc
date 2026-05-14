@@ -3,21 +3,21 @@
 
 TEST_BEGIN
 
-auto inner = ts::array(ts::i8(), 3);
-auto holder = ts::defineStruct("Holder").field("tag", ts::i8()).field("data", inner).done();
+auto inner = ts::array(ts::u8(), 3);
+auto holder = ts::defineStruct("Holder").field("tag", ts::u8()).field("data", inner).done();
 
 c.function("main").begin(); {
   c.declareLocal("h", holder);
-  c.declareLocal("idx", ts::i8());
+  c.declareLocal("idx", ts::u8());
 
-  auto data = literal::array(ts::array(ts::i8(), 3)).push(literal::i8('B')).push(literal::i8('C')).push(literal::i8('D')).done();
+  auto data = literal::array(ts::array(ts::u8(), 3)).push(literal::u8('B')).push(literal::u8('C')).push(literal::u8('D')).done();
 
-  c.assign("h", literal::struct_t(holder).init("tag", literal::i8('A')).init("data", data).done());
-  c.assign("idx", literal::i8(0));
+  c.assign("h", literal::struct_t(holder).init("tag", literal::u8('A')).init("data", data).done());
+  c.assign("idx", literal::u8(0));
 
   auto dataField = c.structField("h", "data");
   auto elem = c.arrayElement(dataField, "idx");
-  c.assign(elem, literal::i8('Q'));
+  c.assign(elem, literal::u8('Q'));
 
   c.write("h");
   c.returnFromFunction();

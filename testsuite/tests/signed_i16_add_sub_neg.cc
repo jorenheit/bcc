@@ -1,4 +1,4 @@
-// Signed i16 sanity: addition, subtraction, and negation-via-zero-minus-x
+// Signed u16 sanity: addition, subtraction, and negation-via-zero-minus-x
 // Expected: ABABAB
 
 TEST_BEGIN

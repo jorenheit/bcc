@@ -55,7 +55,7 @@ Slot Assembler::addressOfSlot(Slot const &slot) {
 }
 
 void Assembler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot, Slot const &indexSlot) {
-  assert(types::isArray(arrSlot.type));
+  assert(types::isArrayLike(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
   assert(elementSlot.type == types::cast<types::ArrayLike>(arrSlot.type)->elementType());
   types::TypeHandle elementType = elementSlot.type;
@@ -63,7 +63,7 @@ void Assembler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot
   pushPtr();
 
   // TODO: use constructive version when I have it
-  Slot const scaledIndexSlot = getTemp(ts::i8());
+  Slot const scaledIndexSlot = getTemp(ts::u8());
   assignSlot(scaledIndexSlot, indexSlot);
   moveTo(scaledIndexSlot, MacroCell::Value0);
   mulConst(elementType->size(),
@@ -98,7 +98,7 @@ void Assembler::copyElementIntoSlot(Slot const &elementSlot, Slot const &arrSlot
 }
 
 void Assembler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Slot const &indexSlot) {
-  assert(types::isArray(arrSlot.type));
+  assert(types::isArrayLike(arrSlot.type));
   assert(types::isInteger(indexSlot.type));
 
   types::TypeHandle elementType = types::cast<types::ArrayLike>(arrSlot.type)->elementType();
@@ -106,7 +106,7 @@ void Assembler::copySlotIntoElement(Slot const &srcSlot, Slot const &arrSlot, Sl
 
   pushPtr();
 
-  Slot const scaledIndexSlot = getTemp(ts::i8());
+  Slot const scaledIndexSlot = getTemp(ts::u8());
   assignSlot(scaledIndexSlot, indexSlot);
   moveTo(scaledIndexSlot, MacroCell::Value0);
   mulConst(elementType->size(),

@@ -5,8 +5,11 @@
 #include "acus/assembler/assembler.h"
 
 namespace acus::api {
-  using namespace acus;
-  using literal::Literal;
-  using types::TypeHandle;
-  using error::ErrorCode;
+  using acus::Assembler;
+  using acus::Expression;
+  using acus::ts::TypeHandle;
+  using acus::literal::Literal;
+  
+  namespace literal { using namespace acus::literal; }
+  namespace ts { using namespace acus::ts; }
 }

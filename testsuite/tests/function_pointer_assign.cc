@@ -19,12 +19,12 @@ c.function("main").begin(); {
 } c.endFunction();
 
 c.function("printA").begin(); {
-  c.write(literal::i8('A'));
+  c.write(literal::u8('A'));
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("printB").begin(); {
-  c.write(literal::i8('B'));
+  c.write(literal::u8('B'));
   c.returnFromFunction();
 } c.endFunction();
 

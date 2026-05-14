@@ -63,9 +63,9 @@ void Assembler::printImpl(Expression const &val, API_CTX) {
     // For slots, call the builtin functions
     BuiltinFunction const func = [&]{
       switch (val.type()->tag()) {
-      case types::I8:  return BuiltinFunction::PrintUnsigned8;
+      case types::U8:  return BuiltinFunction::PrintUnsigned8;
       case types::S8:  return BuiltinFunction::PrintSigned8;
-      case types::I16: return BuiltinFunction::PrintUnsigned16;
+      case types::U16: return BuiltinFunction::PrintUnsigned16;
       case types::S16: return BuiltinFunction::PrintSigned16;
       default: std::unreachable();
       }
@@ -129,7 +129,7 @@ void Assembler::printDecimalSlotUnsigned(Slot const &slot, bool const destroySlo
 	  
   Slot const digits = getTemp(ts::raw(maxDigits));
   for (int i = 0; i != 5; ++i) {
-    Slot const currentDigitSlot = digits.sub(ts::i8(), i);
+    Slot const currentDigitSlot = digits.sub(ts::u8(), i);
     divSlotByConst(valSlot, 10, currentDigitSlot);
   }
 	
@@ -224,7 +224,7 @@ void Assembler::printStringConst(std::string const &str) {
 
   if (str.size() == 0) return;
   
-  Slot const ch = getTemp(ts::i8());
+  Slot const ch = getTemp(ts::u8());
 
   pushPtr();
   moveTo(ch);

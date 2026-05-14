@@ -358,7 +358,7 @@ void Assembler::modSlotByConstSigned(Slot const &lhs, int denom, std::optional<S
 				       lhs, MacroCell::Payload0,
 				       lhs, MacroCell::Payload1));
 
-  Slot const tmp = getTemp(ts::i8());
+  Slot const tmp = getTemp(ts::u8());
   Cell const resultNegative { tmp, MacroCell::Flag };
   moveTo(lhs, MacroCell::Flag);
   loopOpen(); {

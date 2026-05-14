@@ -69,7 +69,7 @@ namespace {
     if (i1 == i2) return i1;
     if (i1->signedness() == i2->signedness()) {
       // Same signedness, different width -> return 16-bit variant
-      return i1->isSigned() ? ts::s16() : ts::i16();
+      return i1->isSigned() ? ts::s16() : ts::u16();
     }
     if (i1->bits() == i2->bits()) {
       // Same width, different signedness
@@ -84,7 +84,7 @@ namespace {
   OpResult logicResult(BinOp op, TypeHandle lhs, TypeHandle rhs) {
     assert(isLogical(op));
     auto promoted = promotedInteger(lhs, rhs);
-    if (promoted) return accept(ts::i8(), promoted);
+    if (promoted) return accept(ts::u8(), promoted);
     
     return reject("operator '" + binOpStr(op) + "' is not defined for '" +
 		  lhs->str() + "' and '" + rhs->str() +
@@ -94,7 +94,7 @@ namespace {
   OpResult compareResult(BinOp op, TypeHandle lhs, TypeHandle rhs) {
     assert(isComparison(op));
     auto promoted = promotedInteger(lhs, rhs);
-    if (promoted) return accept(ts::i8(), promoted);
+    if (promoted) return accept(ts::u8(), promoted);
     return reject("operator '" + binOpStr(op) + "' is not defined for '" +
 		  lhs->str() + "' and '" + rhs->str() +
 		  "'. Expected two integers.");
@@ -265,8 +265,8 @@ OpResult types::rules::assignResult(TypeHandle dest, TypeHandle src) {
 
   // All cases where source and dest are of different types
   switch (dest->tag()) {
-  case I8: 
-  case I16:
+  case U8: 
+  case U16:
   case S8:
   case S16:     return integerAssignResult(dest, src);
   case POINTER: return pointerAssignResult(dest, src);

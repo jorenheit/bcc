@@ -3,7 +3,7 @@
 
 TEST_BEGIN
 
-auto point = ts::defineStruct("Point").field("x", ts::i8()).field("y", ts::i8()).done();
+auto point = ts::defineStruct("Point").field("x", ts::u8()).field("y", ts::u8()).done();
 
 c.function("main").begin(); {
   c.declareLocal("s", point);
@@ -11,8 +11,8 @@ c.function("main").begin(); {
   auto x = c.structField("s", "x");
   auto y = c.structField("s", "y");
 
-  c.assign(x, literal::i8('A'));
-  c.assign(y, literal::i8('B'));
+  c.assign(x, literal::u8('A'));
+  c.assign(y, literal::u8('B'));
   c.write("s");
 
   c.callFunction("foo").arg("s").done();
@@ -25,8 +25,8 @@ c.function("foo").param("p", point).ret(ts::void_t()).begin(); {
   auto py = c.structField("p", "y");
 
   c.write("p");
-  c.assign(px, literal::i8('X'));
-  c.assign(py, literal::i8('Y'));
+  c.assign(px, literal::u8('X'));
+  c.assign(py, literal::u8('Y'));
   c.write("p");
   c.returnFromFunction();
 } c.endFunction();

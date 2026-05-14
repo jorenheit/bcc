@@ -15,7 +15,7 @@ Expression Assembler::binOpAssignImpl(Expression const &lhs, Expression const &r
   Slot const lhsBase = lhs.slot()->materialize(*this);
   Slot targetSlot = lhsBase;
   if (types::isPointer(lhs.type())) {
-    targetSlot = lhsBase.sub(ts::i16(), RuntimePointer::Offset);
+    targetSlot = lhsBase.sub(ts::u16(), RuntimePointer::Offset);
     stride = types::cast<types::PointerType>(lhs.type())->pointeeType()->size();
   }
   
@@ -77,9 +77,9 @@ Expression Assembler::binOpImpl(Expression const &lhs, Expression const &rhs, Sp
     int const y = literal::cast<types::IntegerType>(rhs.literal())->semanticValue();
     auto const result = spec.fold(x, y);
 
-    if (types::isI8(opResult.type)) return Expression{literal::i8(result)};
+    if (types::isU8(opResult.type)) return Expression{literal::u8(result)};
     if (types::isS8(opResult.type)) return Expression{literal::s8(result)};
-    if (types::isI16(opResult.type)) return Expression{literal::i16(result)};
+    if (types::isU16(opResult.type)) return Expression{literal::u16(result)};
     if (types::isS16(opResult.type)) return Expression{literal::s16(result)};
 
     std::unreachable();

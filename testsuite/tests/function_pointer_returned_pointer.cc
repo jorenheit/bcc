@@ -4,7 +4,7 @@
 
 TEST_BEGIN
 
-auto i8 = ts::i8();
+auto u8 = ts::u8();
 auto voidT = ts::void_t();
 auto targetType = ts::function().ret(voidT).done();
 auto targetPtr = ts::function_pointer(targetType);
@@ -12,14 +12,14 @@ auto targetPtr = ts::function_pointer(targetType);
 c.function("main").begin(); {
   c.declareLocal("fptr", targetPtr);
 
-  c.callFunction("choose").into("fptr").arg(literal::i8(1)).done();
+  c.callFunction("choose").into("fptr").arg(literal::u8(1)).done();
   c.callFunctionPointer("fptr").done();
-  c.callFunction("choose").into("fptr").arg(literal::i8(0)).done();
+  c.callFunction("choose").into("fptr").arg(literal::u8(0)).done();
   c.callFunctionPointer("fptr").done();
   c.returnFromFunction();
 } c.endFunction();
 
-c.function("choose").param("flag", i8).ret(targetPtr).begin(); {
+c.function("choose").param("flag", u8).ret(targetPtr).begin(); {
   c.jumpIf("flag", "true", "false");
   c.label("true");
   c.returnFromFunction(literal::function_pointer(targetType, "printT"));
@@ -28,12 +28,12 @@ c.function("choose").param("flag", i8).ret(targetPtr).begin(); {
 } c.endFunction();
 
 c.function("printT").begin(); {
-  c.write(literal::i8('T'));
+  c.write(literal::u8('T'));
   c.returnFromFunction();
 } c.endFunction();
 
 c.function("printF").begin(); {
-  c.write(literal::i8('F'));
+  c.write(literal::u8('F'));
   c.returnFromFunction();
 } c.endFunction();
 

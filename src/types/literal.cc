@@ -6,9 +6,9 @@
 
 namespace acus::literal {
 
-  Literal i8(int val, API_FUNC) {
+  Literal u8(int val, API_FUNC) {
     API_FUNC_BEGIN_FREE();
-    return std::make_shared<impl::i8>(val, API_FWD);
+    return std::make_shared<impl::u8>(val, API_FWD);
   }
 
   Literal s8(int val, API_FUNC) {
@@ -16,9 +16,9 @@ namespace acus::literal {
     return std::make_shared<impl::s8>(val, API_FWD);
   }
   
-  Literal i16(int val, API_FUNC) {
+  Literal u16(int val, API_FUNC) {
     API_FUNC_BEGIN_FREE();
-    return std::make_shared<impl::i16>(val, API_FWD);
+    return std::make_shared<impl::u16>(val, API_FWD);
   }
 
   Literal s16(int val, API_FUNC) {

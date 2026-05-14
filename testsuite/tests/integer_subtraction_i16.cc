@@ -1,15 +1,15 @@
-// Subtract i16 integers using sub and subAssign
+// Subtract u16 integers using sub and subAssign
 // Expected: AGADAA
 
 TEST_BEGIN
 
 c.function("main").begin(); {
-  c.declareLocal("x", ts::i16());
-  c.declareLocal("y", ts::i16());
-  c.declareLocal("z", ts::i16());
+  c.declareLocal("x", ts::u16());
+  c.declareLocal("y", ts::u16());
+  c.declareLocal("z", ts::u16());
 
-  c.assign("x", literal::i16(CAT('G', 'A')));
-  c.assign("y", literal::i16(3));
+  c.assign("x", literal::u16(CAT('G', 'A')));
+  c.assign("y", literal::u16(3));
 
   c.write("x");                    // AG
   c.subAssign("x", "y");              // x -= y

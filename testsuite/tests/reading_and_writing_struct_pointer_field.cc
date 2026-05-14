@@ -4,16 +4,16 @@
 
 TEST_BEGIN
 
-auto i8  = ts::i8();
-auto i8p = ts::pointer(i8);
+auto u8  = ts::u8();
+auto u8p = ts::pointer(u8);
 
-auto holder = ts::defineStruct("Holder").field("p", i8p).done();
+auto holder = ts::defineStruct("Holder").field("p", u8p).done();
 
 c.function("main").begin(); {
   c.declareLocal("s", holder);
-  c.declareLocal("x", i8);
+  c.declareLocal("x", u8);
 
-  c.assign("x", literal::i8('A'));
+  c.assign("x", literal::u8('A'));
   c.assign(c.structField("s", "p"), c.addressOf("x"));
 
   c.callFunction("foo").arg("s").done();
@@ -26,7 +26,7 @@ c.function("foo").param("s", holder).ret(ts::void_t()).begin(); {
   auto pDeref = c.dereferencePointer(p);
 
   c.write(pDeref);
-  c.assign(pDeref, literal::i8('X'));
+  c.assign(pDeref, literal::u8('X'));
   c.returnFromFunction();
 } c.endFunction();
 

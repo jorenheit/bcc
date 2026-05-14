@@ -1,9 +1,9 @@
-// Tests returning an i16 array from a callee into a caller local array.
+// Tests returning an u16 array from a callee into a caller local array.
 // Expected: ABCDEFGH
 
 TEST_BEGIN
 
-auto array4 = ts::array(ts::i16(), 4);
+auto array4 = ts::array(ts::u16(), 4);
 
 c.function("main").begin(); {
   c.declareLocal("x", array4);
@@ -21,10 +21,10 @@ c.function("foo").ret(array4).begin(); {
   auto x2 = c.arrayElement("x", 2);
   auto x3 = c.arrayElement("x", 3);
 
-  c.assign(x0, literal::i16(CAT('A','B')));
-  c.assign(x1, literal::i16(CAT('C','D')));
-  c.assign(x2, literal::i16(CAT('E','F')));
-  c.assign(x3, literal::i16(CAT('G','H')));
+  c.assign(x0, literal::u16(CAT('A','B')));
+  c.assign(x1, literal::u16(CAT('C','D')));
+  c.assign(x2, literal::u16(CAT('E','F')));
+  c.assign(x3, literal::u16(CAT('G','H')));
 
   c.returnFromFunction("x");
 } c.endFunction();

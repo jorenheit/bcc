@@ -216,8 +216,8 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
     if (arg.hasSlot()) { // Already stored on tape -> copy to next frame
       Slot const argSlot = arg.slot()->materialize(*this);
       switch (argSlot.type->tag()) {
-      case types::I8:
-      case types::I16:
+      case types::U8:
+      case types::U16:
       case types::S8:
       case types::S16:
       case types::STRING:
@@ -275,9 +275,9 @@ void Assembler::initializeArguments(primitive::DInt const currentFrameSize, prim
     else { // anonymous value -> construct in-place
       types::TypeHandle argType = arg.type();
       switch(argType->tag()) {
-      case types::I8:
+      case types::U8:
       case types::S8:
-      case types::I16:
+      case types::U16:
       case types::S16: {
 	// Construct integer
 	int const value = literal::cast<types::IntegerType>(arg.literal())->encodedValue();
@@ -451,7 +451,7 @@ void Assembler::branchIfSlot(Slot const &slot, std::string const &trueLabel, std
 
   pushPtr();
 
-  Slot const tmp = getTemp(ts::i8());
+  Slot const tmp = getTemp(ts::u8());
     
   moveTo(slot);
   if (slot.type->usesValue1()) {

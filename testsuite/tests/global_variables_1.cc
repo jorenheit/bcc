@@ -3,13 +3,13 @@
 
 TEST_BEGIN
 
-c.declareGlobal("g", ts::i8());
+c.declareGlobal("g", ts::u8());
 
 c.function("main").begin(); {
-  c.declareLocal("x", ts::i8());
+  c.declareLocal("x", ts::u8());
   c.referGlobals({"g"});
 
-  c.assign("g", literal::i8('A'));
+  c.assign("g", literal::u8('A'));
   c.callFunction("foo").done();
   c.write("g");          // should print 'F'
   c.returnFromFunction();
@@ -19,7 +19,7 @@ c.function("foo").begin(); {
   c.referGlobals({"g"});
 
   c.write("g");          // should print 'A'
-  c.assign("g", literal::i8('F'));  // modify global shadow
+  c.assign("g", literal::u8('F'));  // modify global shadow
   c.returnFromFunction();
 } c.endFunction();
 
