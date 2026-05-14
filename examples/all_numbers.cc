@@ -9,12 +9,12 @@ int main() try {
   c.program("hello", "main").begin(); {
 
     c.function("main").begin(); {
-      c.declareLocal("x", ts::i8());
+      c.declareLocal("x", ts::u8());
       c.label("a");
       for (int i = 0; i != 256; ++i) {
-	c.assign("x", literal::i8(i));
+	c.assign("x", literal::u8(i));
 	c.print("x");
-	c.write(literal::i8('\n'));
+	c.write(literal::u8('\n'));
       }
       c.returnFromFunction();
     } c.endFunction();

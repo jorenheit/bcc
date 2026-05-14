@@ -34,9 +34,9 @@ struct Program {
     functionByName[name] = idx;
     functions.push_back(Function{
 	.functionIndex = idx,
-	.name  = std::move(name),
-	.frame = FrameLayout{type->returnType()->size()},
-	.type  = type
+	.name   = std::move(name),
+	.frame  = FrameLayout{type->returnType()->size()},
+	.type   = type
       });
     functions.back().createScope(nullptr);
     return functions.back();

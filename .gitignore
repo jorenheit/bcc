@@ -6,7 +6,6 @@
 !include/
 !src/
 !testsuite/
-!app/
 !doc/
 !examples/
 !assets/

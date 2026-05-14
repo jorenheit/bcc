@@ -7,21 +7,21 @@ int main() try {
 
   c.program("fib", "main").begin(); {
 
-    auto i8 = ts::i8();
+    auto u8 = ts::u8();
 
     c.function("main").begin(); {
-      c.declareLocal("n", i8);
-      c.declareLocal("i", i8);
-      c.declareLocal("a", i8);
-      c.declareLocal("b", i8);
-      c.declareLocal("next", i8);
+      c.declareLocal("n", u8);
+      c.declareLocal("i", u8);
+      c.declareLocal("a", u8);
+      c.declareLocal("b", u8);
+      c.declareLocal("next", u8);
 
-      c.assign("n", literal::i8(12)); // Number of iterations
+      c.assign("n", literal::u8(12)); // Number of iterations
 
       // fib(0) = 0, fib(1) = 1
-      c.assign("i", literal::i8(0));
-      c.assign("a", literal::i8(0));
-      c.assign("b", literal::i8(1));
+      c.assign("i", literal::u8(0));
+      c.assign("a", literal::u8(0));
+      c.assign("b", literal::u8(1));
 
       c.label("loop_check");
       c.jumpIf(c.le("i", "n"), "loop_body", "done");
@@ -37,7 +37,7 @@ int main() try {
       // b = next
       c.assign("b", "next");
       // i++
-      c.addAssign("i", literal::i8(1));
+      c.addAssign("i", literal::u8(1));
       c.jump("loop_check");
 
       c.label("done");

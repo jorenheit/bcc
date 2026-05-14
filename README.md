@@ -38,22 +38,150 @@ catch (Error const &e) {
 This constructs a program named `hello`, defines `main` as its entry function that simply prints  `Hello, World!`. After defining the BF-program, the generated Brainfuck source is printed to `stdout`. More involved examples are included below.
 
 ## Building
+To start off, clone this repository:
+```sh
+git clone https://github.com/jorenheit/bcc
+```
+Acus uses a small Make-based build system. The project has no external dependencies beyond a C++23 compiler, `make`, and the C++ standard library.
 
-Build instructions are intentionally left as a placeholder for now.
+### Build targets
 
-```text
-TODO: add supported build and install instructions before publication.
+The root Makefile provides the following targets:
+
+| Target              | Description                                     |
+|---------------------|-------------------------------------------------|
+| `make` / `make all` | Build the static Acus library                   |
+| `make examples`     | Build all examples in the `examples/` directory |
+| `make tests`        | Build the test binaries                         |
+| `make check`        | Build and run the test suite                    |
+| `make install`      | Install the static library and public headers   |
+| `make uninstall`    | Remove installed Acus files                     |
+| `make clean`        | Remove generated build artifacts                |
+
+### Building the static library
+
+To build Acus as a static library:
+
+```sh
+make
 ```
 
-Recommended topics to cover here before the first public release:
+The resulting archive is written to:
 
-- required C++ standard,
-- supported compilers,
-- building the library,
-- building examples,
-- running tests,
-- installing headers/library files,
-- using Acus from another CMake or Make project.
+```text
+lib/libacus.a
+```
+
+### Installing
+
+To install the static library and public headers system-wide:
+
+```sh
+sudo make install
+```
+
+By default, this installs into `/usr/local`:
+
+```text
+/usr/local/lib/libacus.a
+/usr/local/include/acus/
+```
+
+To install somewhere else, override `PREFIX`:
+
+```sh
+make install PREFIX="$HOME/.local"
+```
+
+This installs to:
+
+```text
+$HOME/.local/lib/libacus.a
+$HOME/.local/include/acus/
+```
+
+When using a non-standard install prefix, you may need to pass the include and
+library paths explicitly when compiling programs that use Acus:
+
+```sh
+c++ -std=c++23 hello.cc -I$HOME/.local/include -L$HOME/.local/lib -lacus
+```
+
+### Building examples
+
+Examples live in the `examples/` directory. They can be built from the root directory with:
+
+```sh
+make examples
+```
+
+This delegates to the Makefile inside `examples/`. You can also build the examples directly:
+
+```sh
+cd examples
+make
+```
+
+The examples Makefile assumes that the Acus static library has already been built and is available at:
+
+```text
+../lib/libacus.a
+```
+
+Example binaries are written to:
+
+```text
+examples/bin/
+```
+
+### Running tests
+
+To build the tests:
+
+```sh
+make tests
+```
+
+To build and run the tests:
+
+```sh
+make check
+```
+
+### Uninstalling
+
+If Acus was installed with `make install`, it can be removed with:
+
+```sh
+sudo make uninstall
+```
+
+or, if a custom prefix was used:
+
+```sh
+make uninstall PREFIX="$HOME/.local"
+```
+
+### Using Acus from another project
+
+After installation, a program can be linked against Acus like this:
+
+```sh
+c++ -std=c++23 main.cc -lacus
+```
+
+If Acus has not been installed system-wide, point the compiler at the local
+headers and static library:
+
+```sh
+c++ -std=c++23 main.cc -I/path/to/acus/include -L/path/to/acus/lib -lacus
+```
+
+For example, from a project next to the Acus source tree:
+
+```sh
+c++ -std=c++23 main.cc -I../acus/include -L../acus/lib -lacus
+```
 
 ## Public include files
 

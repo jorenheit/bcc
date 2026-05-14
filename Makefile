@@ -1,106 +1,145 @@
-# ---------- Config ----------
-CXX      := g++
-CXXFLAGS := -std=c++23 -Wall -Iinclude
-LDFLAGS  :=
-LDLIBS   :=
+# Acus build system
+#
+# Common targets:
+#   make              build lib/libacus.a
+#   make examples     build every .cc/.cpp file in examples/
+#   make tests        build test executables
+#   make check        build and run test executables
+#   make install      install the static library and public headers
+#   make uninstall    remove installed Acus files
+#   make clean        remove generated build artifacts
 
-TARGET      := bcc
-TEST_TARGET := bcc_tests
-COMPILETIME_TEST_TARGET := bcc_compiletime_tests
-OBJDIR      := obj
+# ---------- Tools ----------
+CXX      ?= g++
+AR       ?= ar
+RANLIB   ?= ranlib
+INSTALL  ?= install
+RM       ?= rm -f
+RMDIR    ?= rm -rf
 
-# Shared library/application sources, without app/main.cc.
-COMMON_SRCS := \
-	src/api/api.cc \
-	src/ir/primitive.cc \
-	src/ir/constants.cc \
-	src/types/typesystem.cc \
-	src/types/type_rules.cc \
-	src/types/operators.cc \
-	src/types/literal.cc \
-	src/types/literal_impl.cc \
-	src/types/literal_builders.cc \
-	src/types/type_builders.cc \
-	src/core/proxy.cc \
-	src/core/slot.cc \
-	src/assembler/assembler_builders.cc \
-	src/assembler/assembler_program.cc \
-	src/assembler/assembler_access.cc \
-	src/assembler/assembler_calls_control.cc \
-	src/assembler/assembler_pointers_memory.cc \
-	src/assembler/assembler_algorithms.cc \
-	src/assembler/assembler_blocks.cc \
-	src/assembler/assembler_framenav.cc \
-	src/assembler/assembler_diag.cc \
-	src/assembler/assembler_codegen.cc \
-	src/assembler/assembler_globals.cc \
-	src/assembler/assembler_memory.cc \
-	src/assembler/assembler_rlvalue.cc \
-	src/assembler/assembler_unary.cc \
-	src/assembler/assembler_add.cc \
-	src/assembler/assembler_sub.cc \
-	src/assembler/assembler_divmod.cc \
-	src/assembler/assembler_mul.cc \
-	src/assembler/assembler_logical.cc \
-	src/assembler/assembler_comparisons.cc \
-	src/assembler/assembler_binop_general.cc \
-	src/assembler/assembler_print.cc \
+# ---------- Build configuration ----------
+BUILD_DIR ?= build
+OBJDIR    := $(BUILD_DIR)/obj
+DEPDIR    := $(BUILD_DIR)/dep
+BINDIR    ?= bin
+LIBDIR_LOCAL ?= lib
 
+LIB_NAME := acus
+STATIC_LIB := $(LIBDIR_LOCAL)/lib$(LIB_NAME).a
 
-MAIN_SRC := app/main.cc
-TEST_SRC := testsuite/testsuite.cc
+RUNTIME_TEST_TARGET     := $(BINDIR)/acus-runtime-tests
+COMPILETIME_TEST_TARGET := $(BINDIR)/acus-compiletime-tests
+
+CPPFLAGS ?=
+CXXFLAGS ?= -std=c++23 -Wall
+LDFLAGS  ?=
+LDLIBS   ?=
+
+CPPFLAGS += -Iinclude
+
+# ---------- Installation configuration ----------
+PREFIX     ?= /usr/local
+INCLUDEDIR ?= $(PREFIX)/include
+LIBDIR     ?= $(PREFIX)/lib
+DESTDIR    ?=
+
+INSTALL_INCLUDEDIR := $(DESTDIR)$(INCLUDEDIR)/acus
+INSTALL_LIBDIR     := $(DESTDIR)$(LIBDIR)
+
+# ---------- Sources ----------
+# Source files are discovered automatically, but editor backup files are ignored.
+LIB_SRCS := $(shell find src -type f \( -name '*.cc' -o -name '*.cpp' \) ! -name '*~' ! -name '#*#' | sort)
+RUNTIME_TEST_SRC     := testsuite/testsuite.cc
 COMPILETIME_TEST_SRC := testsuite/compiletime_testsuite.cc
 
-EXAMPLE_SRCS    := $(filter-out %~,$(wildcard examples/*.cc))
-EXAMPLE_TARGETS := $(patsubst examples/%.cc,examples/%,$(EXAMPLE_SRCS))
-EXAMPLE_OBJS    := $(patsubst %.cc,$(OBJDIR)/%.o,$(EXAMPLE_SRCS))
-
-COMMON_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(COMMON_SRCS))
-MAIN_OBJ    := $(patsubst %.cc,$(OBJDIR)/%.o,$(MAIN_SRC))
-TEST_OBJ    := $(patsubst %.cc,$(OBJDIR)/%.o,$(TEST_SRC))
+LIB_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(filter %.cc,$(LIB_SRCS))) \
+            $(patsubst %.cpp,$(OBJDIR)/%.o,$(filter %.cpp,$(LIB_SRCS)))
+RUNTIME_TEST_OBJ := $(patsubst %.cc,$(OBJDIR)/%.o,$(RUNTIME_TEST_SRC))
 COMPILETIME_TEST_OBJ := $(patsubst %.cc,$(OBJDIR)/%.o,$(COMPILETIME_TEST_SRC))
 
-$(TEST_OBJ): CXXFLAGS += -O3
+DEPS := $(patsubst $(OBJDIR)/%.o,$(DEPDIR)/%.d,$(LIB_OBJS) $(RUNTIME_TEST_OBJ) $(COMPILETIME_TEST_OBJ))
 
-DEPS := $(COMMON_OBJS:.o=.d) \
-	$(MAIN_OBJ:.o=.d) \
-	$(TEST_OBJ:.o=.d) \
-	$(COMPILETIME_TEST_OBJ:.o=.d) \
-	$(EXAMPLE_OBJS:.o=.d)
+# Runtime tests are BF-heavy; keep your existing optimization preference.
+$(RUNTIME_TEST_OBJ): CXXFLAGS += -O3
 
+# ---------- Main targets ----------
 .PHONY: all
-all: $(TARGET)
+all: $(STATIC_LIB)
 
-$(TARGET): $(COMMON_OBJS) $(MAIN_OBJ)
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+$(STATIC_LIB): $(LIB_OBJS)
+	@mkdir -p $(dir $@)
+	$(AR) rcs $@ $^
+	$(RANLIB) $@
 
-.PHONY: tests
-tests: $(TEST_TARGET) $(COMPILETIME_TEST_TARGET)
+.PHONY: tests runtime-tests compiletime-tests
+tests: runtime-tests compiletime-tests
 
-.PHONY: runtime-tests
-runtime-tests: $(TEST_TARGET)
+runtime-tests: $(RUNTIME_TEST_TARGET)
 
-.PHONY: compiletime-tests
 compiletime-tests: $(COMPILETIME_TEST_TARGET)
 
-$(TEST_TARGET): $(COMMON_OBJS) $(TEST_OBJ)
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+$(RUNTIME_TEST_TARGET): $(RUNTIME_TEST_OBJ) $(STATIC_LIB)
+	@mkdir -p $(dir $@)
+	$(CXX) $(LDFLAGS) $(RUNTIME_TEST_OBJ) -L$(LIBDIR_LOCAL) -l$(LIB_NAME) $(LDLIBS) -o $@
 
-$(COMPILETIME_TEST_TARGET): $(COMMON_OBJS) $(COMPILETIME_TEST_OBJ)
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+$(COMPILETIME_TEST_TARGET): $(COMPILETIME_TEST_OBJ) $(STATIC_LIB)
+	@mkdir -p $(dir $@)
+	$(CXX) $(LDFLAGS) $(COMPILETIME_TEST_OBJ) -L$(LIBDIR_LOCAL) -l$(LIB_NAME) $(LDLIBS) -o $@
+
+.PHONY: check
+check: tests
+	./$(RUNTIME_TEST_TARGET)
+	./$(COMPILETIME_TEST_TARGET)
 
 .PHONY: examples
-examples: $(EXAMPLE_TARGETS)
+examples: $(STATIC_LIB)
+	$(MAKE) -C examples ACUS_ROOT="$(CURDIR)" LIBDIR="$(CURDIR)/$(LIBDIR_LOCAL)" INCLUDEDIR="$(CURDIR)/include"
 
-examples/%: $(COMMON_OBJS) $(OBJDIR)/examples/%.o
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
+# ---------- Compile rules ----------
 $(OBJDIR)/%.o: %.cc
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -MMD -MP -MF $(@:.o=.d) -MT $@ -c $< -o $@
+	@mkdir -p $(dir $@) $(dir $(patsubst $(OBJDIR)/%.o,$(DEPDIR)/%.d,$@))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -MF $(patsubst $(OBJDIR)/%.o,$(DEPDIR)/%.d,$@) -MT $@ -c $< -o $@
+
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@) $(dir $(patsubst $(OBJDIR)/%.o,$(DEPDIR)/%.d,$@))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -MF $(patsubst $(OBJDIR)/%.o,$(DEPDIR)/%.d,$@) -MT $@ -c $< -o $@
 
 -include $(DEPS)
 
+# ---------- Installation ----------
+#
+# Public headers are installed below $(INCLUDEDIR)/acus so users can write:
+#
+#   #include <acus/acus.h>
+#
+# The source tree currently keeps the umbrella header at include/acus.h and the
+# rest of the public header tree at include/acus/.  Installation copies the
+# umbrella header to $(INCLUDEDIR)/acus/acus.h and copies the contents of
+# include/acus/ underneath the same installed directory.
+.PHONY: install
+install: $(STATIC_LIB)
+	$(INSTALL) -d $(INSTALL_LIBDIR)
+	$(INSTALL) -m 644 $(STATIC_LIB) $(INSTALL_LIBDIR)/lib$(LIB_NAME).a
+	$(INSTALL) -d $(INSTALL_INCLUDEDIR)
+	$(INSTALL) -m 644 include/acus.h $(INSTALL_INCLUDEDIR)/acus.h
+	@if [ -d include/acus ]; then \
+		find include/acus -type d | while IFS= read -r dir; do \
+			rel=$${dir#include/acus}; \
+			$(INSTALL) -d "$(INSTALL_INCLUDEDIR)/$$rel"; \
+		done; \
+		find include/acus -type f \( -name '*.h' -o -name '*.hh' -o -name '*.hpp' -o -name '*.hxx' -o -name '*.tpp' -o -name '*.ipp' \) | while IFS= read -r file; do \
+			rel=$${file#include/acus/}; \
+			$(INSTALL) -m 644 "$$file" "$(INSTALL_INCLUDEDIR)/$$rel"; \
+		done; \
+	fi
+
+.PHONY: uninstall
+uninstall:
+	$(RM) $(INSTALL_LIBDIR)/lib$(LIB_NAME).a
+	$(RMDIR) $(INSTALL_INCLUDEDIR)
+
+# ---------- Cleanup ----------
 .PHONY: clean
 clean:
-	$(RM) -r $(OBJDIR) $(TARGET) $(TEST_TARGET) $(COMPILETIME_TEST_TARGET) $(EXAMPLE_TARGETS)
+	$(RMDIR) $(BUILD_DIR) $(BINDIR) $(LIBDIR_LOCAL)
+	$(MAKE) -C examples clean ACUS_ROOT="$(CURDIR)" LIBDIR="$(CURDIR)/$(LIBDIR_LOCAL)" INCLUDEDIR="$(CURDIR)/include"

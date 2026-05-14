@@ -39,7 +39,7 @@ namespace acus::primitive {
     virtual ~Node() = default;
     virtual std::string text(Context const&) const = 0;
     virtual std::string generate(Context const&) const = 0;
-    virtual std::shared_ptr<Node> merge(Node const *other) const { return nullptr; }
+    virtual std::shared_ptr<Node> merge(Node const *) const { return nullptr; }
   };
 
   struct Sequence {
