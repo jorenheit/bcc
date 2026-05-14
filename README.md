@@ -6,6 +6,9 @@ Acus is a C++23 backend toolkit for generating Brainfuck programs through an API
 
 The intended use case is to build higher-level frontends on top of Acus while still keeping the backend usable directly from C++ for experiments, tests, and low-level code generation.
 
+#### Let's be real
+Above all, this library is meant to have fun with. Brainfuck is a language that exists for esoteric reasons, not practical use. If you create some weird language on top of Acus to generate BF, let me know and I will link to it from this page! Contact me at [this_github_username]@gmail.com.
+
 ## Minimal example: Hello, World!
 
 The program below features a simple Hello World example and outlines the way an Acus program must be structured:
@@ -40,7 +43,7 @@ This constructs a program named `hello`, defines `main` as its entry function th
 ## Building
 To start off, clone this repository:
 ```sh
-git clone https://github.com/jorenheit/bcc
+git clone https://github.com/jorenheit/acus
 ```
 Acus uses a small Make-based build system. The project has no external dependencies beyond a C++23 compiler, `make`, and the C++ standard library.
 
