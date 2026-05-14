@@ -708,10 +708,11 @@ A full overview of all API functions is shown in the table below:
 | `unreachable` | `void`  | Marks the current block as intentionally unreachable.                                                                       |
 
 #### Input/Output
-| Function   | Returns | Description                                                                                 |
-|------------|---------|---------------------------------------------------------------------------------------------|
-| `writeOut` | `void`  | Writes the raw byte or bytes represented by a value.                                        |
-| `print`    | `void`  | Writes a string or integer in decimal notation. Supports unsigned and signed integer types. |
+| Function | Returns | Description                                                                                 |
+|----------|---------|---------------------------------------------------------------------------------------------|
+| `read`   | `void`  | Writes the raw byte or bytes represented by a value.                                        |
+| `write`  | `void`  | Writes the raw byte or bytes represented by a value.                                        |
+| `print`  | `void`  | Writes a string or integer in decimal notation. Supports unsigned and signed integer types. |
 
 
 #### `Assembler::ProgramBuilder`
@@ -772,7 +773,7 @@ All type factories live in `acus::ts`.
 | `raw`              | `ts::TypeHandle`      | Returns an internal raw storage type of a given slot size.    |
 | `struct_t`         | `ts::TypeHandle`      | Looks up an already-defined struct type by name.              |
 | `pointer`          | `ts::TypeHandle`      | Returns a runtime pointer type for a pointee type.            |
-| `function_pointer` | `ts::TypeHandle``     | Returns a function pointer type for a function type.          |
+| `function_pointer` | `ts::TypeHandle`      | Returns a function pointer type for a function type.          |
 | `void_function`    | `ts::TypeHandle`      | Returns the `void()` function type.                           |
 | `function`         | `FunctionTypeBuilder` | Starts building a function type.                              |
 | `defineStruct`     | `StructTypeBuilder`   | Starts defining a named struct type.                          |

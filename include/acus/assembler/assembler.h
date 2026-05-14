@@ -128,8 +128,8 @@ namespace acus {
 
     Expression addressOf(auto const &obj, API_FUNC);
 
-    void write(auto const &val, API_FUNC);
     void read(auto const &rhs, API_FUNC);
+    void write(auto const &val, API_FUNC);
     void print(auto const &val, API_FUNC);
 
     void label(std::string const &jumpLabel, API_FUNC);
