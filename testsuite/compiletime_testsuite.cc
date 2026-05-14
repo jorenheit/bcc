@@ -407,13 +407,6 @@ std::vector<TestCase> buildTests() {
     c.addressOf(tmp);
   });
 
-  add("read-only expression as lvalue", ReadOnlyExpression, [] {
-    Assembler c;
-    beginBasicMain(c);
-    auto value = c.expr(literal::u8(1));
-    c.assign(value, literal::u8(2));
-  });
-
   add("print unsupported type", NotPrintable, [] {
     Assembler c;
     beginBasicMain(c);

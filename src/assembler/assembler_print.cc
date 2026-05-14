@@ -20,8 +20,6 @@ void Assembler::readImpl(Expression const &rhs, API_CTX) {
     rhs.slot()->write(*this, targetSlot);
     freeTemp(targetSlot);
   }
-
-  return rhs;
 }
 
 void Assembler::writeImpl(Expression const &rhs, API_CTX) {
