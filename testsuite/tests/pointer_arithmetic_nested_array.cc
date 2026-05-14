@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Do pointer arithmetic on an array of arrays and verify scaling by inner array size
 // Expected: ACB
 

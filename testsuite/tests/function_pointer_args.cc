@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests calling function pointers with u8 arguments.
 // The two targets both receive an argument, but add their own prefix so dispatch and argument transport are both checked.
 // Expected: LARB

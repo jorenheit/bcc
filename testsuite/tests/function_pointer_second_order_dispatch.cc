@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests a function pointer whose target itself calls another function pointer.
 // main calls outer through a pointer; outer receives a callback pointer and calls it.
 // The sequence is repeated with a different callback.

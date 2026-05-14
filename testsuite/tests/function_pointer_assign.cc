@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests assigning function-pointer literals to a local and then overwriting that local.
 // This should catch stale function-pointer target state after reassignment.
 // Expected: AB

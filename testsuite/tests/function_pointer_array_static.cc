@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests an array of function pointers indexed with static indices.
 // arr[1] is called first, then arr[0], so storage order and selected target are both checked.
 // Expected: BA

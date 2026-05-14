@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests direct function-pointer selection through a function returning a function pointer.
 // getPtr(0) returns foo2, getPtr(1) returns foo1, and both pointers are called.
 // Expected: foo2foo1

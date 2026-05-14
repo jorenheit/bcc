@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Filename: logical_nand.cc
 // Test logical NAND (lnand / lnandAssign) on u8 args, u16 args, mixed args,
 // variable/literal combinations, two literals for constant folding, and assign variants.

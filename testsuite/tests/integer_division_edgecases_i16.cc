@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Filename: integer_division_edgecases_u16.cc
 // Division edge cases for u16, including division by zero and 0/0
 // Expected: AABBCCDD

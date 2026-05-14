@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests recursive pointer relocation through array -> struct -> pointer.
 // foo reads through both pointer fields, then writes through both.
 // Expected: ABXY

@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Decimal print for integer variables with different widths and signedness
 // Expected: 255 -3 65535 -300 127 -128 32767 -32768
 

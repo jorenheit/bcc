@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests pass-by-value of an array of u16 values, verifying multi-cell argument copying across a function call.
 // Expect: ABCDABCD
 

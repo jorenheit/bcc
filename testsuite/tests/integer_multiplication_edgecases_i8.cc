@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Filename: integer_multiplication_edgecases_u8.cc
 // Multiplication edge cases for u8: x*0 and x*1, plus assign variants
 // Expected: ABCD

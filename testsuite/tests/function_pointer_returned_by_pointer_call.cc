@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests a function pointer call whose callee returns another function pointer.
 // The returned pointer is then called, then the selector pointer is overwritten
 // and the sequence is repeated. This stresses indirect call return transport

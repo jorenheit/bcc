@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests writing through a pointer that points to a caller local and is passed to a function.
 // foo writes 'Y' through p, so x changes from 'X' to 'Y'.
 // Expected: YY

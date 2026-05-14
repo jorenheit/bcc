@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Filename: integer_modulo_mixed_u16_u8.cc
 // Mod mixed u16/u8 integers using mod and modAssign
 // Expected: AABB

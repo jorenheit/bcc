@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Filename: integer_multiplication_u8.cc
 // Multiply u8 integers using mul and mulAssign
 // Expected: AM

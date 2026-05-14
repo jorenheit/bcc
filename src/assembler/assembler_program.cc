@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "assembler.ih"
 
 Assembler::ProgramBuilder Assembler::program(std::string const &name, std::string const &entry, API_FUNC) {

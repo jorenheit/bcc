@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests taking a pointer to an array element, reading through it,
 // then writing through it.
 // arr[1] starts as 'B', is read through p, then changed to 'X' through p.

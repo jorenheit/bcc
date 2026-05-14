@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Inequality comparison tests (neq / neqAssign)
 // Covers: u8/u8, u16/u16, mixed u8/u16, variable/literal,
 // literal/variable, literal/literal constant folding, and assign variants.

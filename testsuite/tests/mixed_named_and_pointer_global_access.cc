@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests coherence between named global access and pointer-based global access across a call.
 // main writes g by name, foo reads it through a pointer and writes through that pointer,
 // then main reads g by name again.

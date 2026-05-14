@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tests recursive self-calls with multiple u8 parameters, stressing repeated frame creation and parameter re-passing.
 // Expect: ABCABCABCABC...
 TEST_BEGIN

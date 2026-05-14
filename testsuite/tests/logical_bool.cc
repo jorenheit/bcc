@@ -1,3 +1,8 @@
+// Acus - A C++ library for generating Brainfuck programs.
+// Copyright (C) 2026 Joren Heit
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Filename: logical_bool.cc
 // Test logical bool conversion (lbool / lboolAssign) on u8 args, u16 args,
 // literals, variable/literal combinations, and assign variants.
