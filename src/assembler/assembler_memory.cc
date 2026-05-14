@@ -138,7 +138,7 @@ Slot Assembler::getTemp(literal::Literal const &value) {
   return tmp;
 }
 
-Expression Assembler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
+void Assembler::declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC) {
   API_FUNC_BEGIN();
   API_CHECK_EXPECTED();
   API_REQUIRE_DECLARE_GLOBAL_ALLOWED();
@@ -156,7 +156,6 @@ Expression Assembler::declareGlobal(std::string const &name, types::TypeHandle t
   };
 
   _program.globals.emplace_back(slot);
-  return Expression{slot};
 }
 
 

@@ -45,9 +45,9 @@ namespace acus {
     void endFunction(API_FUNC);
     void endScope(API_FUNC);
 
-    void referGlobals(std::vector<std::string> const &names, API_FUNC);
     Expression declareLocal(std::string const &name, types::TypeHandle type, API_FUNC);
-    Expression declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
+    void declareGlobal(std::string const &name, types::TypeHandle type, API_FUNC);
+    void referGlobals(std::vector<std::string> const &names, API_FUNC);
 
     void returnFromFunction(auto const &ret, API_FUNC);
     void returnFromFunction(API_FUNC);

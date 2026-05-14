@@ -597,7 +597,7 @@ A full overview of all API functions is shown in the table below:
 | Function        | Returns      | Description                                                                                      |
 |-----------------|--------------|--------------------------------------------------------------------------------------------------|
 | `declareLocal`  | `Expression` | Declares a local variable in the current scope.                                                  |
-| `declareGlobal` | `Expression` | Declares a global variable in the current program.                                               |
+| `declareGlobal` | `void`       | Declares a global variable in the current program.                                               |
 | `referGlobals`  | `void`       | Makes selected globals visible inside the current function through local global-reference slots. |
 
 #### Function calls and returns
