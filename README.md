@@ -838,3 +838,9 @@ Generic unary and binary operators use these enums.
 |---------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------------|
 | `UnOp`  | `Not`, `Bool`, `Neg`, `Abs`, `SignBit`                                                                            | Unary operations used by `unOp` and `unOpAssign`.    |
 | `BinOp` | `Add`, `Sub`, `Mul`, `Div`, `Mod`, `And`, `Or`, `Nand`, `Nor`, `Xor`, `Xnor`, `Eq`, `Neq`, `Lt`, `Le`, `Gt`, `Ge` | Binary operations used by `binOp` and `binOpAssign`. |
+
+## License
+
+Acus is licensed under the GNU General Public License v3.0 or later.
+
+See [LICENSE](LICENSE) for the full license text.
